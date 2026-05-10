@@ -93,6 +93,7 @@
 | `output_before_hash` | — | 14(4)(c) | — |
 | `output_after_hash` | — | 14(4)(d) | — |
 | `intervention_timestamp` | — | 14(4)(e) | — |
+| `justification_hash` (optional) | — | 14(4)(c) | — |
 | `disclosure_presented` | — | — | 50(1) |
 
 ---

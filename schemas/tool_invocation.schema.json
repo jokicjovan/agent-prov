@@ -18,6 +18,7 @@
     "timestamp_end",
     "input_hash",
     "output_hash",
+    "reference_data_id",
     "parent_record_id"
   ],
   "properties": {

@@ -59,7 +59,7 @@
     },
     "bundle_hash": {
       "$ref": "#/$defs/sha256_hex",
-      "description": "SHA-256 hex digest computed over the canonical JSON of this bundle with the bundle_hash field itself removed. Provides a tamper-evident integrity seal for the entire record set. EU AI Act Art. 12(1) — the 'technically allow' obligation requires logs that are fit for evidentiary use, which mutable record sets are not. Verification recomputes the same exclusion-and-hash; mismatch indicates tampering."
+      "description": "SHA-256 hex digest computed over the canonical JSON of this bundle with the bundle_hash field itself removed. Provides a tamper-evident integrity seal for the entire record set. EU AI Act Art. 12(1) — the 'technically allow' obligation requires logs that are fit for evidentiary use, which mutable record sets are not. Verification recomputes the same exclusion-and-hash; mismatch indicates tampering. The canonical-JSON form used by the reference implementation (sorted keys, compact separators, UTF-8, ensure_ascii=false, no NaN/Infinity) is intentionally close to but not strictly RFC 8785 (JCS); independent verifiers must match the reference implementation's number formatting exactly to reproduce the digest."
     }
   },
   "$defs": {
