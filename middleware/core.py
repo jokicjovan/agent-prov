@@ -152,12 +152,10 @@ class ProvenanceMiddleware(BaseCallbackHandler):
         self._on_step_complete(frame, response)
 
     def _on_step_complete(self, frame: _StepFrame, response: Any) -> None:
-        """Hand the matched start/end pair to the Agent Step emitter.
+        """Hand the matched start/end pair to the Agent Step emitter."""
+        from middleware.step_emitter import emit_agent_step  # late import avoids circularity
 
-        Default implementation is a no-op so the skeleton runs in tests
-        without requiring the full emitter; subclassed/replaced once
-        `step_emitter` lands.
-        """
+        emit_agent_step(frame, response, self.session, self._nodes)
 
     # ------------------------------------------------------------------ tools
 
