@@ -195,6 +195,9 @@ class ProvenanceMiddleware(BaseCallbackHandler):
 
     def _on_tool_complete(self, frame: _ToolFrame, output: Any) -> None:
         """Hand the matched start/end pair to the Tool Invocation emitter."""
+        from middleware.tool_emitter import emit_tool_invocation  # late import avoids circularity
+
+        emit_tool_invocation(frame, output, self.session, self._nodes)
 
     # --------------------------------------------------------------- helpers
 
