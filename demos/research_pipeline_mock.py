@@ -1,13 +1,15 @@
-"""Demo Pipeline 1 — 3-agent Research Assistant.
+"""Demo Pipeline 1 (mock variant) — 3-agent Research Assistant.
 
 Graph:  researcher  →  summarizer  →  writer
 
 The researcher node calls a mock web_search tool before synthesising with a
 fake LLM, so the resulting bundle contains both agent_step and
-tool_invocation records.
+tool_invocation records. Deterministic; no external API calls.
+
+For a real-API counterpart see research_pipeline_live.py.
 
 Usage:
-    uv run python demos/research_pipeline.py
+    uv run python demos/research_pipeline_mock.py
 """
 
 from __future__ import annotations
@@ -26,6 +28,9 @@ from langgraph.graph import END, StateGraph
 from middleware.bundle_generator import BundleGenerator
 from middleware.core import ProvenanceMiddleware
 from middleware.session import PipelineSession
+
+
+PIPELINE_ID = "8d3fecf8-42d6-4f45-824f-7dde23407026"
 
 
 # ---------------------------------------------------------------------------
@@ -173,7 +178,7 @@ def run(
     output_dir: str | pathlib.Path = "demos",
 ) -> dict:
     """Run the research pipeline and write the sealed bundle to *output_dir*."""
-    session = PipelineSession(pipeline_id="research-pipeline-v1")
+    session = PipelineSession(pipeline_id=PIPELINE_ID)
     middleware = ProvenanceMiddleware(session)
 
     graph = _build_graph()
@@ -182,7 +187,7 @@ def run(
         config={"callbacks": [middleware]},
     )
 
-    output_path = pathlib.Path(output_dir) / "research_pipeline_bundle.json"
+    output_path = pathlib.Path(output_dir) / "research_pipeline_mock_bundle.json"
     bundle = BundleGenerator(session, disclosure_presented=True).to_file(output_path)
 
     _print_summary(bundle, output_path)
@@ -191,7 +196,7 @@ def run(
 
 def _print_summary(bundle: dict, path: pathlib.Path) -> None:
     records = bundle["records"]
-    print(f"\n=== Research Pipeline: Bundle Summary ===")
+    print(f"\n=== Research Pipeline (mock): Bundle Summary ===")
     print(f"Bundle ID    : {bundle['bundle_id']}")
     print(f"Pipeline ID  : {bundle['pipeline_id']}")
     print(f"Session ID   : {bundle['session_id']}")
