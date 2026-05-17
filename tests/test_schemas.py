@@ -24,7 +24,8 @@ import pytest
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
-from middleware.bundle_generator import canonical_json_sha256, compute_bundle_hash
+from middleware.bundle_generator import compute_bundle_hash
+from middleware.core import canonical_json_sha256
 
 
 # ---------------------------------------------------------------------------

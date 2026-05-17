@@ -23,8 +23,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import uuid4
 
-from middleware.core import SessionProtocol, _now_iso8601
-from middleware.step_emitter import _hash_obj
+from middleware.core import SessionProtocol, _now_iso8601, hash_content
 
 
 _ACTION_TYPES = frozenset({"approved", "rejected", "edited", "escalated"})
@@ -68,7 +67,7 @@ class HumanReview:
         self._reviewer_id = list(reviewer_id)
         self._reviewer_role = reviewer_role
         self._output_before = output_before
-        self._output_before_hash = _hash_obj(output_before)
+        self._output_before_hash = hash_content(output_before)
 
         self._decided = False
         self._action_type: str | None = None
@@ -136,7 +135,7 @@ class HumanReview:
 
     def edit(self, new_output: Any, *, justification: Any | None = None) -> None:
         """Commit an ``edited`` decision; the new output must differ from before."""
-        new_hash = _hash_obj(new_output)
+        new_hash = hash_content(new_output)
         if new_hash == self._output_before_hash:
             raise HITLError(
                 "edit() requires output_after to differ from output_before; "
@@ -184,7 +183,7 @@ class HumanReview:
         self._action_type = action_type
         self._output_after_hash = output_after_hash
         if justification is not None:
-            self._justification_hash = _hash_obj(justification)
+            self._justification_hash = hash_content(justification)
 
     # ------------------------------------------------------------------ access
 

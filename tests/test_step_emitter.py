@@ -9,12 +9,11 @@ from uuid import uuid4
 
 import pytest
 
-from middleware.core import _NodeFrame, _StepFrame
+from middleware.core import _NodeFrame, _StepFrame, hash_content
 from middleware.step_emitter import (
     _derive_agent_id,
     _extract_model_id,
     _extract_model_version,
-    _hash_obj,
     emit_agent_step,
 )
 
@@ -162,13 +161,13 @@ def test_agent_id_is_unknown_when_no_parent():
 
 
 def test_hash_is_deterministic_and_order_independent():
-    h1 = _hash_obj({"b": 2, "a": 1})
-    h2 = _hash_obj({"a": 1, "b": 2})
+    h1 = hash_content({"b": 2, "a": 1})
+    h2 = hash_content({"a": 1, "b": 2})
     assert h1 == h2
     assert SHA256_RE.match(h1)
 
 
 def test_different_inputs_produce_different_hashes():
-    h1 = _hash_obj("hello")
-    h2 = _hash_obj("world")
+    h1 = hash_content("hello")
+    h2 = hash_content("world")
     assert h1 != h2

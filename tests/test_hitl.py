@@ -21,8 +21,8 @@ import pytest
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
+from middleware.core import hash_content
 from middleware.hitl import HITLError, HumanReview
-from middleware.step_emitter import _hash_obj
 
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
@@ -98,7 +98,7 @@ def test_approve_emits_schema_valid_record_with_after_equal_to_before():
     assert r["record_type"] == "human_intervention"
     assert r["action_type"] == "approved"
     assert r["output_before_hash"] == r["output_after_hash"]
-    assert r["output_before_hash"] == _hash_obj(BEFORE)
+    assert r["output_before_hash"] == hash_content(BEFORE)
     assert UUID_RE.match(r["record_id"])
     assert SHA256_RE.match(r["output_before_hash"])
     assert "justification_hash" not in r
@@ -114,8 +114,8 @@ def test_edit_emits_record_with_distinct_after_hash():
     HITL_VALIDATOR.validate(r)
 
     assert r["action_type"] == "edited"
-    assert r["output_before_hash"] == _hash_obj(BEFORE)
-    assert r["output_after_hash"] == _hash_obj(EDITED)
+    assert r["output_before_hash"] == hash_content(BEFORE)
+    assert r["output_after_hash"] == hash_content(EDITED)
     assert r["output_after_hash"] != r["output_before_hash"]
 
 
@@ -154,7 +154,7 @@ def test_justification_is_hashed_when_supplied():
 
     r = session.records[0]
     HITL_VALIDATOR.validate(r)
-    assert r["justification_hash"] == _hash_obj(rationale)
+    assert r["justification_hash"] == hash_content(rationale)
     assert SHA256_RE.match(r["justification_hash"])
 
 

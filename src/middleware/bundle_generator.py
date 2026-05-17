@@ -2,35 +2,12 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import pathlib
-from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-
-def canonical_json_sha256(obj: Any) -> str:
-    """Return the SHA-256 hex digest of *obj* serialized as canonical JSON.
-
-    Canonical form:
-      - object keys sorted lexicographically by Unicode code point
-      - no insignificant whitespace (compact separators)
-      - UTF-8 encoded, non-ASCII characters preserved (not \\uXXXX-escaped)
-
-    This is intentionally close to but not strictly RFC 8785 (JCS):
-    Python's default number formatting differs from JCS in edge cases
-    (e.g. integer-valued floats). Adopting a full JCS library is noted as
-    future work.
-    """
-    canonical = json.dumps(
-        obj,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    )
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+from middleware.core import _now_iso8601, canonical_json_sha256
 
 
 def compute_bundle_hash(bundle: dict) -> str:
@@ -96,7 +73,3 @@ class BundleGenerator:
             encoding="utf-8",
         )
         return bundle
-
-
-def _now_iso8601() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")

@@ -10,8 +10,13 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID, uuid4
 
-from middleware.core import SessionProtocol, _NodeFrame, _ToolFrame, _now_iso8601
-from middleware.step_emitter import _hash_obj
+from middleware.core import (
+    SessionProtocol,
+    _NodeFrame,
+    _ToolFrame,
+    _now_iso8601,
+    hash_content,
+)
 
 
 def emit_tool_invocation(
@@ -32,8 +37,8 @@ def emit_tool_invocation(
         "tool_version": _extract_tool_version(frame),
         "timestamp_start": frame.timestamp_start,
         "timestamp_end": _now_iso8601(),
-        "input_hash": _hash_obj(frame.input_str),
-        "output_hash": _hash_obj(_normalize_output(output)),
+        "input_hash": hash_content(frame.input_str),
+        "output_hash": hash_content(output),
         "reference_data_id": None,
         "parent_record_id": getattr(session, "last_record_id", None),
     }
@@ -65,15 +70,3 @@ def _derive_agent_id(frame: _ToolFrame, nodes: dict[UUID, _NodeFrame]) -> str:
     if frame.parent_run_id is not None:
         return str(frame.parent_run_id)
     return "unknown"
-
-
-# ------------------------------------------------------------------ output normalisation
-
-
-def _normalize_output(output: Any) -> Any:
-    """Return the JSON-serializable form of a tool output object."""
-    if hasattr(output, "dict"):
-        return output.dict()
-    if hasattr(output, "model_dump"):
-        return output.model_dump()
-    return output

@@ -16,15 +16,13 @@ from uuid import uuid4
 
 import pytest
 
-from middleware.core import ProvenanceMiddleware, _NodeFrame, _ToolFrame
+from middleware.core import ProvenanceMiddleware, _NodeFrame, _ToolFrame, hash_content
 from middleware.tool_emitter import (
     _derive_agent_id,
     _extract_tool_name,
     _extract_tool_version,
-    _normalize_output,
     emit_tool_invocation,
 )
-from middleware.step_emitter import _hash_obj
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
@@ -209,8 +207,8 @@ def test_input_hash_is_deterministic():
 
 
 def test_different_tool_inputs_produce_different_hashes():
-    h1 = _hash_obj('{"query": "foo"}')
-    h2 = _hash_obj('{"query": "bar"}')
+    h1 = hash_content('{"query": "foo"}')
+    h2 = hash_content('{"query": "bar"}')
     assert h1 != h2
 
 
