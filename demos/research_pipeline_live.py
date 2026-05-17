@@ -8,7 +8,8 @@ that overhead numbers are measured against realistic LLM latency rather than
 a synchronous stub. The mock variant remains the deterministic reference run.
 
 Requires:
-    OPENAI_API_KEY  in the environment
+    OPENAI_API_KEY  in the environment, or in a `.env` file at the repo root
+                    (loaded via python-dotenv on import).
     OPENAI_MODEL    (optional, default "gpt-4o-mini")
 
 Usage:
@@ -21,6 +22,7 @@ import os
 import pathlib
 from typing import TypedDict
 
+from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
@@ -30,6 +32,10 @@ from langgraph.graph import END, StateGraph
 from middleware.bundle_generator import BundleGenerator
 from middleware.core import ProvenanceMiddleware
 from middleware.session import PipelineSession
+
+# Load OPENAI_API_KEY (and other secrets) from a `.env` file at the repo root
+# when present. Real shell-exported environment values still take precedence.
+load_dotenv()
 
 
 PIPELINE_ID = "b1f4a2d0-7c8e-4a1f-9b3d-6e5a8c2f4d11"
