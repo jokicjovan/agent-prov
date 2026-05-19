@@ -26,39 +26,13 @@ import re
 from typing import Any
 
 import pytest
-from jsonschema import Draft202012Validator
-from referencing import Registry, Resource
 
+from _helpers import PIPELINE_BUNDLE_SCHEMA, validator
 from middleware.bundle_generator import BundleGenerator, compute_bundle_hash
 from middleware.session import PipelineSession
 
 
-# ---------------------------------------------------------------------------
-# Schema registry (mirrors test_schemas.py)
-# ---------------------------------------------------------------------------
-
-SCHEMAS_DIR = pathlib.Path(__file__).resolve().parent.parent / "schemas"
-
-
-def _load(name: str) -> dict:
-    return json.loads((SCHEMAS_DIR / name).read_text(encoding="utf-8"))
-
-
-_AGENT_STEP = _load("agent_step.schema.json")
-_TOOL_INVOCATION = _load("tool_invocation.schema.json")
-_HUMAN_INTERVENTION = _load("human_intervention.schema.json")
-_PIPELINE_BUNDLE = _load("pipeline_bundle.schema.json")
-
-_REGISTRY = Registry().with_resources(
-    [
-        (_AGENT_STEP["$id"], Resource.from_contents(_AGENT_STEP)),
-        (_TOOL_INVOCATION["$id"], Resource.from_contents(_TOOL_INVOCATION)),
-        (_HUMAN_INTERVENTION["$id"], Resource.from_contents(_HUMAN_INTERVENTION)),
-        (_PIPELINE_BUNDLE["$id"], Resource.from_contents(_PIPELINE_BUNDLE)),
-    ]
-)
-
-_BUNDLE_VALIDATOR = Draft202012Validator(_PIPELINE_BUNDLE, registry=_REGISTRY)
+_BUNDLE_VALIDATOR = validator(PIPELINE_BUNDLE_SCHEMA)
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 

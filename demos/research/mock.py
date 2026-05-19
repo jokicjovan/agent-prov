@@ -1,4 +1,4 @@
-"""Demo Pipeline 1 (mock variant) — 3-agent Research Assistant.
+"""Research Assistant pipeline — mock variant.
 
 Graph:  researcher  →  summarizer  →  writer
 
@@ -6,10 +6,10 @@ The researcher node calls a mock web_search tool before synthesising with a
 fake LLM, so the resulting bundle contains both agent_step and
 tool_invocation records. Deterministic; no external API calls.
 
-For a real-API counterpart see research_pipeline_live.py.
+For a real-API counterpart see ``demos/research/live.py``.
 
 Usage:
-    uv run python demos/research_pipeline_mock.py
+    uv run python demos/research/mock.py
 """
 
 from __future__ import annotations
@@ -175,7 +175,7 @@ def _build_graph():
 
 def run(
     topic: str = "AI agents in multi-agent systems",
-    output_dir: str | pathlib.Path = "demos",
+    output_dir: str | pathlib.Path = "demos/research",
 ) -> dict:
     """Run the research pipeline and write the sealed bundle to *output_dir*."""
     session = PipelineSession(pipeline_id=PIPELINE_ID)
@@ -187,7 +187,7 @@ def run(
         config={"callbacks": [middleware]},
     )
 
-    output_path = pathlib.Path(output_dir) / "research_pipeline_mock_bundle.json"
+    output_path = pathlib.Path(output_dir) / "mock_bundle.json"
     bundle = BundleGenerator(session, disclosure_presented=True).to_file(output_path)
 
     _print_summary(bundle, output_path)

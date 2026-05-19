@@ -11,16 +11,13 @@ Covers:
 
 from __future__ import annotations
 
-import json
-import pathlib
 import re
 from dataclasses import dataclass, field
 from typing import Any
 
 import pytest
-from jsonschema import Draft202012Validator
-from referencing import Registry, Resource
 
+from _helpers import HUMAN_INTERVENTION_SCHEMA, validator
 from middleware.core import hash_content
 from middleware.hitl import HITLError, HumanReview
 
@@ -30,22 +27,7 @@ SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
 ISO8601_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z$")
 
 
-# ---------------------------------------------------------------------------
-# Schema validator (cross-$ref aware, mirrors test_schemas.py setup)
-# ---------------------------------------------------------------------------
-
-SCHEMAS_DIR = pathlib.Path(__file__).resolve().parent.parent / "schemas"
-
-
-def _load(name: str) -> dict:
-    return json.loads((SCHEMAS_DIR / name).read_text(encoding="utf-8"))
-
-
-HUMAN_INTERVENTION_SCHEMA = _load("human_intervention.schema.json")
-REGISTRY = Registry().with_resources(
-    [(HUMAN_INTERVENTION_SCHEMA["$id"], Resource.from_contents(HUMAN_INTERVENTION_SCHEMA))]
-)
-HITL_VALIDATOR = Draft202012Validator(HUMAN_INTERVENTION_SCHEMA, registry=REGISTRY)
+HITL_VALIDATOR = validator(HUMAN_INTERVENTION_SCHEMA)
 
 
 # ---------------------------------------------------------------------------

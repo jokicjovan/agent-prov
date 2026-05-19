@@ -1,11 +1,11 @@
-"""Demo Pipeline 1 (live variant) — 3-agent Research Assistant on a real LLM.
+"""Research Assistant pipeline — live variant (real OpenAI chat model).
 
 Graph:  researcher  →  summarizer  →  writer
 
-Same structure as research_pipeline_mock.py, but the three nodes call a real
-OpenAI chat model via langchain-openai. Used for the evaluation chapter so
-that overhead numbers are measured against realistic LLM latency rather than
-a synchronous stub. The mock variant remains the deterministic reference run.
+Same structure as ``demos/research/mock.py``, but the three nodes call a
+real OpenAI chat model via langchain-openai so that middleware overhead is
+measured against realistic LLM latency rather than a synchronous stub. The
+mock variant remains the deterministic reference run.
 
 Requires:
     OPENAI_API_KEY  in the environment, or in a `.env` file at the repo root
@@ -13,7 +13,7 @@ Requires:
     OPENAI_MODEL    (optional, default "gpt-4o-mini")
 
 Usage:
-    uv run python demos/research_pipeline_live.py
+    uv run python demos/research/live.py
 """
 
 from __future__ import annotations
@@ -111,13 +111,13 @@ def _build_graph():
 
 def run(
     topic: str = "AI agents in multi-agent systems",
-    output_dir: str | pathlib.Path = "demos",
+    output_dir: str | pathlib.Path = "demos/research",
 ) -> dict:
     """Run the live research pipeline and write the sealed bundle to *output_dir*."""
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError(
             "OPENAI_API_KEY is not set. Export it in your shell before running "
-            "the live demo, or run research_pipeline_mock.py for a deterministic "
+            "the live demo, or run demos/research/mock.py for a deterministic "
             "offline variant."
         )
 
@@ -127,7 +127,7 @@ def run(
     graph = _build_graph()
     graph.invoke({"topic": topic}, config={"callbacks": [middleware]})
 
-    output_path = pathlib.Path(output_dir) / "research_pipeline_live_bundle.json"
+    output_path = pathlib.Path(output_dir) / "live_bundle.json"
     bundle = BundleGenerator(session, disclosure_presented=True).to_file(output_path)
 
     _print_summary(bundle, output_path)
