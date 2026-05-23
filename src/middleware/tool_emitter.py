@@ -10,13 +10,8 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID, uuid4
 
-from middleware.core import (
-    SessionProtocol,
-    _NodeFrame,
-    _ToolFrame,
-    _now_iso8601,
-    hash_content,
-)
+from middleware._frames import SessionProtocol, _NodeFrame, _ToolFrame
+from middleware._hashing import _now_iso8601, hash_content
 
 
 def emit_tool_invocation(

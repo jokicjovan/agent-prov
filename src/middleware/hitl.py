@@ -23,7 +23,8 @@ from __future__ import annotations
 from typing import Any
 from uuid import uuid4
 
-from middleware.core import SessionProtocol, _now_iso8601, hash_content
+from middleware._frames import SessionProtocol
+from middleware._hashing import _now_iso8601, hash_content
 
 
 _ACTION_TYPES = frozenset({"approved", "rejected", "edited", "escalated"})

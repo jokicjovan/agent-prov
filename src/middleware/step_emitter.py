@@ -10,13 +10,8 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID, uuid4
 
-from middleware.core import (
-    SessionProtocol,
-    _NodeFrame,
-    _StepFrame,
-    _now_iso8601,
-    hash_content,
-)
+from middleware._frames import SessionProtocol, _NodeFrame, _StepFrame
+from middleware._hashing import _now_iso8601, hash_content
 
 
 def emit_agent_step(
@@ -38,11 +33,63 @@ def emit_agent_step(
         "timestamp_start": frame.timestamp_start,
         "timestamp_end": _now_iso8601(),
         "input_hash": hash_content(frame.messages),
-        "output_hash": hash_content(response),
+        "output_hash": hash_content(_semantic_output(response)),
         "reference_data_id": None,
         "parent_record_id": getattr(session, "last_record_id", None),
     }
     session.add_record(record)
+
+
+# ------------------------------------------------------------- response payload
+
+
+def _semantic_output(response: Any) -> Any:
+    """Reduce an LLM response to its run-stable semantic payload for hashing.
+
+    Hashing the full response object is not reproducible: LangChain stamps a
+    fresh ``id`` on every generated message (and on every tool call), so an
+    identical answer would digest differently on each run. This projection
+    keeps only what is semantically the model's output — the message content
+    and the name/args of any tool calls — and drops runtime identifiers and
+    transport metadata, so identical output yields an identical ``output_hash``
+    across runs. Tool calls are retained because a step that emits only a tool
+    call carries no content, and hashing content alone would make every such
+    step collide.
+
+    Falls back to hashing the response whole if it has no recognisable
+    ``generations`` structure — better an opaque digest than a dropped output.
+    """
+    generations = _get(response, "generations")
+    if not generations:
+        return response
+    payload: list[dict[str, Any]] = []
+    for batch in generations:
+        for generation in batch:
+            message = _get(generation, "message")
+            if message is None:
+                payload.append({"text": _get(generation, "text")})
+            else:
+                payload.append(
+                    {
+                        "content": _get(message, "content"),
+                        "tool_calls": _normalize_tool_calls(_get(message, "tool_calls")),
+                    }
+                )
+    return payload
+
+
+def _normalize_tool_calls(tool_calls: Any) -> list[dict[str, Any]]:
+    """Keep only the semantic (name, args) of each tool call; drop runtime ids."""
+    if not tool_calls:
+        return []
+    return [{"name": _get(tc, "name"), "args": _get(tc, "args")} for tc in tool_calls]
+
+
+def _get(obj: Any, key: str) -> Any:
+    """Read *key* from a mapping or an attribute-bearing object, else ``None``."""
+    if isinstance(obj, dict):
+        return obj.get(key)
+    return getattr(obj, key, None)
 
 
 # ------------------------------------------------------------------ extraction

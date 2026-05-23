@@ -16,7 +16,9 @@ from uuid import uuid4
 
 import pytest
 
-from middleware.core import ProvenanceMiddleware, _NodeFrame, _ToolFrame, hash_content
+from middleware._frames import _NodeFrame, _ToolFrame
+from middleware._hashing import hash_content
+from middleware.core import ProvenanceMiddleware
 from middleware.tool_emitter import (
     _derive_agent_id,
     _extract_tool_name,

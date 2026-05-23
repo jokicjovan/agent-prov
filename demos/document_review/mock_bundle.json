@@ -1,34 +1,34 @@
 {
-  "bundle_id": "7f4bcd85-a2ea-4392-89fb-30fee99b2f8b",
+  "bundle_id": "ca82656a-a712-4ee5-bd36-e6d4980afe8e",
   "record_type": "pipeline_bundle",
   "protocol_version": "0.1.0",
   "pipeline_id": "951e06e5-f3b3-443f-ba1e-45e9416e1be3",
-  "session_id": "00801809-0aef-484f-a16c-0072cf9c84a5",
-  "created_at": "2026-05-19T15:20:31.168895Z",
+  "session_id": "3a38df6b-9967-4e53-9d1e-50049735e16c",
+  "created_at": "2026-05-23T19:00:07.836174Z",
   "disclosure_presented": true,
   "records": [
     {
-      "record_id": "7492c13e-b1a6-4b10-968b-47e76dadb452",
+      "record_id": "fcecbe25-00dc-4183-bc6b-459fbeded173",
       "record_type": "agent_step",
       "protocol_version": "0.1.0",
       "pipeline_id": "951e06e5-f3b3-443f-ba1e-45e9416e1be3",
-      "session_id": "00801809-0aef-484f-a16c-0072cf9c84a5",
+      "session_id": "3a38df6b-9967-4e53-9d1e-50049735e16c",
       "agent_id": "summarizer",
       "model_id": "fake-summarizer",
       "model_version": "fake-summarizer",
-      "timestamp_start": "2026-05-19T15:20:31.165824Z",
-      "timestamp_end": "2026-05-19T15:20:31.166667Z",
+      "timestamp_start": "2026-05-23T19:00:07.833197Z",
+      "timestamp_end": "2026-05-23T19:00:07.833775Z",
       "input_hash": "c23c7f0b33c89af4c19f72b58f3a3758e1f74b34769c96ddfbbee86290281a0d",
-      "output_hash": "edc26f954b7d20fc247da765812982691eedac4618c475484abb6b04d6e7b81b",
+      "output_hash": "dd8eec596a0f5a2ee7ae23a0950b2ba2b258064c077cfb14f295cad4472e00da",
       "reference_data_id": null,
       "parent_record_id": null
     },
     {
-      "record_id": "decfafe1-9524-42c3-b293-f6dae180ca4a",
+      "record_id": "a1eab26f-c35a-4e27-a751-c9f0746066e8",
       "record_type": "human_intervention",
       "protocol_version": "0.1.0",
       "pipeline_id": "951e06e5-f3b3-443f-ba1e-45e9416e1be3",
-      "session_id": "00801809-0aef-484f-a16c-0072cf9c84a5",
+      "session_id": "3a38df6b-9967-4e53-9d1e-50049735e16c",
       "reviewer_id": [
         "reviewer:editor-01"
       ],
@@ -36,32 +36,32 @@
       "action_type": "edited",
       "output_before_hash": "414effefe4286f519903af5c76b78c196ab12d5ca6471400b0388dd20b5ffc7c",
       "output_after_hash": "40e15ba522fe7cf47e6856fac1f58c54243272aad3cf0a26d1452ad3c3a03a71",
-      "intervention_timestamp": "2026-05-19T15:20:31.167137Z",
-      "parent_record_id": "7492c13e-b1a6-4b10-968b-47e76dadb452",
+      "intervention_timestamp": "2026-05-23T19:00:07.834502Z",
+      "parent_record_id": "fcecbe25-00dc-4183-bc6b-459fbeded173",
       "justification_hash": "8e8b08c1dbffc072c15bb4b4ce7b8c94e9c0959fc896ec34c213bcb7c4e7402d"
     },
     {
-      "record_id": "73b207e4-ad57-430d-92da-41fcfb57abaf",
+      "record_id": "80b5e11c-4129-420f-ba06-cd7b4cb9ac31",
       "record_type": "agent_step",
       "protocol_version": "0.1.0",
       "pipeline_id": "951e06e5-f3b3-443f-ba1e-45e9416e1be3",
-      "session_id": "00801809-0aef-484f-a16c-0072cf9c84a5",
+      "session_id": "3a38df6b-9967-4e53-9d1e-50049735e16c",
       "agent_id": "finalizer",
       "model_id": "fake-finalizer",
       "model_version": "fake-finalizer",
-      "timestamp_start": "2026-05-19T15:20:31.168577Z",
-      "timestamp_end": "2026-05-19T15:20:31.168671Z",
+      "timestamp_start": "2026-05-23T19:00:07.835880Z",
+      "timestamp_end": "2026-05-23T19:00:07.835956Z",
       "input_hash": "56846ac643e42e8c21cfec1299ab6ee9be48739b1dd8ee25307d1cd37b060066",
-      "output_hash": "eaedbbcfd2ec6e35825697a6ac25adb8416cf202172817eaf7eb084c94a59289",
+      "output_hash": "45d1a028f4cd0573ac8eec7ea941a7720a853720c0152858d56af03412861ff4",
       "reference_data_id": null,
-      "parent_record_id": "decfafe1-9524-42c3-b293-f6dae180ca4a"
+      "parent_record_id": "a1eab26f-c35a-4e27-a751-c9f0746066e8"
     },
     {
-      "record_id": "8b226e3b-83b0-4685-b4b7-783502031168",
+      "record_id": "da236564-628f-4ebf-9633-d7db22031df3",
       "record_type": "human_intervention",
       "protocol_version": "0.1.0",
       "pipeline_id": "951e06e5-f3b3-443f-ba1e-45e9416e1be3",
-      "session_id": "00801809-0aef-484f-a16c-0072cf9c84a5",
+      "session_id": "3a38df6b-9967-4e53-9d1e-50049735e16c",
       "reviewer_id": [
         "reviewer:compliance-07"
       ],
@@ -69,10 +69,10 @@
       "action_type": "approved",
       "output_before_hash": "1eab154df5550f8151e77d7d2cf1b550f3894c5e8e074930c334e99686a09cd5",
       "output_after_hash": "1eab154df5550f8151e77d7d2cf1b550f3894c5e8e074930c334e99686a09cd5",
-      "intervention_timestamp": "2026-05-19T15:20:31.168877Z",
-      "parent_record_id": "73b207e4-ad57-430d-92da-41fcfb57abaf",
+      "intervention_timestamp": "2026-05-23T19:00:07.836156Z",
+      "parent_record_id": "80b5e11c-4129-420f-ba06-cd7b4cb9ac31",
       "justification_hash": "79995e711204126f365746e06200e997d394b8dd9ee9d8b79dbb74fd188a00f6"
     }
   ],
-  "bundle_hash": "497e991c1b844660269d06d18579afac32ae44fbe3405e9da6c68d22dcd1b2ec"
+  "bundle_hash": "ed12994ebaee42862058f9a820287a0d60096914fb274fe845fea66f78f607a2"
 }

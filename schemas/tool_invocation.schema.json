@@ -83,7 +83,7 @@
         { "$ref": "#/$defs/uuid" },
         { "type": "null" }
       ],
-      "description": "record_id of the immediately preceding record in the pipeline (inter-record linkage). Typically the Agent Step Record that issued this tool call. Null only if this is the first record in the pipeline (rare for tool invocations). Schema metadata supporting the ordered record chain referenced by Art. 12(2) traceability."
+      "description": "record_id of the immediately preceding record in the pipeline, by chronological emission order (inter-record linkage). The chain is chronological, not causal: this is the record observed to complete just before this tool invocation, not necessarily the Agent Step Record that issued the call. Null only if this is the first record in the pipeline (rare for tool invocations). Schema metadata supporting the ordered record chain referenced by Art. 12(2) traceability."
     }
   },
   "$defs": {

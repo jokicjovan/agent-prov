@@ -11,7 +11,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID, uuid4
 
-from middleware.core import ProvenanceMiddleware, _StepFrame, _ToolFrame
+from middleware._frames import _StepFrame, _ToolFrame
+from middleware.core import ProvenanceMiddleware
 
 
 @dataclass

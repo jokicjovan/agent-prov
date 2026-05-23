@@ -8,8 +8,11 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
+from langchain_core.messages import AIMessage
+from langchain_core.outputs import ChatGeneration, LLMResult
 
-from middleware.core import _NodeFrame, _StepFrame, hash_content
+from middleware._frames import _NodeFrame, _StepFrame
+from middleware._hashing import hash_content
 from middleware.step_emitter import (
     _derive_agent_id,
     _extract_model_id,
@@ -171,3 +174,51 @@ def test_different_inputs_produce_different_hashes():
     h1 = hash_content("hello")
     h2 = hash_content("world")
     assert h1 != h2
+
+
+# --- output_hash determinism -------------------------------------------------
+# emit_agent_step must hash the *semantic* model output, not the full response
+# envelope: LangChain stamps a fresh runtime id on every generated message, so
+# hashing the envelope makes an identical answer digest differently each run.
+
+
+def _llm_result(content: str, *, message_id: str, tool_calls: Any = None) -> LLMResult:
+    """Build an LLMResult shaped like a real chat-model response."""
+    message = AIMessage(content=content, id=message_id, tool_calls=tool_calls or [])
+    return LLMResult(generations=[[ChatGeneration(message=message)]])
+
+
+def test_output_hash_is_stable_across_runtime_message_ids():
+    """Same content, different LangChain-assigned message id -> same output_hash."""
+    session_a, session_b = StubSession(), StubSession()
+    emit_agent_step(_make_frame(), _llm_result("identical answer", message_id="run--aaaaaaaa-0"), session_a, {})
+    emit_agent_step(_make_frame(), _llm_result("identical answer", message_id="run--bbbbbbbb-0"), session_b, {})
+    assert session_a.records[0]["output_hash"] == session_b.records[0]["output_hash"]
+
+
+def test_output_hash_changes_with_content():
+    """Different model output -> different output_hash."""
+    session = StubSession()
+    emit_agent_step(_make_frame(), _llm_result("answer one", message_id="run--a-0"), session, {})
+    emit_agent_step(_make_frame(), _llm_result("answer two", message_id="run--a-0"), session, {})
+    assert session.records[0]["output_hash"] != session.records[1]["output_hash"]
+
+
+def test_output_hash_reflects_tool_calls_when_content_is_empty():
+    """A tool-calling step carries no content; its tool call must still be hashed."""
+    call_x = [{"name": "web_search", "args": {"query": "x"}, "id": "call_1", "type": "tool_call"}]
+    call_y = [{"name": "web_search", "args": {"query": "y"}, "id": "call_2", "type": "tool_call"}]
+    session = StubSession()
+    emit_agent_step(_make_frame(), _llm_result("", message_id="run--a-0", tool_calls=call_x), session, {})
+    emit_agent_step(_make_frame(), _llm_result("", message_id="run--a-0", tool_calls=call_y), session, {})
+    assert session.records[0]["output_hash"] != session.records[1]["output_hash"]
+
+
+def test_output_hash_ignores_runtime_tool_call_ids():
+    """Tool-call ids are runtime-assigned; identical name/args -> same output_hash."""
+    call_a = [{"name": "web_search", "args": {"query": "x"}, "id": "call_aaa", "type": "tool_call"}]
+    call_b = [{"name": "web_search", "args": {"query": "x"}, "id": "call_bbb", "type": "tool_call"}]
+    session = StubSession()
+    emit_agent_step(_make_frame(), _llm_result("", message_id="run--a-0", tool_calls=call_a), session, {})
+    emit_agent_step(_make_frame(), _llm_result("", message_id="run--a-0", tool_calls=call_b), session, {})
+    assert session.records[0]["output_hash"] == session.records[1]["output_hash"]

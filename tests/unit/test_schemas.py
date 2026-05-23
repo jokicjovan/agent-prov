@@ -30,7 +30,7 @@ from _helpers import (
     is_valid as _is_valid,
 )
 from middleware.bundle_generator import compute_bundle_hash
-from middleware.core import canonical_json_sha256
+from middleware._hashing import canonical_json_sha256
 
 
 # ---------------------------------------------------------------------------

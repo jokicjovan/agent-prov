@@ -18,7 +18,7 @@ from typing import Any
 import pytest
 
 from _helpers import HUMAN_INTERVENTION_SCHEMA, validator
-from middleware.core import hash_content
+from middleware._hashing import hash_content
 from middleware.hitl import HITLError, HumanReview
 
 

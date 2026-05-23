@@ -6,7 +6,7 @@ Chapter 3 specified the protocol as a static artefact: four record types, their 
 
 The chapter is organised around the path a single pipeline run takes through the implementation. It opens with the technology choices and project layout (§4.2) and an architecture overview (§4.3). It then follows the data flow: the middleware that listens to pipeline lifecycle events (§4.4), the emitters that turn matched events into records (§4.5), the canonical hashing primitive (§4.6), the session that accumulates records (§4.7), and the bundle generator that seals them (§4.8). Human intervention capture (§4.9) and the compliance report generator (§4.10) follow. The chapter then describes the two demonstration pipelines that exercise the implementation end to end (§4.11), the testing strategy (§4.12), and the limitations of the current implementation (§4.13).
 
-The implementation is the reference against which the protocol is defined: where Chapter 3's tables and the JSON Schemas disagree, the schemas are authoritative; where the protocol's hashing convention is ambiguous, the implementation in `middleware/core.py` is authoritative. This chapter therefore doubles as the specification of the canonical hashing form that an independent verifier must reproduce.
+The implementation is the reference against which the protocol is defined: where Chapter 3's tables and the JSON Schemas disagree, the schemas are authoritative; where the protocol's hashing convention is ambiguous, the implementation in `middleware/_hashing.py` is authoritative. This chapter therefore doubles as the specification of the canonical hashing form that an independent verifier must reproduce.
 
 ---
 
@@ -110,7 +110,7 @@ The middleware does not import `PipelineSession`. It depends instead on `Session
 
 This is a small decision with two payoffs. It keeps the dependency graph acyclic — `core.py` does not import `session.py` — and it makes the middleware testable against a trivial fake session without constructing the real one. It also documents, in the type system, exactly how little the capture layer needs to know about record accumulation.
 
-One unavoidable circularity remains and is handled explicitly: `core.py`'s `_on_step_complete` and `_on_tool_complete` import the emitter functions at call time rather than at module load. The emitters import frame dataclasses from `core.py`, so a load-time import in the other direction would form a cycle. The function-scope import breaks it. This is flagged as minor technical debt — a cleaner resolution would extract the frame dataclasses into a third module — and is discussed in Chapter 6.
+The dependency graph is acyclic by construction. The frame dataclasses and `SessionProtocol` live in a leaf module, `_frames`; the canonical-JSON hashing helpers (§4.6) live in `_hashing`; both are imported by `core` and by the emitters but import nothing from `middleware` themselves. `core` can therefore import the emitter functions at module load time. An earlier layout kept the frames and hashing helpers in `core` itself, which forced function-scope imports in `_on_step_complete` and `_on_tool_complete` to break the cycle; extracting the leaves removed that workaround.
 
 ---
 
@@ -130,7 +130,7 @@ An emitter turns a matched lifecycle pair into a record and hands the record to 
 - `timestamp_start` — read from the frame, set when the model call began.
 - `timestamp_end` — set now, as the record is emitted.
 - `input_hash` — the canonical hash of the frame's input message list.
-- `output_hash` — the canonical hash of the model response.
+- `output_hash` — the canonical hash of the response's semantic payload: per generation, the message content and the (name, args) of any tool calls. The full response envelope is not hashed because LangChain stamps a fresh runtime `id` on every generated message and on every tool call, which would make identical content digest differently on each run; the projection keeps only what is semantically the model's output, preserving the content-addressable property the protocol relies on. Tool calls are retained — not just `content` — because a step that emits only a tool call carries no content, and hashing content alone would make every such step collide.
 - `reference_data_id` — `null`; the reference corpus identifier is not recoverable from a generic chat model call and is left for the application layer to populate.
 - `parent_record_id` — the session's `last_record_id` (§4.7).
 
@@ -156,7 +156,7 @@ These fallbacks share a design stance: a provenance layer must never crash the p
 
 ## 4.6 Canonical hashing
 
-All content hashing in the implementation goes through two functions in `core.py`.
+All content hashing in the implementation goes through two functions in `_hashing.py`.
 
 `canonical_json_sha256(obj)` is the protocol's canonical-form primitive. It serialises `obj` with `json.dumps` under a fixed configuration — keys sorted lexicographically, compact separators (no insignificant whitespace), `ensure_ascii=False` so non-ASCII characters are preserved rather than `\u`-escaped — encodes the result as UTF-8, and returns the SHA-256 hex digest. Two guards matter. `allow_nan=False` makes the function reject `NaN` and `Infinity`: these are not portable in JSON and a provenance hash should fail loudly rather than digest an unrepresentable float. `default=str` provides a last-resort serialiser for types `json` does not handle natively, so a `UUID` or `datetime` that reaches the function is stringified rather than raising.
 
@@ -275,12 +275,10 @@ The **integration test** (`tests/integration/test_middleware_pipeline.py`) build
 
 ## 4.13 Implementation limitations
 
-Three limitations of the current implementation are stated here and carried forward to Chapter 6 for fuller discussion. They are recorded now so that the evaluation in Chapter 5 is read against an honest account of what the proof of concept does and does not guarantee.
-
-**Output-hash determinism.** `output_hash` on an Agent Step Record is computed by hashing the model's response object. LangChain stamps a fresh run identifier onto every generated message, and that identifier is part of the object `hash_content` currently digests. The same agent, given the same input and producing the same content, therefore yields a different `output_hash` on each run. This weakens the content-addressable-evidence property the protocol relies on. The fix — hashing only the semantic payload of the response, or excluding the runtime identifier during normalisation — is a contained change identified in Chapter 6.
+Two limitations of the current implementation are stated here and carried forward to Chapter 6 for fuller discussion. They are recorded now so that the evaluation in Chapter 5 is read against an honest account of what the proof of concept does and does not guarantee.
 
 **Canonical JSON is not strictly RFC 8785.** As described in §4.6, the canonical form depends on Python's number formatting and diverges from JCS in edge cases. An independent verifier must reproduce the reference implementation exactly. Adopting a published JCS library would remove the divergence.
 
 **The parent chain is chronological, not causal.** `parent_record_id` records emission order, not the "issued-by" relationship between an agent step and the tool call it dispatched. Recovering causal structure is left to an analysis layer or to a future optional `caused_by_record_id` field (§3.7.3).
 
-None of these blocks the evaluation. The first is the most consequential and is the clearest single item of future work; the other two are documented divergences with defined resolutions. Chapter 5 now turns from how the protocol is implemented to how well it performs: completeness against the Act's obligations, runtime and storage overhead, and instrumentation effort.
+Neither blocks the evaluation. Both are documented divergences with defined resolutions. Chapter 5 now turns from how the protocol is implemented to how well it performs: completeness against the Act's obligations, runtime and storage overhead, and instrumentation effort.

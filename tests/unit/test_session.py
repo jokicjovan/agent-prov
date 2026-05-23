@@ -1,6 +1,6 @@
 """Tests for PipelineSession — ID generation, record accumulation, parent-chain wiring.
 
-Fourteen test cases covering:
+Sixteen test cases covering:
   1-2  UUID generation for pipeline_id and session_id.
   3    Custom pipeline_id is used verbatim; session_id is still fresh.
   4    Two instances share pipeline_id but get distinct session_ids.
@@ -13,6 +13,8 @@ Fourteen test cases covering:
   13   SessionProtocol interface — required attributes are all present.
   14   Integration: ProvenanceMiddleware + PipelineSession round-trip emits
        a valid, parent-chained record sequence.
+  15   Construction rejects a pipeline_id that is not a lowercase UUID.
+  16   Construction rejects a protocol_version that is not valid semver.
 """
 
 from __future__ import annotations
@@ -23,7 +25,8 @@ from uuid import uuid4
 
 import pytest
 
-from middleware.core import ProvenanceMiddleware, _NodeFrame
+from middleware._frames import _NodeFrame
+from middleware.core import ProvenanceMiddleware
 from middleware.session import PipelineSession, _DEFAULT_PROTOCOL_VERSION
 
 
@@ -165,7 +168,7 @@ def test_12_len_mirrors_records_list_length():
 
 
 def test_13_session_satisfies_session_protocol_interface():
-    from middleware.core import SessionProtocol
+    from middleware._frames import SessionProtocol
     import inspect
 
     session = PipelineSession()
@@ -239,3 +242,38 @@ def test_14_integration_middleware_emits_records_into_session_with_parent_chaini
 
     mw.on_chain_end(outputs={}, run_id=node_run_id)
     assert mw.in_flight == {"nodes": 0, "steps": 0, "tools": 0}
+
+
+# ---------------------------------------------------------------------------
+# Tests 15-16 — input validation at construction
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "bad_pipeline_id",
+    [
+        "research-pipeline-v1",                          # arbitrary slug — the documented footgun
+        "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",          # uppercase UUID — protocol mandates lowercase
+        "aaaaaaaa-aaaa-aaaa-aaaa",                       # truncated
+        "",                                              # empty
+    ],
+)
+def test_15_construction_rejects_non_uuid_pipeline_id(bad_pipeline_id: str):
+    with pytest.raises(ValueError, match="pipeline_id"):
+        PipelineSession(pipeline_id=bad_pipeline_id)
+
+
+@pytest.mark.parametrize(
+    "bad_version",
+    [
+        "1",            # not three components
+        "1.2",          # not three components
+        "v1.2.3",       # leading "v"
+        "1.2.3.4",      # too many components
+        "01.2.3",       # leading zero in major
+        "",             # empty
+    ],
+)
+def test_16_construction_rejects_non_semver_protocol_version(bad_version: str):
+    with pytest.raises(ValueError, match="protocol_version"):
+        PipelineSession(protocol_version=bad_version)
