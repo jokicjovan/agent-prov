@@ -8,7 +8,7 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, LLMResult
 
 from middleware._frames import _NodeFrame, _StepFrame
@@ -222,3 +222,62 @@ def test_output_hash_ignores_runtime_tool_call_ids():
     emit_agent_step(_make_frame(), _llm_result("", message_id="run--a-0", tool_calls=call_a), session, {})
     emit_agent_step(_make_frame(), _llm_result("", message_id="run--a-0", tool_calls=call_b), session, {})
     assert session.records[0]["output_hash"] == session.records[1]["output_hash"]
+
+
+# --- input_hash determinism --------------------------------------------------
+# Symmetric with output_hash: the input projection must strip the same runtime
+# identifiers, otherwise any multi-turn history (where a prior AIMessage with
+# a fresh runtime id sits in the messages list) re-randomises input_hash on
+# every replay even when nothing semantically changed.
+
+
+def test_input_hash_is_stable_across_runtime_ai_message_ids():
+    """Same conversation history, different LangChain-assigned ids -> same input_hash."""
+    history_a = [[
+        HumanMessage(content="hello"),
+        AIMessage(content="hi back", id="run--aaaaaaaa-0"),
+    ]]
+    history_b = [[
+        HumanMessage(content="hello"),
+        AIMessage(content="hi back", id="run--bbbbbbbb-0"),
+    ]]
+    session_a, session_b = StubSession(), StubSession()
+    emit_agent_step(_make_frame(messages=history_a), FAKE_RESPONSE, session_a, {})
+    emit_agent_step(_make_frame(messages=history_b), FAKE_RESPONSE, session_b, {})
+    assert session_a.records[0]["input_hash"] == session_b.records[0]["input_hash"]
+
+
+def test_input_hash_is_stable_across_runtime_tool_call_ids():
+    """Tool-call and tool-message correlation ids are runtime; semantically equal histories -> same input_hash."""
+    call_a = [{"name": "web_search", "args": {"query": "x"}, "id": "call_aaa", "type": "tool_call"}]
+    call_b = [{"name": "web_search", "args": {"query": "x"}, "id": "call_bbb", "type": "tool_call"}]
+    history_a = [[
+        HumanMessage(content="look it up"),
+        AIMessage(content="", id="run--a-0", tool_calls=call_a),
+        ToolMessage(content="result", tool_call_id="call_aaa", name="web_search"),
+    ]]
+    history_b = [[
+        HumanMessage(content="look it up"),
+        AIMessage(content="", id="run--b-0", tool_calls=call_b),
+        ToolMessage(content="result", tool_call_id="call_bbb", name="web_search"),
+    ]]
+    session_a, session_b = StubSession(), StubSession()
+    emit_agent_step(_make_frame(messages=history_a), FAKE_RESPONSE, session_a, {})
+    emit_agent_step(_make_frame(messages=history_b), FAKE_RESPONSE, session_b, {})
+    assert session_a.records[0]["input_hash"] == session_b.records[0]["input_hash"]
+
+
+def test_input_hash_changes_when_content_changes():
+    """Different message content -> different input_hash."""
+    session = StubSession()
+    emit_agent_step(_make_frame(messages=[[HumanMessage(content="one")]]), FAKE_RESPONSE, session, {})
+    emit_agent_step(_make_frame(messages=[[HumanMessage(content="two")]]), FAKE_RESPONSE, session, {})
+    assert session.records[0]["input_hash"] != session.records[1]["input_hash"]
+
+
+def test_input_hash_distinguishes_human_from_ai_message():
+    """type is part of the projection: identical content on different roles must not collide."""
+    session = StubSession()
+    emit_agent_step(_make_frame(messages=[[HumanMessage(content="same")]]), FAKE_RESPONSE, session, {})
+    emit_agent_step(_make_frame(messages=[[AIMessage(content="same", id="run--a-0")]]), FAKE_RESPONSE, session, {})
+    assert session.records[0]["input_hash"] != session.records[1]["input_hash"]

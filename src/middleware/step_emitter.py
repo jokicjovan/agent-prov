@@ -32,7 +32,7 @@ def emit_agent_step(
         "model_version": _extract_model_version(frame),
         "timestamp_start": frame.timestamp_start,
         "timestamp_end": _now_iso8601(),
-        "input_hash": hash_content(frame.messages),
+        "input_hash": hash_content(_semantic_input(frame.messages)),
         "output_hash": hash_content(_semantic_output(response)),
         "reference_data_id": None,
         "parent_record_id": getattr(session, "last_record_id", None),
@@ -40,21 +40,53 @@ def emit_agent_step(
     session.add_record(record)
 
 
-# ------------------------------------------------------------- response payload
+# ---------------------------------------------------------- semantic projection
+#
+# Hashing raw messages is not run-stable: LangChain stamps a fresh ``id`` on
+# every generated ``AIMessage`` (and a fresh ``tool_call_id`` on every
+# ``ToolMessage``). Replaying the same pipeline with the same prompt would then
+# yield a different ``input_hash`` / ``output_hash`` on each run, even when
+# nothing semantically changed — defeating the auditor's "did this input
+# produce this output" check. The projection below keeps only the semantic
+# fields (type, content, tool-call name/args, tool name on tool responses) and
+# is applied symmetrically on both sides so a single conversation digests
+# identically across runs.
+
+
+def _semantic_message(msg: Any) -> dict[str, Any]:
+    """Reduce a single chat message to its run-stable semantic payload.
+
+    Keeps ``type`` (so HumanMessage / AIMessage / ToolMessage do not collide
+    on identical content), ``content``, and any ``tool_calls`` (themselves
+    projected to drop runtime ids). Includes a ToolMessage's ``name`` when
+    present — the tool name is semantic and lets the auditor see which tool
+    produced a given response.
+    """
+    payload: dict[str, Any] = {
+        "type": _get(msg, "type"),
+        "content": _get(msg, "content"),
+        "tool_calls": _normalize_tool_calls(_get(msg, "tool_calls")),
+    }
+    name = _get(msg, "name")
+    if name is not None:
+        payload["name"] = name
+    return payload
+
+
+def _semantic_input(messages: Any) -> Any:
+    """Project the batched LLM input messages to their run-stable shape.
+
+    ``frame.messages`` follows LangChain's batched ``list[list[BaseMessage]]``
+    convention; preserve that nesting so the digest distinguishes a batched
+    call from a flat list of the same messages.
+    """
+    if not messages:
+        return messages
+    return [[_semantic_message(m) for m in batch] for batch in messages]
 
 
 def _semantic_output(response: Any) -> Any:
-    """Reduce an LLM response to its run-stable semantic payload for hashing.
-
-    Hashing the full response object is not reproducible: LangChain stamps a
-    fresh ``id`` on every generated message (and on every tool call), so an
-    identical answer would digest differently on each run. This projection
-    keeps only what is semantically the model's output — the message content
-    and the name/args of any tool calls — and drops runtime identifiers and
-    transport metadata, so identical output yields an identical ``output_hash``
-    across runs. Tool calls are retained because a step that emits only a tool
-    call carries no content, and hashing content alone would make every such
-    step collide.
+    """Reduce an LLM response to its run-stable semantic payload.
 
     Falls back to hashing the response whole if it has no recognisable
     ``generations`` structure — better an opaque digest than a dropped output.
@@ -69,12 +101,7 @@ def _semantic_output(response: Any) -> Any:
             if message is None:
                 payload.append({"text": _get(generation, "text")})
             else:
-                payload.append(
-                    {
-                        "content": _get(message, "content"),
-                        "tool_calls": _normalize_tool_calls(_get(message, "tool_calls")),
-                    }
-                )
+                payload.append(_semantic_message(message))
     return payload
 
 
