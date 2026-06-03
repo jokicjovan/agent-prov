@@ -7,11 +7,21 @@ hands it to the PipelineSession via session.add_record().
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 from uuid import UUID, uuid4
 
 from middleware._frames import SessionProtocol, _NodeFrame, _ToolFrame
 from middleware._hashing import _now_iso8601, hash_content
+
+logger = logging.getLogger(__name__)
+
+# Sentinel written to tool_version when no version can be resolved. It satisfies
+# the schema's minLength constraint and keeps an uninstrumented tool from
+# crashing the pipeline, but it carries no drift-detection signal — so the
+# fallback is logged at WARNING level rather than applied silently. Deployments
+# that care about version drift should supply an explicit tool_version.
+_UNVERSIONED = "unversioned"
 
 
 def emit_tool_invocation(
@@ -56,7 +66,14 @@ def _extract_tool_version(frame: _ToolFrame) -> str:
     # Version supplied via metadata by the caller
     if v := frame.metadata.get("tool_version"):
         return str(v)
-    return "unversioned"
+    logger.warning(
+        "No tool_version for tool %r; recording %r. Drift detection for this "
+        "tool is degraded — supply an explicit version via the serialized "
+        "'version' kwarg or a 'tool_version' metadata key.",
+        _extract_tool_name(frame),
+        _UNVERSIONED,
+    )
+    return _UNVERSIONED
 
 
 def _derive_agent_id(frame: _ToolFrame, nodes: dict[UUID, _NodeFrame]) -> str:

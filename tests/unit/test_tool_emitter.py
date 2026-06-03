@@ -9,6 +9,7 @@ Covers:
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -156,6 +157,23 @@ def test_tool_version_kwargs_takes_precedence_over_metadata():
 def test_tool_version_falls_back_to_unversioned():
     frame = _make_tool_frame(serialized={"name": "web_search", "kwargs": {}}, metadata={})
     assert _extract_tool_version(frame) == "unversioned"
+
+
+def test_tool_version_fallback_logs_warning(caplog):
+    frame = _make_tool_frame(serialized={"name": "web_search", "kwargs": {}}, metadata={})
+    with caplog.at_level(logging.WARNING, logger="middleware.tool_emitter"):
+        _extract_tool_version(frame)
+    assert any(
+        rec.levelno == logging.WARNING and "web_search" in rec.getMessage()
+        for rec in caplog.records
+    )
+
+
+def test_tool_version_no_warning_when_version_present(caplog):
+    frame = _make_tool_frame(serialized={"name": "web_search", "kwargs": {"version": "2.1.0"}})
+    with caplog.at_level(logging.WARNING, logger="middleware.tool_emitter"):
+        _extract_tool_version(frame)
+    assert not caplog.records
 
 
 # ---------------------------------------------------------------------------
