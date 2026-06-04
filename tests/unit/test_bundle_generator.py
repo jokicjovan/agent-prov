@@ -28,8 +28,8 @@ from typing import Any
 import pytest
 
 from _helpers import PIPELINE_BUNDLE_SCHEMA, validator
-from middleware.bundle_generator import BundleGenerator, compute_bundle_hash
-from middleware.session import PipelineSession
+from agent_prov.bundle_generator import BundleGenerator, compute_bundle_hash
+from agent_prov.session import PipelineSession
 
 
 _BUNDLE_VALIDATOR = validator(PIPELINE_BUNDLE_SCHEMA)

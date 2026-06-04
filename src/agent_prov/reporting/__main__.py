@@ -1,4 +1,4 @@
-"""Command-line entry point: `python -m reporting <bundle.json> <out.pdf>`."""
+"""Command-line entry point: `python -m agent_prov.reporting <bundle.json> <out.pdf>`."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ import json
 import pathlib
 import sys
 
-from reporting.compliance_report import ComplianceReport
+from agent_prov.reporting.compliance_report import ComplianceReport
 
 
 def _cli(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="reporting",
+        prog="agent_prov.reporting",
         description=(
             "Render an EU AI Act compliance PDF from a sealed Pipeline Bundle."
         ),

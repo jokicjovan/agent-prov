@@ -7,8 +7,8 @@ import pathlib
 from typing import Any
 from uuid import uuid4
 
-from middleware._hashing import _now_iso8601, canonical_json_sha256
-from middleware.validation import validate_bundle
+from agent_prov._hashing import _now_iso8601, canonical_json_sha256
+from agent_prov.validation import validate_bundle
 
 
 def compute_bundle_hash(bundle: dict) -> str:

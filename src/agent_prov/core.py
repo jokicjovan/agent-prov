@@ -24,10 +24,10 @@ from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
 
-from middleware._frames import SessionProtocol, _NodeFrame, _StepFrame, _ToolFrame
-from middleware._hashing import _now_iso8601
-from middleware.step_emitter import emit_agent_step
-from middleware.tool_emitter import emit_tool_invocation
+from agent_prov._frames import SessionProtocol, _NodeFrame, _StepFrame, _ToolFrame
+from agent_prov._hashing import _now_iso8601
+from agent_prov.step_emitter import emit_agent_step
+from agent_prov.tool_emitter import emit_tool_invocation
 
 
 class ProvenanceMiddleware(BaseCallbackHandler):

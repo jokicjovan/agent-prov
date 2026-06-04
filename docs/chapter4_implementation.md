@@ -18,14 +18,14 @@ The implementation is the reference against which the protocol is defined: where
 
 **`uv` for environment and dependency management.** The project is a `uv` project: `pyproject.toml` declares dependencies, `uv.lock` is committed for reproducibility, and `uv sync` reconstructs the environment from the lockfile. The runtime dependency set is deliberately small — `jsonschema` for schema validation, `langchain-core` and `langgraph` for the host framework, `python-dotenv` for loading API credentials in the live demos.
 
-**`src/` layout with two packages.** Source lives under `src/` and is split into two installable packages, declared to the Hatchling build backend:
+**`src/` layout, single package.** Source lives under `src/` as one installable package, `agent_prov`, declared to the Hatchling build backend. Its import name matches the distribution name (`agent-prov`), following the standard one-package-per-distribution convention. The package has two parts:
 
-- `middleware` — the protocol implementation: capture, emission, session, sealing, HITL.
-- `reporting` — the compliance report generator.
+- `agent_prov` (top level) — the protocol implementation: capture, emission, session, sealing, HITL.
+- `agent_prov.reporting` — the compliance report generator, a subpackage.
 
-The split is intentional. `middleware` has a minimal dependency footprint and is what a host application installs to instrument a pipeline. `reporting` depends on `fpdf2` for PDF rendering, which an instrumented application does not need at runtime. `reporting` is therefore an *optional extra*: `pip install agent-prov[reporting]` (or the equivalent `uv` invocation) pulls `fpdf2`; a plain install does not. The extra is duplicated into the development dependency group so that `uv sync` provisions a complete environment for running the test suite without a separate step.
+The separation is intentional. The core has a minimal dependency footprint and is what a host application installs to instrument a pipeline. `agent_prov.reporting` depends on `fpdf2` for PDF rendering, which an instrumented application does not need at runtime. It is therefore exposed as an *optional extra*: `pip install agent-prov[reporting]` (or the equivalent `uv` invocation) pulls `fpdf2`; a plain install does not. The extra is duplicated into the development dependency group so that `uv sync` provisions a complete environment for running the test suite without a separate step.
 
-The `src/` layout with an editable install means `import middleware` and `import reporting` resolve identically from the test suite, the demos, and any host application, without `PYTHONPATH` manipulation.
+The `src/` layout with an editable install means `import agent_prov` and `import agent_prov.reporting` resolve identically from the test suite, the demos, and any host application, without `PYTHONPATH` manipulation.
 
 ---
 
@@ -77,7 +77,7 @@ Three properties of this architecture are worth stating before the component-by-
 
 ### 4.4.1 Why a callback handler
 
-`ProvenanceMiddleware` (`src/middleware/core.py`) subclasses LangChain's `BaseCallbackHandler`. LangChain invokes a callback handler's methods at well-defined points in the execution of a graph: when a node (a *chain*, in LangChain's vocabulary) starts and ends, when a chat model call starts and ends, and when a tool call starts and ends. The middleware implements six of these methods:
+`ProvenanceMiddleware` (`src/agent_prov/core.py`) subclasses LangChain's `BaseCallbackHandler`. LangChain invokes a callback handler's methods at well-defined points in the execution of a graph: when a node (a *chain*, in LangChain's vocabulary) starts and ends, when a chat model call starts and ends, and when a tool call starts and ends. The middleware implements six of these methods:
 
 | Callback method | LangGraph/LangChain event | Middleware action |
 |-----------------|---------------------------|-------------------|
@@ -120,7 +120,7 @@ An emitter turns a matched lifecycle pair into a record and hands the record to 
 
 ### 4.5.1 Agent Step emitter
 
-`emit_agent_step` (`src/middleware/step_emitter.py`) is called by the middleware when a chat model call completes. It receives the closed `_StepFrame`, the model's response object, the session, and the still-open `_nodes` dictionary. It assembles a dictionary with every field of the Agent Step Record:
+`emit_agent_step` (`src/agent_prov/step_emitter.py`) is called by the middleware when a chat model call completes. It receives the closed `_StepFrame`, the model's response object, the session, and the still-open `_nodes` dictionary. It assembles a dictionary with every field of the Agent Step Record:
 
 - `record_id` — a fresh UUID v4.
 - `record_type` — the constant `"agent_step"`.
@@ -138,7 +138,7 @@ The assembled dictionary is passed to `session.add_record`.
 
 ### 4.5.2 Tool Invocation emitter
 
-`emit_tool_invocation` (`src/middleware/tool_emitter.py`) is structurally identical, called when a tool call completes. It produces a `"tool_invocation"` record, replacing `model_id`/`model_version` with `tool_name`/`tool_version` and hashing the tool's input string and output value. The symmetry is deliberate and mirrors the structural symmetry of the two record types described in §3.4.1.
+`emit_tool_invocation` (`src/agent_prov/tool_emitter.py`) is structurally identical, called when a tool call completes. It produces a `"tool_invocation"` record, replacing `model_id`/`model_version` with `tool_name`/`tool_version` and hashing the tool's input string and output value. The symmetry is deliberate and mirrors the structural symmetry of the two record types described in §3.4.1.
 
 ### 4.5.3 Field extraction and its failure modes
 
@@ -168,7 +168,7 @@ The canonical form conforms to RFC 8785: canonicalisation is delegated to the `r
 
 ## 4.7 The `PipelineSession` and the parent chain
 
-`PipelineSession` (`src/middleware/session.py`) is the accumulator. It is constructed once per pipeline run and holds:
+`PipelineSession` (`src/agent_prov/session.py`) is the accumulator. It is constructed once per pipeline run and holds:
 
 - `pipeline_id` — supplied by the caller when one logical pipeline definition spans multiple runs (retries, scheduled executions), or a fresh UUID otherwise.
 - `session_id` — always a fresh UUID, identifying this single run.
@@ -184,7 +184,7 @@ The canonical form conforms to RFC 8785: canonicalisation is delegated to the `r
 
 ## 4.8 The `BundleGenerator` and the integrity seal
 
-`BundleGenerator` (`src/middleware/bundle_generator.py`) runs once, after the pipeline finishes, and turns a session into a sealed Pipeline Bundle. It is constructed with the session and a `disclosure_presented` boolean — the Article 50(1) flag, which the application supplies because only the application knows whether an AI-interaction disclosure was shown to the user.
+`BundleGenerator` (`src/agent_prov/bundle_generator.py`) runs once, after the pipeline finishes, and turns a session into a sealed Pipeline Bundle. It is constructed with the session and a `disclosure_presented` boolean — the Article 50(1) flag, which the application supplies because only the application knows whether an AI-interaction disclosure was shown to the user.
 
 `generate()` assembles the bundle dictionary: a fresh `bundle_id`, the `"pipeline_bundle"` discriminator, the protocol version and identifiers copied from the session, a `created_at` timestamp, the `disclosure_presented` flag, the ordered `records` list, and a `bundle_hash` field initialised to the empty string. An empty session is rejected with a `ValueError` — the Pipeline Bundle schema requires at least one record, and a run that emitted nothing is an error to surface, not an empty document to seal.
 
@@ -196,7 +196,7 @@ The seal is then computed. `compute_bundle_hash` builds a copy of the bundle wit
 
 ## 4.9 Human intervention capture: the `HumanReview` context manager
 
-The Human Intervention Record is the protocol's central contribution (§3.5), and its capture mechanism is correspondingly the most carefully designed part of the implementation. It is not an emitter driven by a LangChain callback, because a human decision is not a LangChain event. It is a Python context manager, `HumanReview` (`src/middleware/hitl.py`), that the host application wraps around the code path where a human reviews an agent output.
+The Human Intervention Record is the protocol's central contribution (§3.5), and its capture mechanism is correspondingly the most carefully designed part of the implementation. It is not an emitter driven by a LangChain callback, because a human decision is not a LangChain event. It is a Python context manager, `HumanReview` (`src/agent_prov/hitl.py`), that the host application wraps around the code path where a human reviews an agent output.
 
 **Construction.** `HumanReview` is constructed with the session, the reviewer identity (a list of strings, supporting Article 14(5)'s two-person rule without a schema fork — §3.5.2), the reviewer role, and `output_before` — the agent output exactly as it was presented to the reviewer. The constructor hashes `output_before` immediately, on entry, capturing the *pre-decision* state before the body of the `with` block can run. It rejects an empty reviewer list or an empty role with a `HITLError`.
 
@@ -235,7 +235,7 @@ The `reporting` package consumes a sealed bundle and produces the auditor-facing
 
 `to_pdf(path)` renders the report. The layout proceeds from bundle metadata, through a record summary, to a per-record section — each record's fields followed by the Act clauses those fields map to — and closes with the clause-coverage matrix. Rendering uses `fpdf2`'s table API and the built-in Helvetica core font only, so the PDF carries no font dependency and reproduces identically across machines.
 
-**The command-line entry point.** `reporting/__main__.py` exposes the generator as `python -m reporting <bundle.json> <out.pdf>`. An auditor needs no knowledge of the Python API to turn a bundle into a report. Sample reports for both demonstration pipelines are committed to the repository alongside their bundles.
+**The command-line entry point.** `agent_prov/reporting/__main__.py` exposes the generator as `python -m agent_prov.reporting <bundle.json> <out.pdf>`. An auditor needs no knowledge of the Python API to turn a bundle into a report. Sample reports for both demonstration pipelines are committed to the repository alongside their bundles.
 
 ---
 
@@ -267,7 +267,7 @@ One implementation detail is worth noting because it is a workaround rather than
 
 The implementation is covered by 138 tests, organised into a unit suite and one integration test.
 
-The **unit suite** tests each component in isolation: the four JSON Schemas and the bundle hash; the validation surface; the `ProvenanceMiddleware` lifecycle; each of the two emitters; the `PipelineSession`; the `BundleGenerator`; the `HumanReview` context manager across all four action types; and the `ComplianceReport`. The obligations the JSON Schema cannot express — the `timestamp_end >= timestamp_start` ordering on Agent Step and Tool Invocation Records, and the `action_type` ↔ `output_after_hash` conditional rules on the Human Intervention Record — are enforced by a dedicated validation module (`src/middleware/validation.py`) and exercised directly through its `validate_record` / `validate_bundle` entry points. Because `BundleGenerator` runs `validate_bundle` at seal time, every bundle the suite produces is validated through that same single surface, so structural and conditional conformance are defined in one place rather than re-implemented per test.
+The **unit suite** tests each component in isolation: the four JSON Schemas and the bundle hash; the validation surface; the `ProvenanceMiddleware` lifecycle; each of the two emitters; the `PipelineSession`; the `BundleGenerator`; the `HumanReview` context manager across all four action types; and the `ComplianceReport`. The obligations the JSON Schema cannot express — the `timestamp_end >= timestamp_start` ordering on Agent Step and Tool Invocation Records, and the `action_type` ↔ `output_after_hash` conditional rules on the Human Intervention Record — are enforced by a dedicated validation module (`src/agent_prov/validation.py`) and exercised directly through its `validate_record` / `validate_bundle` entry points. Because `BundleGenerator` runs `validate_bundle` at seal time, every bundle the suite produces is validated through that same single surface, so structural and conditional conformance are defined in one place rather than re-implemented per test.
 
 The **integration test** (`tests/integration/test_middleware_pipeline.py`) builds a minimal LangGraph pipeline in-process — an analyst node with a tool call, a `HumanReview` edit, and a finaliser node — drives it through the full stack, and asserts four things about the resulting bundle: it validates against the Pipeline Bundle schema; the record sequence is exactly `tool_invocation, agent_step, human_intervention, agent_step`; the chronological parent chain is intact, including across the human boundary; and the HITL record's `action_type` and before/after hashes are mutually consistent. The test owns its own pipeline fixture rather than importing a demo, so that it remains stable as the demos evolve for narrative reasons. It is the single test that exercises real LangGraph callback wiring, the composition of both emitters with `HumanReview`, and canonical sealing together — the end-to-end contract the rest of the suite verifies piecewise.
 

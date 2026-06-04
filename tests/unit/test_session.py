@@ -25,9 +25,9 @@ from uuid import uuid4
 
 import pytest
 
-from middleware._frames import _NodeFrame
-from middleware.core import ProvenanceMiddleware
-from middleware.session import PipelineSession, _DEFAULT_PROTOCOL_VERSION
+from agent_prov._frames import _NodeFrame
+from agent_prov.core import ProvenanceMiddleware
+from agent_prov.session import PipelineSession, _DEFAULT_PROTOCOL_VERSION
 
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
@@ -168,7 +168,7 @@ def test_12_len_mirrors_records_list_length():
 
 
 def test_13_session_satisfies_session_protocol_interface():
-    from middleware._frames import SessionProtocol
+    from agent_prov._frames import SessionProtocol
     import inspect
 
     session = PipelineSession()

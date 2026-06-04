@@ -11,8 +11,8 @@ import logging
 from typing import Any
 from uuid import UUID, uuid4
 
-from middleware._frames import SessionProtocol, _NodeFrame, _ToolFrame
-from middleware._hashing import _now_iso8601, hash_content
+from agent_prov._frames import SessionProtocol, _NodeFrame, _ToolFrame
+from agent_prov._hashing import _now_iso8601, hash_content
 
 logger = logging.getLogger(__name__)
 

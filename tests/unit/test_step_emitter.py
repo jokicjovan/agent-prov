@@ -11,9 +11,9 @@ import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, LLMResult
 
-from middleware._frames import _NodeFrame, _StepFrame
-from middleware._hashing import hash_content
-from middleware.step_emitter import (
+from agent_prov._frames import _NodeFrame, _StepFrame
+from agent_prov._hashing import hash_content
+from agent_prov.step_emitter import (
     _derive_agent_id,
     _extract_model_id,
     _extract_model_version,

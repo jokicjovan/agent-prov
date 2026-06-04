@@ -25,9 +25,9 @@ from langchain_core.runnables.config import merge_configs
 from langchain_core.tools import tool
 from langgraph.graph import END, StateGraph
 
-from middleware.bundle_generator import BundleGenerator
-from middleware.core import ProvenanceMiddleware
-from middleware.session import PipelineSession
+from agent_prov.bundle_generator import BundleGenerator
+from agent_prov.core import ProvenanceMiddleware
+from agent_prov.session import PipelineSession
 
 
 PIPELINE_ID = "8d3fecf8-42d6-4f45-824f-7dde23407026"

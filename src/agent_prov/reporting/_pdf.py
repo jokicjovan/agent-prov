@@ -12,7 +12,7 @@ from typing import Any
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 
-from reporting.obligations import CLAUSE_DESCRIPTION, OBLIGATION_MAP, _field_present
+from agent_prov.reporting.obligations import CLAUSE_DESCRIPTION, OBLIGATION_MAP, _field_present
 
 
 def _format_value(value: Any) -> str:

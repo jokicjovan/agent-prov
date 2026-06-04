@@ -18,8 +18,8 @@ from typing import Any
 import pytest
 
 from _helpers import HUMAN_INTERVENTION_SCHEMA, validator
-from middleware._hashing import hash_content
-from middleware.hitl import HITLError, HumanReview
+from agent_prov._hashing import hash_content
+from agent_prov.hitl import HITLError, HumanReview
 
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")

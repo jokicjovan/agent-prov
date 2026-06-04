@@ -27,9 +27,9 @@ from _helpers import (
     TOOL_INVOCATION_SCHEMA,
     is_valid as _is_valid,
 )
-from middleware.bundle_generator import compute_bundle_hash
-from middleware._hashing import canonical_json_sha256
-from middleware.validation import ProtocolValidationError, validate_record
+from agent_prov.bundle_generator import compute_bundle_hash
+from agent_prov._hashing import canonical_json_sha256
+from agent_prov.validation import ProtocolValidationError, validate_record
 
 
 # ---------------------------------------------------------------------------

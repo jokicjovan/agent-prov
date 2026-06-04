@@ -38,11 +38,11 @@ from langchain_core.tools import tool
 from langgraph.graph import END, StateGraph
 
 from _helpers import PIPELINE_BUNDLE_SCHEMA, validator
-from middleware.bundle_generator import BundleGenerator
-from middleware.core import ProvenanceMiddleware
-from middleware.hitl import HumanReview
-from middleware.validation import validate_record
-from middleware.session import PipelineSession
+from agent_prov.bundle_generator import BundleGenerator
+from agent_prov.core import ProvenanceMiddleware
+from agent_prov.hitl import HumanReview
+from agent_prov.validation import validate_record
+from agent_prov.session import PipelineSession
 
 
 # ---------------------------------------------------------------------------

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from jsonschema import Draft202012Validator
 
-from middleware.validation import REGISTRY, SCHEMAS
+from agent_prov.validation import REGISTRY, SCHEMAS
 
 AGENT_STEP_SCHEMA = SCHEMAS["agent_step"]
 TOOL_INVOCATION_SCHEMA = SCHEMAS["tool_invocation"]

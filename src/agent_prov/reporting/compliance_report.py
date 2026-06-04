@@ -11,7 +11,7 @@ from __future__ import annotations
 import pathlib
 from typing import Any
 
-from reporting._pdf import (
+from agent_prov.reporting._pdf import (
     _ReportPDF,
     _bundle_metadata_rows,
     _coverage_rows,
@@ -19,7 +19,7 @@ from reporting._pdf import (
     _record_field_rows,
     _record_summary_rows,
 )
-from reporting.obligations import CLAUSE_DESCRIPTION, OBLIGATION_MAP, _field_present
+from agent_prov.reporting.obligations import CLAUSE_DESCRIPTION, OBLIGATION_MAP, _field_present
 
 
 class ComplianceReport:

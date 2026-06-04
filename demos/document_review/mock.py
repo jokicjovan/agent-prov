@@ -33,10 +33,10 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.runnables.config import merge_configs
 from langgraph.graph import END, StateGraph
 
-from middleware.bundle_generator import BundleGenerator
-from middleware.core import ProvenanceMiddleware
-from middleware.hitl import HumanReview
-from middleware.session import PipelineSession
+from agent_prov.bundle_generator import BundleGenerator
+from agent_prov.core import ProvenanceMiddleware
+from agent_prov.hitl import HumanReview
+from agent_prov.session import PipelineSession
 
 
 PIPELINE_ID = "951e06e5-f3b3-443f-ba1e-45e9416e1be3"

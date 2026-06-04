@@ -11,8 +11,8 @@ from typing import Any
 
 import pytest
 
-from middleware.bundle_generator import compute_bundle_hash
-from middleware.validation import (
+from agent_prov.bundle_generator import compute_bundle_hash
+from agent_prov.validation import (
     ProtocolValidationError,
     validate_bundle,
     validate_record,

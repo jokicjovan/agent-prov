@@ -13,7 +13,7 @@ Covers:
   10  Null-valued field (reference_data_id) does not satisfy its mapped clause.
   11  Empty reviewer_id array does not satisfy Art. 12(3)(d) / Art. 14(5).
   12  to_pdf writes a non-empty %PDF-prefixed file.
-  13  CLI: `python -m reporting bundle.json out.pdf` produces a PDF.
+  13  CLI: `python -m agent_prov.reporting bundle.json out.pdf` produces a PDF.
 
 Fixtures are constructed inline from literal constants so the tests do not
 depend on demo artifacts (which are regenerated whenever a demo changes).
@@ -29,8 +29,8 @@ from typing import Any
 
 import pytest
 
-from reporting import ComplianceReport
-from reporting.obligations import CLAUSE_DESCRIPTION, OBLIGATION_MAP
+from agent_prov.reporting import ComplianceReport
+from agent_prov.reporting.obligations import CLAUSE_DESCRIPTION, OBLIGATION_MAP
 
 
 PROTOCOL_VERSION = "0.1.0"
@@ -257,7 +257,7 @@ def test_cli_renders_pdf(tmp_path: pathlib.Path, doc_review_bundle: dict) -> Non
     bundle_path.write_text(json.dumps(doc_review_bundle), encoding="utf-8")
     out = tmp_path / "cli_report.pdf"
     result = subprocess.run(
-        [sys.executable, "-m", "reporting", str(bundle_path), str(out)],
+        [sys.executable, "-m", "agent_prov.reporting", str(bundle_path), str(out)],
         capture_output=True,
         text=True,
         check=False,

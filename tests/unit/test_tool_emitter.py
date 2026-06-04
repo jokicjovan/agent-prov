@@ -17,10 +17,10 @@ from uuid import uuid4
 
 import pytest
 
-from middleware._frames import _NodeFrame, _ToolFrame
-from middleware._hashing import hash_content
-from middleware.core import ProvenanceMiddleware
-from middleware.tool_emitter import (
+from agent_prov._frames import _NodeFrame, _ToolFrame
+from agent_prov._hashing import hash_content
+from agent_prov.core import ProvenanceMiddleware
+from agent_prov.tool_emitter import (
     _derive_agent_id,
     _extract_tool_name,
     _extract_tool_version,
