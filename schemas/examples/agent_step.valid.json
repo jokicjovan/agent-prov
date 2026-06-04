@@ -1,0 +1,16 @@
+{
+  "record_id": "550e8400-e29b-41d4-a716-446655440000",
+  "record_type": "agent_step",
+  "protocol_version": "1.0.0",
+  "pipeline_id": "550e8400-e29b-41d4-a716-446655440001",
+  "session_id": "550e8400-e29b-41d4-a716-446655440002",
+  "agent_id": "researcher",
+  "model_id": "claude-opus-4-7",
+  "model_version": "20260101",
+  "timestamp_start": "2026-05-09T10:00:00.000Z",
+  "timestamp_end": "2026-05-09T10:00:03.245Z",
+  "input_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "output_hash": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+  "reference_data_id": null,
+  "parent_record_id": null
+}

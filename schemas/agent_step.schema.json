@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provenance-protocol.thesis/schemas/agent_step.schema.json",
+  "title": "Agent Step Record",
+  "description": "Captures a single LLM agent node execution within a pipeline. Primary EU AI Act mapping: Art. 12(2), 12(3)(a)(b)(c), 14(4)(a).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record_id",
+    "record_type",
+    "protocol_version",
+    "pipeline_id",
+    "session_id",
+    "agent_id",
+    "model_id",
+    "model_version",
+    "timestamp_start",
+    "timestamp_end",
+    "input_hash",
+    "output_hash",
+    "reference_data_id",
+    "parent_record_id"
+  ],
+  "properties": {
+    "record_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "Unique identifier for this record. Schema metadata; no direct Act mapping."
+    },
+    "record_type": {
+      "const": "agent_step",
+      "description": "Discriminator identifying this record as an Agent Step Record."
+    },
+    "protocol_version": {
+      "$ref": "#/$defs/semver",
+      "description": "Provenance protocol version (semver). Schema metadata."
+    },
+    "pipeline_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "Identifier of the pipeline this record belongs to. EU AI Act Art. 12(2)(c) — supports operational monitoring (Art. 26(5)) by linking records to a pipeline run."
+    },
+    "session_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "Identifier of the execution session within the pipeline. EU AI Act Art. 12(2)(c) — supports operational monitoring."
+    },
+    "agent_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier of the agent node that produced this record. EU AI Act Art. 12(2)(c) — supports operational monitoring by identifying the agent."
+    },
+    "model_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the LLM model used (e.g. 'claude-opus-4-7'). EU AI Act Art. 12(2)(b) — enables post-market monitoring (Art. 72) and drift detection. Art. 14(4)(a) — enables oversight-time review of capabilities/limitations."
+    },
+    "model_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Specific version/snapshot of the model (e.g. '20260101', '1.2.3'). EU AI Act Art. 12(2)(b) — version granularity needed for drift detection. Art. 14(4)(a) — enables oversight-time review."
+    },
+    "timestamp_start": {
+      "$ref": "#/$defs/iso8601_timestamp",
+      "description": "ISO 8601 / RFC 3339 timestamp marking the start of this agent step. EU AI Act Art. 12(3)(a) — record start time of each use (biometric minimum, applied universally per thesis policy)."
+    },
+    "timestamp_end": {
+      "$ref": "#/$defs/iso8601_timestamp",
+      "description": "ISO 8601 / RFC 3339 timestamp marking the end of this agent step. EU AI Act Art. 12(3)(a) — record end time of each use. Constraint timestamp_end >= timestamp_start is not expressible in JSON Schema 2020-12; enforced at the unit-test layer (tests/test_schemas.py)."
+    },
+    "input_hash": {
+      "$ref": "#/$defs/sha256_hex",
+      "description": "SHA-256 hash of canonical input (prompt) given to the model. EU AI Act Art. 12(3)(c) — record input data that produced a result. Hashing rather than storing raw content satisfies GDPR data minimisation."
+    },
+    "output_hash": {
+      "$ref": "#/$defs/sha256_hex",
+      "description": "SHA-256 hash of canonical model output. EU AI Act Art. 12(2)(c) — supports operational monitoring by enabling integrity verification of agent output."
+    },
+    "reference_data_id": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "description": "Identifier of any reference dataset/database consulted for this step (e.g. RAG corpus version). EU AI Act Art. 12(3)(b) — record the reference database consulted (biometric minimum, applied universally where relevant). Null when no external reference data is consulted."
+    },
+    "parent_record_id": {
+      "oneOf": [
+        { "$ref": "#/$defs/uuid" },
+        { "type": "null" }
+      ],
+      "description": "record_id of the immediately preceding record in the pipeline (inter-record linkage). Null for the first record. Schema metadata supporting the ordered record chain referenced by Art. 12(2) traceability."
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "RFC 4122 UUID string in lowercase hex (canonical form for the protocol)."
+    },
+    "sha256_hex": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 digest as 64 lowercase hex characters."
+    },
+    "iso8601_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 / RFC 3339 timestamp with timezone."
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Semantic version per semver.org."
+    }
+  }
+}
