@@ -6,9 +6,9 @@ Twelve test cases covering:
   6    additionalProperties: false rejects an unknown field (schema-level).
   7    Invalid sha256_hex pattern rejected (schema-level).
   8    Wrong record_type discriminator rejected (schema-level).
-  9    HITL conditional: 'edited' requires output_after_hash != output_before_hash (unit-test layer).
-  10   HITL conditional: 'rejected'/'escalated' require output_after_hash is null (unit-test layer).
-  11   timestamp_end >= timestamp_start enforced (unit-test layer).
+  9    HITL conditional: 'edited' requires output_after_hash != output_before_hash (validate_record).
+  10   HITL conditional: 'rejected'/'escalated' require output_after_hash is null (validate_record).
+  11   timestamp_end >= timestamp_start enforced (validate_record).
   12   canonical_json_sha256 + compute_bundle_hash properties:
         determinism, key-order independence, content sensitivity, bundle_hash exclusion.
 """
@@ -25,12 +25,11 @@ from _helpers import (
     HUMAN_INTERVENTION_SCHEMA,
     PIPELINE_BUNDLE_SCHEMA,
     TOOL_INVOCATION_SCHEMA,
-    assert_hitl_consistent,
-    assert_timestamps_ordered,
     is_valid as _is_valid,
 )
 from middleware.bundle_generator import compute_bundle_hash
 from middleware._hashing import canonical_json_sha256
+from middleware.validation import ProtocolValidationError, validate_record
 
 
 # ---------------------------------------------------------------------------
@@ -155,7 +154,7 @@ def test_03_human_intervention_happy_path_validates_for_each_action_type():
     for action in ("approved", "rejected", "edited", "escalated"):
         record = make_human_intervention(action)
         assert _is_valid(HUMAN_INTERVENTION_SCHEMA, record), action
-        assert_hitl_consistent(record)
+        validate_record(record)  # structural + conditional, single surface
 
 
 def test_04_pipeline_bundle_happy_path_validates():
@@ -201,34 +200,35 @@ def test_08_wrong_record_type_discriminator_is_rejected():
 
 
 # ---------------------------------------------------------------------------
-# Tests 9-11 — conditional rules deferred from the schema layer
+# Tests 9-11 — conditional rules: structurally valid, but rejected by the
+# single validation surface (validate_record), which JSON Schema cannot express
 # ---------------------------------------------------------------------------
 
 
 def test_09_hitl_edited_requires_after_hash_to_differ_from_before():
     bad = make_human_intervention("edited", output_after_hash=HASH_A)
     assert _is_valid(HUMAN_INTERVENTION_SCHEMA, bad), (
-        "schema alone accepts this; the conditional belongs in the application layer"
+        "schema alone accepts this; the conditional belongs to validate_record"
     )
-    with pytest.raises(AssertionError):
-        assert_hitl_consistent(bad)
+    with pytest.raises(ProtocolValidationError):
+        validate_record(bad)
 
 
 def test_10_hitl_rejected_or_escalated_requires_null_after_hash():
     for action in ("rejected", "escalated"):
         bad = make_human_intervention(action, output_after_hash=HASH_B)
         assert _is_valid(HUMAN_INTERVENTION_SCHEMA, bad), action
-        with pytest.raises(AssertionError):
-            assert_hitl_consistent(bad)
+        with pytest.raises(ProtocolValidationError):
+            validate_record(bad)
 
 
-def test_11_timestamp_end_before_timestamp_start_is_rejected_at_unit_layer():
+def test_11_timestamp_end_before_timestamp_start_is_rejected():
     bad = make_agent_step(timestamp_end=TS_BEFORE_START)
     assert _is_valid(AGENT_STEP_SCHEMA, bad), (
-        "schema alone accepts this; the ordering constraint belongs in the application layer"
+        "schema alone accepts this; the ordering constraint belongs to validate_record"
     )
-    with pytest.raises(AssertionError):
-        assert_timestamps_ordered(bad)
+    with pytest.raises(ProtocolValidationError):
+        validate_record(bad)
 
 
 # ---------------------------------------------------------------------------

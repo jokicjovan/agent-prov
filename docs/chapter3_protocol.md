@@ -92,7 +92,7 @@ An agent step is delimited by the start and end of a single chat-model call. A L
 }
 ```
 
-A `timestamp_end >= timestamp_start` ordering constraint is not expressible in JSON Schema 2020-12 and is enforced at the unit-test layer (`tests/test_schemas.py`).
+A `timestamp_end >= timestamp_start` ordering constraint compares two field values, which no JSON Schema draft can express; it is enforced by the protocol's validation surface alongside structural schema validation (§3.9).
 
 ---
 
@@ -195,7 +195,7 @@ The four `action_type` values bind to specific shapes of the `output_before_hash
 | `rejected` | `null` | reviewer discarded the output; downstream pipeline does not consume it |
 | `escalated` | `null` | reviewer declined to commit a decision at this point; the decision is deferred to a higher authority and no output is committed at this step |
 
-These conditional dependencies are not expressible in JSON Schema 2020-12 and are enforced at the unit-test layer (`tests/test_schemas.py`, tests 9 and 10). The schema description for `output_after_hash` documents the rules so that independent implementations can re-implement the same conditional verifier.
+The `approved`/`edited` rows compare `output_after_hash` against `output_before_hash` — a value-to-value comparison no JSON Schema draft can express — so they are enforced by the protocol's validation surface rather than the schema (§3.9). The schema description for `output_after_hash` documents the rules so that independent implementations can reproduce the same conditional verifier.
 
 The four-value enum is closed by design. Each value maps to a specific Article 14 sub-clause: `rejected` and `edited` discharge Article 14(4)(d) (the right to disregard or override); `escalated` discharges Article 14(4)(e) (intervention or halt via stop mechanism); `approved` plays no role under Article 14 directly but is the anchor for the Article 50(4) exemption when paired with an editorial `reviewer_role`. Extending the enum is a major version bump.
 
@@ -322,14 +322,14 @@ A causal "issued-by" link could be added in a later major version of the protoco
 
 Article 14(5) requires that for biometric identification systems no decision be taken unless verified by at least two natural persons. The Human Intervention Record's `reviewer_id` accepts `minItems: 1` at the base schema; biometric deployments tighten this constraint to `minItems: 2` at the application layer. The protocol expresses this as a *profile* rather than a fork of the schema: a deployment running biometric pipelines runs the base schema plus a profile validator that imposes the additional constraint. This keeps the base record-level vocabulary uniform across deployments and isolates the biometric-specific rule to where it applies.
 
-### 3.7.5 Conditional rules deferred from the schema layer
+### 3.7.5 Conditional rules outside the schema layer
 
-Two classes of constraint are stated in the schemas' descriptions but enforced at the unit-test layer rather than in the JSON Schema:
+Two classes of constraint are stated in the schemas' descriptions but cannot live in the JSON Schema, because each compares two field *values* — something no JSON Schema draft can express:
 
-- `timestamp_end >= timestamp_start` on Agent Step and Tool Invocation Records. Inter-field comparisons of this kind are not expressible in JSON Schema 2020-12.
+- `timestamp_end >= timestamp_start` on Agent Step and Tool Invocation Records.
 - The `action_type` / `output_after_hash` conditional rules on the Human Intervention Record, summarised in §3.5.3.
 
-In both cases the schema accepts records that violate the rule and the application layer must re-implement the conditional verifier. The reference implementation does so in `tests/test_schemas.py`. A future major protocol version may migrate to a schema dialect that expresses these conditionals natively (JSON Schema with `if`/`then` clauses, or a custom validation language), but the present protocol favours the broadest compatibility.
+Rather than leave these to each deployment to re-implement, the protocol's reference implementation enforces them in a single validation surface that composes both mechanisms: structural validation against the JSON Schema, followed by these conditional checks. A record or bundle is valid only if it passes both, and there is one entry point (`validate_record` / `validate_bundle`) for callers and conformance tests alike, so structural and conditional validity are never checked in two different places (§3.9; the implementation is described in Chapter 4). The schema descriptions still document the conditional rules in full, so an independent verifier can reproduce the same checks. Note that the *null*/non-null half of the `action_type` rules (`rejected`/`escalated` → `null`, `edited` → non-null) is in fact expressible with JSON Schema `if`/`then`/`else`; it is kept in the unified validator with the value-comparison rules so that all conditional logic resides in one place rather than split across the schema and the validator.
 
 ---
 

@@ -8,6 +8,7 @@ from typing import Any
 from uuid import uuid4
 
 from middleware._hashing import _now_iso8601, canonical_json_sha256
+from middleware.validation import validate_bundle
 
 
 def compute_bundle_hash(bundle: dict) -> str:
@@ -42,8 +43,15 @@ class BundleGenerator:
     def generate(self) -> dict[str, Any]:
         """Build and seal a Pipeline Bundle from the current session state.
 
+        The sealed bundle is validated through the single protocol validation
+        surface (structure of the bundle and every record, plus the conditional
+        rules JSON Schema cannot express) before it is returned. This runs at
+        seal time — after the observed pipeline has finished — so enforcement
+        never crashes the pipeline mid-run.
+
         Raises:
             ValueError: if the session contains no records (schema requires minItems: 1).
+            ProtocolValidationError: if the sealed bundle fails validation.
         """
         if not self._session.records:
             raise ValueError("cannot generate a bundle from an empty session")
@@ -60,6 +68,7 @@ class BundleGenerator:
             "bundle_hash": "",
         }
         bundle["bundle_hash"] = compute_bundle_hash(bundle)
+        validate_bundle(bundle)
         return bundle
 
     def to_file(self, path: str | pathlib.Path) -> dict[str, Any]:

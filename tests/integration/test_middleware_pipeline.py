@@ -37,10 +37,11 @@ from langchain_core.runnables.config import merge_configs
 from langchain_core.tools import tool
 from langgraph.graph import END, StateGraph
 
-from _helpers import PIPELINE_BUNDLE_SCHEMA, assert_hitl_consistent, validator
+from _helpers import PIPELINE_BUNDLE_SCHEMA, validator
 from middleware.bundle_generator import BundleGenerator
 from middleware.core import ProvenanceMiddleware
 from middleware.hitl import HumanReview
+from middleware.validation import validate_record
 from middleware.session import PipelineSession
 
 
@@ -174,6 +175,6 @@ def test_full_pipeline_with_hitl_produces_valid_bundle(tmp_path: pathlib.Path) -
     )
 
     # 4. HITL action ↔ output_after_hash conventions
-    assert_hitl_consistent(records[2])
+    validate_record(records[2])
     assert records[2]["action_type"] == "edited"
     assert records[2]["output_before_hash"] != records[2]["output_after_hash"]
