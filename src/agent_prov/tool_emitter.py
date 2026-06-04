@@ -68,7 +68,7 @@ def _extract_tool_version(frame: _ToolFrame) -> str:
         return str(v)
     logger.warning(
         "No tool_version for tool %r; recording %r. Drift detection for this "
-        "tool is degraded — supply an explicit version via the serialized "
+        "tool is degraded -- supply an explicit version via the serialized "
         "'version' kwarg or a 'tool_version' metadata key.",
         _extract_tool_name(frame),
         _UNVERSIONED,
