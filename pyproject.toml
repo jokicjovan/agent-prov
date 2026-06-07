@@ -7,11 +7,18 @@ packages = ["src/agent_prov"]
 
 [project]
 name = "agent-prov"
-version = "0.1.0"
-description = "AI Agent Provenance & Compliance Protocol — thesis PoC"
+version = "1.0.0"
+description = "Provenance protocol for LLM multi-agent pipelines, mapped to EU AI Act Articles 12, 14, and 50"
 readme = "README.md"
 requires-python = ">=3.12"
-classifiers = ["License :: OSI Approved :: Apache Software License"]
+authors = [{ name = "Jovan Jokić", email = "jokicjovan@outlook.com" }]
+keywords = ["provenance", "eu-ai-act", "compliance", "llm", "langgraph", "audit", "human-in-the-loop"]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+]
 dependencies = [
     "jsonschema>=4.18",
     "langchain-core>=1.3.3",
@@ -19,6 +26,10 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "rfc8785>=0.1.4",
 ]
+
+[project.urls]
+Homepage = "https://github.com/jokicjovan/agent-prov"
+Repository = "https://github.com/jokicjovan/agent-prov"
 
 [project.optional-dependencies]
 reporting = [
