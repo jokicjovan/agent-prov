@@ -31,37 +31,28 @@ The `src/` layout with an editable install means `import agent_prov` and `import
 
 ## 4.3 Architecture overview
 
-The implementation is a pipeline of five stages. A LangGraph pipeline runs as it normally would; the provenance layer observes it, accumulates records, and seals them. The following diagram describes the data flow; the formal architecture figure is produced at thesis revision time.
+The implementation is a pipeline of five stages. A LangGraph pipeline runs as it normally would; the provenance layer observes it, accumulates records, and seals them. The following diagram describes the data flow.
 
+```mermaid
+flowchart TD
+    subgraph host["LangGraph pipeline — the host application"]
+        direction LR
+        N[node] --> CM[chat model] --> T[tool]
+    end
+
+    host -->|callback lifecycle events| MW["<b>ProvenanceMiddleware</b><br/>LangChain BaseCallbackHandler<br/>opens/closes _NodeFrame / _StepFrame / _ToolFrame"]
+    MW -->|matched start/end pair| EM["<b>emit_agent_step</b> / <b>emit_tool_invocation</b><br/>Agent Step + Tool Invocation Records"]
+    HR["<b>HumanReview</b> — context manager<br/>Human Intervention Record"]
+
+    EM --> SESS["<b>PipelineSession</b><br/>ordered record list + parent-record chain"]
+    HR --> SESS
+    SESS --> BG["<b>BundleGenerator</b><br/>canonical JSON → SHA-256 → bundle_hash"]
+    BG --> FILE[("pipeline_bundle.json — sealed")]
+    FILE --> CR["<b>ComplianceReport</b>"]
+    CR --> PDF["EU AI Act compliance PDF"]
 ```
-            LangGraph pipeline  (the host application)
-   ┌──────────────────────────────────────────────────────┐
-   │   node  ──▶  chat model  ──▶  tool                     │
-   └───────────────────────┬────────────────────────────────┘
-                           │  callback lifecycle events
-                           ▼
-              ProvenanceMiddleware   (LangChain BaseCallbackHandler)
-              opens/closes _NodeFrame / _StepFrame / _ToolFrame buckets
-                           │  matched start/end pair
-                           ▼
-          emit_agent_step  /  emit_tool_invocation        HumanReview
-          (Agent Step + Tool Invocation Records)        (context manager,
-                           │                          Human Intervention Record)
-                           └──────────────┬──────────────────┘
-                                          ▼
-                                   PipelineSession
-                          ordered record list  +  parent-record chain
-                                          │
-                                          ▼
-                                   BundleGenerator
-                       canonical JSON  ▶  SHA-256  ▶  bundle_hash
-                                          │
-                                          ▼
-                                 pipeline_bundle.json   (sealed)
-                                          │
-                                          ▼
-                          ComplianceReport  ──▶  EU AI Act compliance PDF
-```
+
+The automated path (top) and the human-oversight path (`HumanReview`) converge on a single `PipelineSession`; everything downstream of it is framework-agnostic and operates only on the accumulated records.
 
 Three properties of this architecture are worth stating before the component-by-component description.
 
@@ -162,7 +153,7 @@ All content hashing in the implementation goes through two functions in `_hashin
 
 `hash_content(obj)` is the function the emitters and `HumanReview` actually call. It first passes `obj` through `_to_serializable`, which recursively unwraps Pydantic and LangChain objects — anything exposing `model_dump` or `dict` — into plain JSON primitives and stringifies any remaining non-JSON leaf such as a `UUID` or `datetime`, then delegates to `canonical_json_sha256`. This is what lets the emitters hash a list of `BaseMessage` objects or a raw tool return value without the caller pre-normalising it.
 
-The canonical form conforms to RFC 8785: canonicalisation is delegated to the `rfc8785` library rather than hand-rolled, and the one genuinely hard part of the scheme — ECMAScript number formatting — is therefore handled by a conformant implementation rather than reimplemented. The consequence, stated plainly: an independent verifier using any conformant JCS library recomputes a digest byte-for-byte, without having to reproduce an implementation-specific formatting rule. The division of labour — `_to_serializable` reduces application objects to JSON primitives, `rfc8785` canonicalises them — is documented in the `_hashing.py` docstrings so that it is discoverable from the code, not only from the thesis.
+The canonical form conforms to RFC 8785: canonicalisation is delegated to the `rfc8785` library rather than hand-rolled, and the one genuinely hard part of the scheme — ECMAScript number formatting — is therefore handled by a conformant implementation rather than reimplemented. The consequence, stated plainly: an independent verifier using any conformant JCS library recomputes a digest byte-for-byte, without having to reproduce an implementation-specific formatting rule. The division of labour — `_to_serializable` reduces application objects to JSON primitives, `rfc8785` canonicalises them — is documented in the `_hashing.py` docstrings so that it is discoverable from the code, not only from the documentation.
 
 ---
 
@@ -241,7 +232,7 @@ The `reporting` package consumes a sealed bundle and produces the auditor-facing
 
 ## 4.11 Demonstration pipelines
 
-Two demonstration pipelines exercise the implementation end to end. Each ships in two variants: a `mock.py` that uses a deterministic fake LLM and makes no network calls, and a `live.py` that uses `ChatOpenAI` against the real API. The mock variants are the ones referenced throughout the thesis: they are deterministic, reproducible in CI, and produce committed bundles that the reader can inspect. The live variants exist to confirm the middleware behaves identically against a real provider and serve as the target for the overhead benchmark in Chapter 5.
+Two demonstration pipelines exercise the implementation end to end. Each ships in two variants: a `mock.py` that uses a deterministic fake LLM and makes no network calls, and a `live.py` that uses `ChatOpenAI` against the real API. The mock variants are the ones used as running examples throughout: they are deterministic, reproducible in CI, and produce committed bundles that the reader can inspect. The live variants exist to confirm the middleware behaves identically against a real provider and serve as the target for the overhead benchmark in Chapter 5.
 
 The fake LLM is a small `BaseChatModel` subclass returning a fixed response. It is a genuine LangChain chat model, so a call to it triggers the same `on_chat_model_start` / `on_llm_end` callbacks as a real provider — the middleware cannot tell the difference, which is exactly what makes the mock variant a valid test of the capture path.
 

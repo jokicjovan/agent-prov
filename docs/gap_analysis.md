@@ -1,6 +1,6 @@
-# Gap Analysis — PROV-O, PROV-AGENT, and This Thesis
+# Gap Analysis — PROV-O, PROV-AGENT, and This Protocol
 ## What Existing Provenance Standards Cover vs. What They Miss
-*Day 2 output · AI Agent Provenance & Compliance Protocol thesis*
+*AI Agent Provenance & Compliance Protocol*
 
 ---
 
@@ -16,7 +16,7 @@ Core relationships: `wasGeneratedBy`, `used`, `wasAssociatedWith`, `wasAttribute
 
 PROV-O supports qualified relationships (e.g., `qualifiedAssociation`, `qualifiedUsage`) that add roles, timestamps, and plans to any relationship. It is deliberately domain-agnostic — it provides a vocabulary, not a schema.
 
-**Relevance to this thesis:** PROV-O is the vocabulary layer that PROV-AGENT and this thesis both build on. It provides the conceptual foundation but defines no fields specific to LLM agents, tool calls, or human oversight.
+**Relevance to this protocol:** PROV-O is the vocabulary layer that PROV-AGENT and this protocol both build on. It provides the conceptual foundation but defines no fields specific to LLM agents, tool calls, or human oversight.
 
 ---
 
@@ -80,13 +80,13 @@ PROV-AGENT does not define any record type for human oversight events. The schem
 - The identity of the reviewer(s) (`reviewer_id`)
 - The timestamp of the intervention (`intervention_timestamp`)
 
-This is the core gap this thesis addresses. No existing provenance standard models the before/after state of a human override or links it to regulatory oversight obligations.
+This is the core gap this protocol addresses. No existing provenance standard models the before/after state of a human override or links it to regulatory oversight obligations.
 
 ### Gap 2 — No Regulatory Compliance Mapping
 
 PROV-AGENT contains no references to the EU AI Act, GDPR, NIST AI RMF, or any regulatory framework. It is designed and evaluated for scientific HPC workflows (additive manufacturing, federated computing) where reproducibility and traceability — not legal compliance — are the goals. There is no mapping between provenance fields and statutory obligations.
 
-This thesis provides an explicit field-to-clause mapping for EU AI Act Articles 12, 14, and 50, making the protocol suitable as compliance evidence, not just audit trail.
+This protocol provides an explicit field-to-clause mapping for EU AI Act Articles 12, 14, and 50, making it suitable as compliance evidence, not just an audit trail.
 
 ### Gap 3 — Default Storage Model: Raw Content vs. Content Hashing
 
@@ -95,7 +95,7 @@ PROV-AGENT's default storage model is raw prompt and response text as provenance
 1. **Privacy** — storing raw LLM inputs/outputs may include personal data, conflicting with GDPR data minimisation principles
 2. **Integrity** — storing mutable text strings does not provide tamper evidence; a SHA-256 hash of canonical content does
 
-This thesis stores `input_hash` and `output_hash` (SHA-256) by default rather than raw content, satisfying Art. 12(3)(c) while preserving privacy. The original content remains in application storage; the hash proves what was processed.
+This protocol stores `input_hash` and `output_hash` (SHA-256) by default rather than raw content, satisfying Art. 12(3)(c) while preserving privacy. The original content remains in application storage; the hash proves what was processed.
 
 ### Gap 4 — No Pipeline Integrity Guarantee
 
@@ -105,7 +105,7 @@ PROV-AGENT has no equivalent to the Pipeline Bundle with a `bundle_hash`. There 
 
 ## 4. Differentiation Table
 
-| Dimension | PROV-AGENT | This Thesis |
+| Dimension | PROV-AGENT | This Protocol |
 |-----------|-----------|-------------|
 | Automated agent step capture | ✅ | ✅ |
 | Tool invocation capture | ✅ | ✅ |
@@ -123,20 +123,20 @@ PROV-AGENT has no equivalent to the Pipeline Bundle with a `bundle_hash`. There 
 
 ## 5. Positioning Statement
 
-This thesis does not replace PROV-AGENT. It extends and differentiates from it:
+This protocol does not replace PROV-AGENT. It extends and differentiates from it:
 
-- **Extends:** The automated step and tool invocation capture mirrors PROV-AGENT's `AIModelInvocation` and `AgentTool` patterns. The thesis inherits the same PROV-O foundation.
+- **Extends:** The automated step and tool invocation capture mirrors PROV-AGENT's `AIModelInvocation` and `AgentTool` patterns. It inherits the same PROV-O foundation.
 - **Differentiates:** The Human Intervention Record is novel — it models a class of provenance event that PROV-AGENT explicitly does not address. The EU AI Act mapping is novel — it frames provenance as compliance evidence, not just scientific audit trail. The SHA-256 hashing approach addresses privacy constraints absent from the scientific workflow context.
 
 The LangGraph-only implementation is a PoC scope decision, not a protocol limitation: the record schemas are framework-agnostic and could be emitted by adapters for AutoGen, CrewAI, or LangChain in future work.
 
-The thesis contribution is targeted: one new record type (HITL) and one new framing (regulatory compliance) on top of a well-established provenance foundation.
+The contribution is targeted: one new record type (HITL) and one new framing (regulatory compliance) on top of a well-established provenance foundation.
 
 ---
 
 ## 6. Other Related Standards (Brief)
 
-| Standard | Scope | Gap relative to this thesis |
+| Standard | Scope | Gap relative to this protocol |
 |----------|-------|-----------------------------|
 | **PROV-DfA** | Human-steered workflows | Models human *actions*, not human *oversight of AI output* |
 | **ProvONE** | Scientific workflow metadata | No AI-specific fields, no regulatory framing |

@@ -8,7 +8,7 @@ This architectural shift coincides with the arrival of the first comprehensive r
 
 These obligations create a concrete engineering requirement: a regulated multi-agent pipeline must emit a record stream that an auditor can inspect to answer two kinds of question. *What did the automated parts of the system do* — which model produced which output, from which input, at what time, in which pipeline run? And *what did the humans do* — who reviewed which output, what decision did they take, and what did the output look like before and after their intervention? The first question is, in principle, answerable with existing provenance tooling. The second is not. No existing provenance standard models a human oversight event as a first-class record: the reviewer's identity, the action taken, and — critically — the state of the output before and after the human's decision. Yet it is precisely this before/after override evidence that Article 14(4) turns on, and precisely this evidence that an auditor would need to confirm that human oversight was not merely *possible* but *exercised*.
 
-The thesis addresses this gap. It proposes a provenance protocol for LLM multi-agent pipelines that captures automated agent steps, tool calls, and human oversight intervention events, and maps each captured field, clause by clause, to the obligations of EU AI Act Articles 12, 14, and 50.
+This work addresses this gap. It proposes a provenance protocol for LLM multi-agent pipelines that captures automated agent steps, tool calls, and human oversight intervention events, and maps each captured field, clause by clause, to the obligations of EU AI Act Articles 12, 14, and 50.
 
 ## 1.2 Problem statement
 
@@ -16,7 +16,7 @@ The closest published predecessor to this work is PROV-AGENT (Souza et al., IEEE
 
 It leaves a specific shape of gap when the requirement shifts from reproducibility to regulatory compliance. PROV-AGENT does not model human oversight events; it carries no mapping to any regulatory framework; it stores raw prompts and responses by default rather than content hashes, which is often unacceptable under data-minimisation principles; and it provides no integrity seal over the record set, so post-hoc tampering with the trace is not detectable. The vocabulary layer beneath it, W3C PROV, supplies the general primitives — entity, activity, agent — but no AI-specific or compliance-specific schema. C2PA, the standard most often invoked in discussions of "AI provenance," operates at the level of individual media artefacts and says nothing about pipeline execution. And the EU AI Act itself prescribes *that* records must exist and *what* they must enable, but deliberately specifies no record format, hashing scheme, or serialisation.
 
-The problem this thesis solves is therefore the design and implementation of the missing layer: a concrete, machine-readable provenance protocol that (i) records human oversight events as first-class records with before/after override evidence, (ii) maps its fields explicitly to EU AI Act Articles 12, 14, and 50, (iii) stores content hashes rather than raw text by default, and (iv) seals each pipeline run with a tamper-evident integrity hash — and that does so without imposing prohibitive runtime, storage, or developer-effort cost on the pipeline it observes.
+The problem this work solves is therefore the design and implementation of the missing layer: a concrete, machine-readable provenance protocol that (i) records human oversight events as first-class records with before/after override evidence, (ii) maps its fields explicitly to EU AI Act Articles 12, 14, and 50, (iii) stores content hashes rather than raw text by default, and (iv) seals each pipeline run with a tamper-evident integrity hash — and that does so without imposing prohibitive runtime, storage, or developer-effort cost on the pipeline it observes.
 
 ## 1.3 Research questions
 
@@ -32,7 +32,7 @@ RQ1 is answered by the protocol specification and its field-to-clause mapping; R
 
 ## 1.4 Contributions
 
-The thesis makes four contributions.
+This work makes four contributions.
 
 1. **A provenance protocol for regulated multi-agent pipelines**, defined as four versioned, JSON-Schema-validated record types — Agent Step, Tool Invocation, Human Intervention, and Pipeline Bundle — together with an explicit mapping from each compliance-relevant field to the EU AI Act clause it discharges. The protocol stores cryptographic hashes of inputs and outputs rather than raw content, and seals each pipeline run with a canonical-JSON integrity hash (RFC 8785) so that independent verifiers can reproduce the digest byte-for-byte and detect tampering.
 
@@ -68,7 +68,7 @@ The remainder of the thesis is organised as follows.
 
 ## References (working list)
 
-The reference list below is the working set used for this chapter and will be expanded and properly formatted at thesis revision time.
+The reference list below is the working set used for this chapter; the consolidated, formatted bibliography is maintained in `references.md`.
 
 1. European Parliament and Council, *Regulation (EU) 2024/1689 laying down harmonised rules on artificial intelligence (Artificial Intelligence Act)*, Official Journal of the European Union, 13 June 2024.
 2. R. Souza et al., "PROV-AGENT: Unified Provenance for Tracking AI Agent Interactions in Agentic Workflows," IEEE e-Science, Chicago, August 2025. arXiv:2508.02866.

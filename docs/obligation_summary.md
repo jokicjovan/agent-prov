@@ -1,6 +1,6 @@
 # EU AI Act — Obligation Summary
 ## Articles 12, 14, 50 · Technical Requirements for Provenance Protocol Mapping
-*Day 1 output · AI Agent Provenance & Compliance Protocol thesis*
+*AI Agent Provenance & Compliance Protocol*
 
 ---
 
@@ -24,7 +24,7 @@
 | Art. 12(3)(d) | *Minimum for biometric systems:* identify natural persons who verified results (per Art. 14(5)) | `reviewer_id` on Human Intervention Record — **direct clause-level justification** |
 
 ### Notes
-- Art. 12(3) specifies minimums for biometric identification systems only, but the general traceability obligation in Art. 12(2) applies to all high-risk systems. The thesis treats 12(3) fields as the floor and applies them universally across all record types.
+- Art. 12(3) specifies minimums for biometric identification systems only, but the general traceability obligation in Art. 12(2) applies to all high-risk systems. The protocol treats 12(3) fields as the floor and applies them universally across all record types.
 - "Technically allow" in Art. 12(1) means the logging capability must be built into the system architecture — post-hoc or optional logging does not satisfy the obligation. This justifies the middleware-as-infrastructure design approach.
 
 ---
@@ -72,7 +72,7 @@
 | Art. 50(4) exception | AI-generated text is *exempt* from disclosure obligation if it has undergone human review with editorial responsibility | `action_type: approved` on Human Intervention Record with `reviewer_role: editor` — HITL record serves as Art. 50(4) exemption evidence |
 
 ### Notes
-- Art. 50 is the **weakest fit** for this thesis. Its obligations are primarily user-facing disclosure requirements, not internal provenance requirements. The protocol addresses Art. 50 incidentally rather than as its primary target.
+- Art. 50 is the **weakest fit** for this protocol. Its obligations are primarily user-facing disclosure requirements, not internal provenance requirements. The protocol addresses Art. 50 incidentally rather than as its primary target.
 - The most useful Art. 50 hook is the Art. 50(4) exemption: when a human reviewer approves AI-generated text, the Human Intervention Record constitutes evidence of "human review with editorial responsibility." This is a secondary compliance benefit worth one paragraph in Chapter 3.
 - Art. 50 is scoped to a different population of AI systems than Arts. 12 and 14. A multi-agent pipeline producing internal outputs (not user-facing content) may not trigger Art. 50 at all.
 
