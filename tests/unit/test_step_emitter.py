@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
-import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, LLMResult
 

@@ -15,10 +15,11 @@ emitters into a circular import.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
 
 
+@runtime_checkable
 class SessionProtocol(Protocol):
     """Minimal interface the middleware needs from a `PipelineSession`."""
 

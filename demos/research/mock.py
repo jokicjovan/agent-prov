@@ -196,14 +196,14 @@ def run(
 
 def _print_summary(bundle: dict, path: pathlib.Path) -> None:
     records = bundle["records"]
-    print(f"\n=== Research Pipeline (mock): Bundle Summary ===")
+    print("\n=== Research Pipeline (mock): Bundle Summary ===")
     print(f"Bundle ID    : {bundle['bundle_id']}")
     print(f"Pipeline ID  : {bundle['pipeline_id']}")
     print(f"Session ID   : {bundle['session_id']}")
     print(f"Records      : {len(records)}")
     print(f"Bundle hash  : {bundle['bundle_hash']}")
     print(f"Output       : {path.resolve()}")
-    print(f"\nRecord chain:")
+    print("\nRecord chain:")
     for i, r in enumerate(records):
         rtype = r["record_type"]
         agent = r.get("agent_id", "-")
