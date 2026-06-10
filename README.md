@@ -30,6 +30,20 @@ captures a human oversight decision — who reviewed an output, the action they 
 (`approved` / `rejected` / `edited` / `escalated`), and the before/after state of
 the output — and maps it to the EU AI Act's oversight obligations.
 
+```mermaid
+flowchart LR
+    P[LangGraph pipeline] -->|callbacks| MW[ProvenanceMiddleware]
+    HR[HumanReview] --> S
+    MW --> S[PipelineSession]
+    S --> B["BundleGenerator<br/>SHA-256 seal"]
+    B --> J[("pipeline_bundle.json")]
+    J --> R[Compliance report PDF]
+```
+
+The middleware observes the pipeline through LangChain callbacks; human decisions
+enter through `HumanReview`; both converge on one session that is sealed into a
+tamper-evident bundle and can be rendered as a compliance report.
+
 ### The four record types
 
 | Record | Captures |
@@ -109,7 +123,7 @@ src/agent_prov/ reference implementation (middleware, emitters, session, HITL, s
   reporting/    compliance report generator (optional `reporting` extra)
 demos/          two example pipelines, each with a deterministic and a live variant
 evaluation/     completeness audit, overhead benchmark, developer-effort measurement
-docs/           protocol design, EU AI Act obligation mapping, gap analysis, thesis chapters
+docs/           protocol design, EU AI Act obligation mapping, gap analysis, design & evaluation write-up
 tests/          unit + integration test suite
 ```
 
@@ -127,7 +141,7 @@ uv run pytest
 
 - **LangGraph only.** The record schemas are framework-agnostic, but the reference
   implementation targets LangGraph. Adapters for other frameworks are future work.
-- **Research artifact.** This is a thesis proof-of-concept, not a production
+- **Research artifact.** This is a research proof-of-concept, not a production
   library. It demonstrates the protocol; it has not been hardened for production
   deployment.
 - The protocol records hashes and structure; where and how the underlying content

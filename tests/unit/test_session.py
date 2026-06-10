@@ -25,7 +25,6 @@ from uuid import uuid4
 
 import pytest
 
-from agent_prov._frames import _NodeFrame
 from agent_prov.core import ProvenanceMiddleware
 from agent_prov.session import PipelineSession, _DEFAULT_PROTOCOL_VERSION
 
@@ -169,10 +168,11 @@ def test_12_len_mirrors_records_list_length():
 
 def test_13_session_satisfies_session_protocol_interface():
     from agent_prov._frames import SessionProtocol
-    import inspect
 
     session = PipelineSession()
-    # All attributes required by SessionProtocol must be present and of the right type
+    # Structural conformance to the interface the middleware depends on.
+    assert isinstance(session, SessionProtocol)
+    # The attributes the protocol declares must also have the expected types.
     assert isinstance(session.pipeline_id, str)
     assert isinstance(session.session_id, str)
     assert isinstance(session.protocol_version, str)

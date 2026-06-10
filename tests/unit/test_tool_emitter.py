@@ -15,8 +15,6 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
-import pytest
-
 from agent_prov._frames import _NodeFrame, _ToolFrame
 from agent_prov._hashing import hash_content
 from agent_prov.core import ProvenanceMiddleware
