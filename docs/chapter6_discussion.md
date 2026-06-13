@@ -21,8 +21,9 @@ bundle and the adversaries it does and does not defend against (§6.2); the
 limitations carried forward from the implementation and evaluation (§6.3); the
 meaning of the out-of-scope verdicts, which mark a layer boundary rather than a
 hole (§6.4); and the directions that follow — multi-framework adapters,
-canonical identifier rewriting, cryptographic signing, deployment-profile
-schemas, and a machine-readable declaration of behavioural constraints (§6.5).
+canonical identifier rewriting, content-addressed recovery of multi-agent
+topology, cryptographic signing, deployment-profile schemas, and a
+machine-readable declaration of behavioural constraints (§6.5).
 The intent throughout is to state the boundaries precisely enough that a reader
 can tell what the protocol guarantees from what a deployment must add.
 
@@ -137,7 +138,9 @@ pipelines the distinction is invisible — emission order *is* the causal order 
 but a pipeline with parallel branches or out-of-order tool responses would
 produce a chain that under-describes its true structure. The defined resolution
 is an optional `caused_by_record_id` field (§3.7.3), deferred because the demos
-do not exercise the case it solves.
+do not exercise the case it solves; a fuller treatment that recovers the causal
+topology from content and timestamps — without binding the protocol to any one
+engine's execution model — is developed in §6.5.3.
 
 **Semantic projection of identifiers.** `input_hash` and `output_hash` are
 computed over a projection of the LangChain message list that strips runtime
@@ -274,7 +277,68 @@ record for forensic cross-referencing without entering the digest. The PoC
 established the principle; canonical id rewriting is the next step (a v0.2
 schema revision).
 
-### 6.5.3 Cryptographic signing and trusted timestamping
+### 6.5.3 Content-addressed recovery of multi-agent topology
+
+The chronological parent chain (§6.3) under-describes any pipeline whose agents
+do not execute in a single line, and the obvious remedy — reading the true
+data-flow graph from the orchestrator — would re-couple the capture layer to one
+engine's execution model, surrendering the framework-neutral property §6.5.1
+works to preserve. LangGraph exposes that structure directly: its superstep
+boundaries and per-node channel writes, surfaced through the `updates` and
+`debug` stream modes, name exactly which node produced each piece of state and
+which downstream node consumed it, and an adapter built on them would
+reconstruct the exact directed acyclic graph of agent dependencies. But it would
+do so in terms of *supersteps* and *channels* — concepts that exist only inside
+LangGraph's Pregel execution model. AutoGen and CrewAI have neither, so a
+topology mechanism defined against those primitives would not transfer, and the
+protocol's claim to describe pipelines in framework-agnostic terms would hold for
+the records but not for the graph that links them.
+
+The reframe that resolves the tension is to derive the topology from observables
+the protocol *already records* and that every framework necessarily exposes,
+rather than from any engine's private notion of a graph. Two such observables
+suffice. First, the `timestamp_start`/`timestamp_end` pair on every record makes
+concurrency directly detectable: two records whose intervals overlap demonstrably
+ran in parallel, which is enough to *refuse* the false sequential edge the
+chronological cursor would otherwise assert — truthful under-description in place
+of a confident error. Second, and more powerfully, the content commitments
+`input_hash` and `output_hash` make data-flow edges recoverable by content
+addressing: if the content one record produced is the content another consumed, a
+real dependency edge between them exists, derivable from content identity alone
+with no reference to how the orchestrator routed it. This is the principle by
+which content-addressed build systems and version-control graphs reconstruct
+dependency structure without any scheduler naming the edges, and it reuses the
+hashing machinery the protocol already depends on (§4.5). Engine-native
+introspection then changes role: instead of the *source* of the graph,
+LangGraph's channel writes become an optional *accelerator* that auto-populates
+the same produced/consumed artifact relation for the one framework that exposes
+it cheaply, while content matching remains the portable fallback for every
+framework that does not. The topology is defined by content, not by the engine;
+the adapter's only task is to populate the artifact relation by whatever means it
+has — content matching (universal), engine introspection (exact, framework-
+specific), or a thin application-level annotation in the spirit of the
+`HumanReview` block (§4.11), where the integrator names a consumed artifact in a
+line or two when automated matching cannot.
+
+The honest obstacle is that the present digests are computed over the whole
+projected message list for a step (§4.5.1), so an upstream `output_hash` will
+rarely equal a downstream `input_hash` verbatim once the producing content has
+been reformatted into a new prompt. Realising content-addressed topology
+therefore requires moving from whole-message digests to artifact-level ones —
+hashing the discrete pieces of content that flow between steps so a produced
+artifact can be matched *within* a later consumed set despite the surrounding
+prompt differing — together with light normalisation to survive templating, and
+the annotation escape hatch above for the cases where an agent transforms content
+beyond recognition rather than passing it through. The result is a directed
+acyclic provenance graph recovered from content and time rather than from a
+scheduler, which subsumes the optional `caused_by_record_id` field of §3.7.3 —
+the matched producer becomes the causal parent — and generalises beyond LangGraph
+to any pipeline that moves content between steps. It is noted here, rather than
+built, because it reaches past the linear demonstrations the evaluation exercises
+and is a research direction in its own right: framework-agnostic, content-
+addressed multi-agent provenance.
+
+### 6.5.4 Cryptographic signing and trusted timestamping
 
 The authenticity gap identified in §6.2.2 is closed by signing. A digital
 signature over `bundle_hash` by a key the deployer controls binds the bundle to
@@ -291,7 +355,7 @@ the existing seal, not a change to the records. The harder, deployment-specific
 question is key management and the chain of trust for the signing key, which is
 why the PoC stops at the integrity layer.
 
-### 6.5.4 Deployment-profile schema variants
+### 6.5.5 Deployment-profile schema variants
 
 Article 14(5)'s two-person rule (§6.3) is one instance of a general need:
 obligations that apply to a *sub-population* of pipelines rather than all of
@@ -306,7 +370,7 @@ standard elsewhere. The validation surface (§4.12) already centralises
 constraint checking, so a profile is a parameterisation of an existing seam
 rather than a new mechanism.
 
-### 6.5.5 Graph-interrupt human-intervention capture
+### 6.5.6 Graph-interrupt human-intervention capture
 
 The two-graph composition workaround (§6.3, §4.11.2) points at a cleaner capture
 model: a LangGraph node-level interrupt at the review point, where the human
@@ -319,7 +383,7 @@ the Human Intervention Record it produces is identical, which is why the PoC's
 simpler composition is sufficient to validate the protocol while leaving the
 idiomatic integration as future work.
 
-### 6.5.6 Content-store integration and selective disclosure
+### 6.5.7 Content-store integration and selective disclosure
 
 The content-storage boundary (§6.4.3) is specified but not demonstrated. A
 natural next step is a reference content-store adapter — a hash-keyed store with
@@ -331,7 +395,7 @@ content-addressable property from a specified capability into a demonstrated one
 and would let the threat-model claims of §6.2 be evaluated against an actual
 retention-and-disclosure deployment rather than argued analytically.
 
-### 6.5.7 Behavioural constraint declaration
+### 6.5.8 Behavioural constraint declaration
 
 The most open-ended direction, and one deliberately kept out of this thesis's
 scope, is a formal, machine-readable declaration of what an agent is *not*
