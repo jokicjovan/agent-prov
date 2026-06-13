@@ -1,18 +1,23 @@
 """Document Review pipeline — mock variant.
 
-Flow:  summarizer  →  HumanReview(edit)  →  finalizer  →  HumanReview(approve)
+Flow:  summarizer  →  [interrupt: edit]  →  finalizer  →  [interrupt: approve]
 
 A document is summarised by an agent, a human reviewer edits the summary to
 correct an omission, a second agent drafts a decision letter from the edited
 summary, and a compliance reviewer approves the final letter. The resulting
-bundle contains two agent_step records interleaved with two
-human_intervention records, demonstrating the parent_record_id chain
+bundle contains two ``agent_step`` records interleaved with two
+``human_intervention`` records, demonstrating the ``parent_record_id`` chain
 crossing automated and human nodes.
 
-The two graph nodes are compiled as separate single-node graphs and invoked
-in sequence on the same PipelineSession/ProvenanceMiddleware pair. This is
-the simplest way to surface a HITL emission between two LangGraph node runs
-without resorting to graph-level interrupts.
+The workflow is one multi-node LangGraph — ``summarizer → review_summary →
+finalizer → approve_letter → END`` — where the two review points are gate nodes
+that call LangGraph's ``interrupt()``. When a gate is reached the graph pauses
+and returns control to the runner, which collects the human decision in a
+``HumanReview`` block and resumes the graph with ``Command(resume=…)``. Because
+every invocation shares one ``PipelineSession`` and ``ProvenanceMiddleware``,
+``session.last_record_id`` persists across the pause and each Human Intervention
+Record chains onto the agent step it reviewed. A node-level interrupt requires a
+checkpointer, so the graph is compiled with an in-memory ``MemorySaver``.
 
 Deterministic; no external API calls. For a real-API counterpart see
 ``demos/document_review/live.py``.
@@ -31,7 +36,9 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.runnables import RunnableConfig
 from langchain_core.runnables.config import merge_configs
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
+from langgraph.types import Command, interrupt
 
 from agent_prov.bundle_generator import BundleGenerator
 from agent_prov.core import ProvenanceMiddleware
@@ -105,6 +112,20 @@ _finalizer_llm = _FakeLLM(
 
 
 # ---------------------------------------------------------------------------
+# Scripted reviewer edit
+# ---------------------------------------------------------------------------
+
+# Reviewer notices the agent summary omitted the dependants and adds them.
+REVIEWER_EDIT = (
+    "Applicant requests EUR 12,000 over 36 months for home renovation. "
+    "Stable employment (5 years, EUR 1,850 net/month) and limited "
+    "existing obligations (EUR 400 credit card). Credit history is "
+    "clean apart from one late payment 18 months ago. Two dependants "
+    "declared — factor into affordability assessment."
+)
+
+
+# ---------------------------------------------------------------------------
 # Pipeline state
 # ---------------------------------------------------------------------------
 
@@ -127,6 +148,12 @@ def summarizer(state: ReviewState, config: RunnableConfig) -> ReviewState:
     return {"summary": response.content}
 
 
+def review_summary(state: ReviewState) -> ReviewState:
+    """Review-gate node: pause for the editor and adopt the returned summary."""
+    revised = interrupt({"stage": "summary", "value": state["summary"]})
+    return {"summary": revised}
+
+
 def finalizer(state: ReviewState, config: RunnableConfig) -> ReviewState:
     llm_config = merge_configs(config, {"metadata": {"ls_model_name": "fake-finalizer"}})
     response = _finalizer_llm.invoke(
@@ -141,38 +168,33 @@ def finalizer(state: ReviewState, config: RunnableConfig) -> ReviewState:
     return {"decision": response.content}
 
 
+def approve_letter(state: ReviewState) -> ReviewState:
+    """Review-gate node: pause for the compliance officer's sign-off."""
+    interrupt({"stage": "decision", "value": state["decision"]})
+    return {}
+
+
 # ---------------------------------------------------------------------------
-# Graphs (one node each so the HITL block can sit between them)
+# Graph — one multi-node pipeline with two interrupt gates
 # ---------------------------------------------------------------------------
 
-def _build_summarizer_graph():
+def _build_graph():
     g = StateGraph(ReviewState)
     g.add_node("summarizer", summarizer)
-    g.set_entry_point("summarizer")
-    g.add_edge("summarizer", END)
-    return g.compile()
-
-
-def _build_finalizer_graph():
-    g = StateGraph(ReviewState)
+    g.add_node("review_summary", review_summary)
     g.add_node("finalizer", finalizer)
-    g.set_entry_point("finalizer")
-    g.add_edge("finalizer", END)
-    return g.compile()
+    g.add_node("approve_letter", approve_letter)
+    g.set_entry_point("summarizer")
+    g.add_edge("summarizer", "review_summary")
+    g.add_edge("review_summary", "finalizer")
+    g.add_edge("finalizer", "approve_letter")
+    g.add_edge("approve_letter", END)
+    return g.compile(checkpointer=MemorySaver())
 
 
-# ---------------------------------------------------------------------------
-# Scripted reviewer edit
-# ---------------------------------------------------------------------------
-
-# Reviewer notices the agent summary omitted the dependants and adds them.
-REVIEWER_EDIT = (
-    "Applicant requests EUR 12,000 over 36 months for home renovation. "
-    "Stable employment (5 years, EUR 1,850 net/month) and limited "
-    "existing obligations (EUR 400 credit card). Credit history is "
-    "clean apart from one late payment 18 months ago. Two dependants "
-    "declared — factor into affordability assessment."
-)
+def _interrupt_value(state: dict) -> str:
+    """Pull the payload the paused gate handed back to the runner."""
+    return state["__interrupt__"][0].value["value"]
 
 
 # ---------------------------------------------------------------------------
@@ -183,15 +205,17 @@ def run(output_dir: str | pathlib.Path = "demos/document_review") -> dict:
     """Run the document review pipeline and write the sealed bundle."""
     session = PipelineSession(pipeline_id=PIPELINE_ID)
     middleware = ProvenanceMiddleware(session)
-    callbacks: RunnableConfig = {"callbacks": [middleware]}
+    graph = _build_graph()
+    config: RunnableConfig = {
+        "callbacks": [middleware],
+        "configurable": {"thread_id": session.session_id},
+    }
 
-    # 1. Summariser node
-    summary_state = _build_summarizer_graph().invoke(
-        {"document": DOCUMENT}, config=callbacks
-    )
-    agent_summary = summary_state["summary"]
+    # 1. Run until the first gate — summarizer emits its agent_step, then pauses.
+    state = graph.invoke({"document": DOCUMENT}, config=config)
+    agent_summary = _interrupt_value(state)
 
-    # 2. Human review — editor edits the summary
+    # 2. Human review — editor edits the summary (chains onto the summarizer step).
     with HumanReview(
         session=session,
         reviewer_id=["reviewer:editor-01"],
@@ -203,14 +227,11 @@ def run(output_dir: str | pathlib.Path = "demos/document_review") -> dict:
             justification="Summary omitted declared dependants; added for affordability.",
         )
 
-    # 3. Finaliser node — runs on the reviewer-approved summary
-    final_state = _build_finalizer_graph().invoke(
-        {"document": DOCUMENT, "summary": REVIEWER_EDIT},
-        config=callbacks,
-    )
-    final_decision = final_state["decision"]
+    # 3. Resume with the edited summary — finalizer runs, then pauses at the second gate.
+    state = graph.invoke(Command(resume=REVIEWER_EDIT), config=config)
+    final_decision = _interrupt_value(state)
 
-    # 4. Human review — compliance officer approves the letter
+    # 4. Human review — compliance officer approves the letter unchanged.
     with HumanReview(
         session=session,
         reviewer_id=["reviewer:compliance-07"],
@@ -218,6 +239,9 @@ def run(output_dir: str | pathlib.Path = "demos/document_review") -> dict:
         output_before=final_decision,
     ) as review:
         review.approve(justification="Decision aligns with internal credit policy.")
+
+    # 5. Final resume — approve_letter returns and the graph reaches END.
+    graph.invoke(Command(resume=True), config=config)
 
     output_path = pathlib.Path(output_dir) / "mock_bundle.json"
     bundle = BundleGenerator(session, disclosure_presented=True).to_file(output_path)

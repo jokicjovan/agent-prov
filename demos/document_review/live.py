@@ -1,11 +1,12 @@
 """Document Review pipeline — live variant (real OpenAI chat model).
 
-Flow:  summarizer  →  HumanReview(edit)  →  finalizer  →  HumanReview(approve)
+Flow:  summarizer  →  [interrupt: edit]  →  finalizer  →  [interrupt: approve]
 
-Same structure as ``demos/document_review/mock.py``, but the two agent
-nodes call a real OpenAI chat model via langchain-openai so that middleware
-overhead on a HITL-bearing pipeline is measured against realistic LLM
-latency rather than a synchronous stub.
+Same structure as ``demos/document_review/mock.py`` — one multi-node LangGraph
+with ``interrupt()`` gates at the two review points — but the two agent nodes
+call a real OpenAI chat model via langchain-openai so that middleware overhead
+on a HITL-bearing pipeline is measured against realistic LLM latency rather
+than a synchronous stub.
 
 Requires:
     OPENAI_API_KEY  in the environment, or in a `.env` file at the repo root
@@ -26,7 +27,9 @@ from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
+from langgraph.types import Command, interrupt
 
 from agent_prov.bundle_generator import BundleGenerator
 from agent_prov.core import ProvenanceMiddleware
@@ -84,6 +87,12 @@ def summarizer(state: ReviewState, config: RunnableConfig) -> ReviewState:
     return {"summary": response.content}
 
 
+def review_summary(state: ReviewState) -> ReviewState:
+    """Review-gate node: pause for the editor and adopt the returned summary."""
+    revised = interrupt({"stage": "summary", "value": state["summary"]})
+    return {"summary": revised}
+
+
 def finalizer(state: ReviewState, config: RunnableConfig) -> ReviewState:
     prompt = (
         "Draft a one-paragraph credit decision letter from the reviewed "
@@ -95,20 +104,29 @@ def finalizer(state: ReviewState, config: RunnableConfig) -> ReviewState:
     return {"decision": response.content}
 
 
-def _build_summarizer_graph():
+def approve_letter(state: ReviewState) -> ReviewState:
+    """Review-gate node: pause for the compliance officer's sign-off."""
+    interrupt({"stage": "decision", "value": state["decision"]})
+    return {}
+
+
+def _build_graph():
     g = StateGraph(ReviewState)
     g.add_node("summarizer", summarizer)
-    g.set_entry_point("summarizer")
-    g.add_edge("summarizer", END)
-    return g.compile()
-
-
-def _build_finalizer_graph():
-    g = StateGraph(ReviewState)
+    g.add_node("review_summary", review_summary)
     g.add_node("finalizer", finalizer)
-    g.set_entry_point("finalizer")
-    g.add_edge("finalizer", END)
-    return g.compile()
+    g.add_node("approve_letter", approve_letter)
+    g.set_entry_point("summarizer")
+    g.add_edge("summarizer", "review_summary")
+    g.add_edge("review_summary", "finalizer")
+    g.add_edge("finalizer", "approve_letter")
+    g.add_edge("approve_letter", END)
+    return g.compile(checkpointer=MemorySaver())
+
+
+def _interrupt_value(state: dict) -> str:
+    """Pull the payload the paused gate handed back to the runner."""
+    return state["__interrupt__"][0].value["value"]
 
 
 def run(output_dir: str | pathlib.Path = "demos/document_review") -> dict:
@@ -122,13 +140,17 @@ def run(output_dir: str | pathlib.Path = "demos/document_review") -> dict:
 
     session = PipelineSession(pipeline_id=PIPELINE_ID)
     middleware = ProvenanceMiddleware(session)
-    callbacks: RunnableConfig = {"callbacks": [middleware]}
+    graph = _build_graph()
+    config: RunnableConfig = {
+        "callbacks": [middleware],
+        "configurable": {"thread_id": session.session_id},
+    }
 
-    summary_state = _build_summarizer_graph().invoke(
-        {"document": DOCUMENT}, config=callbacks
-    )
-    agent_summary = summary_state["summary"]
+    # 1. Run until the first gate — summarizer emits its agent_step, then pauses.
+    state = graph.invoke({"document": DOCUMENT}, config=config)
+    agent_summary = _interrupt_value(state)
 
+    # 2. Human review — editor edits the summary (chains onto the summarizer step).
     with HumanReview(
         session=session,
         reviewer_id=["reviewer:editor-01"],
@@ -140,12 +162,11 @@ def run(output_dir: str | pathlib.Path = "demos/document_review") -> dict:
             justification="Summary omitted declared dependants; added for affordability.",
         )
 
-    final_state = _build_finalizer_graph().invoke(
-        {"document": DOCUMENT, "summary": REVIEWER_EDIT},
-        config=callbacks,
-    )
-    final_decision = final_state["decision"]
+    # 3. Resume with the edited summary — finalizer runs, then pauses at the second gate.
+    state = graph.invoke(Command(resume=REVIEWER_EDIT), config=config)
+    final_decision = _interrupt_value(state)
 
+    # 4. Human review — compliance officer approves the letter unchanged.
     with HumanReview(
         session=session,
         reviewer_id=["reviewer:compliance-07"],
@@ -153,6 +174,9 @@ def run(output_dir: str | pathlib.Path = "demos/document_review") -> dict:
         output_before=final_decision,
     ) as review:
         review.approve(justification="Decision aligns with internal credit policy.")
+
+    # 5. Final resume — approve_letter returns and the graph reaches END.
+    graph.invoke(Command(resume=True), config=config)
 
     output_path = pathlib.Path(output_dir) / "live_bundle.json"
     bundle = BundleGenerator(session, disclosure_presented=True).to_file(output_path)

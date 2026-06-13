@@ -154,15 +154,14 @@ directions — a non-hashed `runtime_metadata` side field that preserves the id
 without polluting the digest, and canonical identifier rewriting that keeps the
 correlation *inside* the hashed structure (§6.5.2).
 
-**Two-graph HITL composition.** The document-review demonstration sequences its
-two automated nodes as two separate single-node graphs with the `HumanReview`
-block in plain Python between them, rather than as one graph with a node-level
-interrupt at the review point (§4.11.2). This was chosen to keep the human
-decision a visible, testable step in the runner script, but it means the demo's
-runner — not the graph — sequences the steps. A graph-interrupt-based capture
-variant (§6.5.6) would let the human decision point live inside the graph
-definition, which is the more idiomatic LangGraph expression and the more
-faithful model of a real interrupt-and-resume oversight flow.
+**Runner-emitted HITL record.** The document-review demonstration expresses its
+human review points as node-level `interrupt()` gates inside a single multi-node
+graph (§4.11.2), which is the idiomatic LangGraph form. One seam remains:
+because the human decision occurs out of process while the graph is paused, the
+`HumanReview` record is emitted by the runner on resume rather than from inside
+the gate node itself. The record produced is identical either way; folding the
+emission into the resume path, so the gate node and its record are one unit, is
+the refinement noted in §6.5.6.
 
 **Article 14(5) is accommodated, not enforced.** The two-person rule for
 biometric identification systems is *accommodated* by `reviewer_id` being an
@@ -372,16 +371,18 @@ rather than a new mechanism.
 
 ### 6.5.6 Graph-interrupt human-intervention capture
 
-The two-graph composition workaround (§6.3, §4.11.2) points at a cleaner capture
-model: a LangGraph node-level interrupt at the review point, where the human
-decision lives inside the graph definition and the `HumanReview` record is
-emitted as the graph resumes. This would make the human decision point a
-first-class part of the pipeline structure rather than a step the runner script
-sequences externally, and it would model a real interrupt-and-resume oversight
-flow faithfully. It is a refinement of the capture mechanism, not of the record:
-the Human Intervention Record it produces is identical, which is why the PoC's
-simpler composition is sufficient to validate the protocol while leaving the
-idiomatic integration as future work.
+The document-review demonstration already expresses its human review points as
+node-level `interrupt()` gates inside a single multi-node graph (§4.11.2): the
+graph pauses at each gate and resumes around the `HumanReview` block, so the
+human decision point lives in the graph definition rather than being sequenced
+externally by the runner. What remains is the last seam: because the human
+decision occurs out of process while the graph is paused, the Human Intervention
+Record is still emitted by the runner on resume rather than from inside the gate
+node. Folding the emission into the resume path — so the gate node and its record
+are one unit — would make the human decision a fully first-class part of the
+pipeline structure and model the interrupt-and-resume oversight flow end to end.
+The record it produces is identical either way, which is why emitting it from the
+runner is sufficient to validate the protocol.
 
 ### 6.5.7 Content-store integration and selective disclosure
 
