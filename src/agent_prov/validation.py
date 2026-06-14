@@ -20,13 +20,15 @@ which mechanism rejected the input.
 from __future__ import annotations
 
 import json
-import pathlib
+from importlib import resources
 from typing import Any
 
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
-_SCHEMAS_DIR = pathlib.Path(__file__).resolve().parents[2] / "schemas"
+# Read via importlib.resources so schemas resolve in both an editable checkout
+# and an installed wheel.
+_SCHEMAS_PACKAGE = "agent_prov.schemas"
 
 _SCHEMA_FILES = {
     "agent_step": "agent_step.schema.json",
@@ -40,7 +42,8 @@ _RECORD_TYPES = frozenset(_SCHEMA_FILES) - {"pipeline_bundle"}
 
 
 def _load(name: str) -> dict[str, Any]:
-    return json.loads((_SCHEMAS_DIR / name).read_text(encoding="utf-8"))
+    text = resources.files(_SCHEMAS_PACKAGE).joinpath(name).read_text(encoding="utf-8")
+    return json.loads(text)
 
 
 # Loaded schemas keyed by record_type, plus a registry wiring the cross-schema

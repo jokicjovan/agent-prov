@@ -8,7 +8,7 @@ The chapter does not specify a wire format beyond JSON, a transport layer, or a 
 
 The chapter closes with a unified field-to-clause mapping table (§3.8) and a short statement of what the protocol deliberately leaves to the application layer (§3.9).
 
-The canonical machine-readable definitions live in `schemas/*.schema.json`. The tables in this chapter and the schemas are kept in sync; when they disagree, the schemas are authoritative.
+The canonical machine-readable definitions live in `src/agent_prov/schemas/*.schema.json`. The tables in this chapter and the schemas are kept in sync; when they disagree, the schemas are authoritative.
 
 ---
 

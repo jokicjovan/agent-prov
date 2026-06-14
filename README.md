@@ -118,8 +118,8 @@ a Human Intervention Record with the before/after evidence.
 ## Repository layout
 
 ```
-schemas/        JSON Schema for the four record types
 src/agent_prov/ reference implementation (middleware, emitters, session, HITL, sealing)
+  schemas/      JSON Schema for the four record types (shipped with the package)
   reporting/    compliance report generator (optional `reporting` extra)
 demos/          two example pipelines, each with a deterministic and a live variant
 evaluation/     completeness audit, overhead benchmark, developer-effort measurement

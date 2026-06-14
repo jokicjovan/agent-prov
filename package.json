@@ -4,8 +4,8 @@
   "private": true,
   "description": "JSON Schema validation tooling for the AI Agent Provenance & Compliance Protocol.",
   "scripts": {
-    "validate:schemas": "ajv compile --spec=draft2020 -c ajv-formats -s \"schemas/*.schema.json\"",
-    "validate:examples": "ajv validate --spec=draft2020 -c ajv-formats -s schemas/agent_step.schema.json -d \"schemas/examples/agent_step.valid.json\""
+    "validate:schemas": "ajv compile --spec=draft2020 -c ajv-formats -s \"src/agent_prov/schemas/*.schema.json\"",
+    "validate:examples": "ajv validate --spec=draft2020 -c ajv-formats -s src/agent_prov/schemas/agent_step.schema.json -d \"tests/schema_examples/agent_step.valid.json\""
   },
   "devDependencies": {
     "ajv-cli": "^5.0.0",

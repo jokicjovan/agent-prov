@@ -16,6 +16,7 @@ Twelve test cases covering:
 from __future__ import annotations
 
 import copy
+import json
 from typing import Any
 
 import pytest
@@ -265,3 +266,29 @@ def test_12_canonical_hash_properties():
     tampered = copy.deepcopy(bundle)
     tampered["records"][0]["output_hash"] = HASH_C
     assert compute_bundle_hash(tampered) != bundle["bundle_hash"]
+
+
+# ---------------------------------------------------------------------------
+# Test 13 — schemas ship as package resources (wheel-install code path)
+# ---------------------------------------------------------------------------
+
+
+def test_13_schemas_load_as_package_resources():
+    """Schemas must resolve via importlib.resources, not a repo-relative path.
+
+    This is the path an installed wheel uses; a filesystem load relative to the
+    source tree would raise FileNotFoundError once packaged. Reading each schema
+    through ``importlib.resources`` here guards against that regression.
+    """
+    from importlib import resources
+
+    schema_files = {
+        "agent_step.schema.json",
+        "tool_invocation.schema.json",
+        "human_intervention.schema.json",
+        "pipeline_bundle.schema.json",
+    }
+    root = resources.files("agent_prov.schemas")
+    for name in schema_files:
+        loaded = json.loads(root.joinpath(name).read_text(encoding="utf-8"))
+        assert loaded["$id"].endswith(name), name

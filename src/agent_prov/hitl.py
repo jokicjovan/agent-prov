@@ -7,7 +7,7 @@ the ``with`` block via :meth:`HumanReview.approve`, :meth:`HumanReview.edit`,
 :meth:`HumanReview.reject`, or :meth:`HumanReview.escalate`.
 
 The action_type ↔ output_after_hash conventions documented in
-``schemas/human_intervention.schema.json`` are enforced here:
+``agent_prov/schemas/human_intervention.schema.json`` are enforced here:
 
 * ``approved``  → ``output_after_hash`` equals ``output_before_hash``
 * ``edited``    → ``output_after_hash`` differs from ``output_before_hash``
