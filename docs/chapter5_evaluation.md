@@ -63,8 +63,8 @@ Twenty-one clauses were audited. The distribution of verdicts:
 | Verdict | Count | Share |
 |---------|-------|-------|
 | covered | 13 | 62% |
-| partial | 3 | 14% |
-| out_of_scope | 5 | 24% |
+| partial | 4 | 19% |
+| out_of_scope | 4 | 19% |
 | not_covered | **0** | **0%** |
 | **Total** | **21** | |
 
@@ -72,10 +72,10 @@ Broken down by article:
 
 | Article | Clauses | covered | partial | out_of_scope | not_covered |
 |---------|--------:|--------:|--------:|-------------:|------------:|
-| Art. 12 — record-keeping | 8 | 6 | 1 | 1 | 0 |
+| Art. 12 — record-keeping | 8 | 6 | 2 | 0 | 0 |
 | Art. 14 — human oversight | 8 | 5 | 2 | 1 | 0 |
 | Art. 50 — transparency | 5 | 2 | 0 | 3 | 0 |
-| **Total** | **21** | **13** | **3** | **5** | **0** |
+| **Total** | **21** | **13** | **4** | **4** | **0** |
 
 The headline result is the zero in the `not_covered` column: there is no clause
 within scope that the protocol fails to address. Every obligation is either
@@ -92,7 +92,7 @@ The full clause-level audit:
 | Clause | Requirement (abbreviated) | Verdict | Discharging field(s) |
 |--------|---------------------------|---------|----------------------|
 | 12(1) | System allows automatic log generation | covered | `bundle_hash` |
-| 12(2)(a) | Identify situations that may result in risk | out_of_scope | — |
+| 12(2)(a) | Identify situations that may result in risk | partial | `status`, `error`, `outcome` |
 | 12(2)(b) | Facilitate post-market monitoring (drift) | covered | `model_id`, `model_version` |
 | 12(2)(c) | Support operational monitoring (linkable records) | covered | `pipeline_id`, `session_id` |
 | 12(3)(a) | Record start and end time of each use | covered | `timestamp_start`, `timestamp_end` |
@@ -134,9 +134,15 @@ protocol's strongest evidence.
 
 ### 5.2.3 The partial and out-of-scope verdicts
 
-The three *partial* verdicts each mark a clean boundary between what a schema can
-guarantee and what only a deployment can:
+The four *partial* verdicts each mark a clean boundary between what the protocol
+can guarantee and what only a deployment can:
 
+- **Art. 12(2)(a)** (identify situations that may result in risk) — per-step
+  `status`/`error` and the bundle-level `outcome` record malfunctions, failed
+  steps, and aborted runs, which are the events most relevant to risk situations.
+  What remains application-layer is the *classification* judgement: deciding which
+  recorded events constitute reportable risk under Article 79(1). The protocol
+  surfaces the events; it does not tag them as risk.
 - **Art. 12(3)(b)** (reference database consulted) — `reference_data_id` exists on
   both automated record types, but the schema cannot enforce that it is populated
   when external data was in fact used, because whether a call consulted a corpus
@@ -151,12 +157,11 @@ guarantee and what only a deployment can:
   `minItems: 1` universally; the `≥2` constraint for biometric pipelines would
   require a deployment-profile schema variant.
 
-The five *out-of-scope* verdicts are consistent: they cover risk classification
-(12(2)(a)), automation-bias awareness (14(4)(b)), and the artifact-level
-disclosure and watermarking duties of Article 50(2)–(4). These are properties of
-the application's risk logic, oversight interface, or output artifacts — not of
-the pipeline's internal record stream — and Chapter 6 records the boundary
-deliberately rather than papering over it with a token field.
+The four *out-of-scope* verdicts are consistent: they cover automation-bias
+awareness (14(4)(b)) and the artifact-level disclosure and watermarking duties of
+Article 50(2)–(4). These are properties of the application's oversight interface
+or output artifacts — not of the pipeline's internal record stream — and Chapter 6
+records the boundary deliberately rather than papering over it with a token field.
 
 The honest reading of §5.2 is therefore: within the layer the protocol claims —
 the tamper-evident record stream of a pipeline run — coverage is complete; the

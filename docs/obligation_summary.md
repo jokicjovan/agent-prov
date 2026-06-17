@@ -15,7 +15,7 @@
 | Clause | Requirement | Protocol field implication |
 |--------|-------------|---------------------------|
 | Art. 12(1) | System must *technically allow* automatic log generation — logging cannot be optional or manual | Every pipeline execution must emit records automatically; the middleware must be non-bypassable |
-| Art. 12(2)(a) | Logs must identify situations that may result in risk (Art. 79(1)) or substantial modification | Satisfied by the logging capability itself — if records exist and can be reviewed, the obligation is met. No per-record `risk_flag` field; risk assessment is application-layer logic outside the protocol scope. |
+| Art. 12(2)(a) | Logs must identify situations that may result in risk (Art. 79(1)) or substantial modification | Partially covered: per-step `status`/`error` and the bundle-level `outcome` record malfunctions and failed/aborted runs — the events most relevant to risk situations. Classifying whether a situation "may result in risk" per Art. 79(1) remains application-layer logic; the protocol surfaces the events, the deployment judges which are reportable. |
 | Art. 12(2)(b) | Logs must facilitate post-market monitoring (Art. 72) | `model_id` + `model_version` on every record — enables drift detection across deployments |
 | Art. 12(2)(c) | Logs must support operational monitoring by deployers (Art. 26(5)) | `pipeline_id` + `session_id` linking all records in a run |
 | Art. 12(3)(a) | *Minimum for biometric systems:* record start and end time of each use | `timestamp_start`, `timestamp_end` on Agent Step Record |

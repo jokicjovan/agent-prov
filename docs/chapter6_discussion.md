@@ -173,10 +173,14 @@ constraint for the biometric population without forcing it on every pipeline
 
 ## 6.4 The boundaries the out-of-scope obligations mark
 
-Five clauses were marked *out of scope* in the completeness audit (§5.2.3): risk
-classification (12(2)(a)), automation-bias awareness (14(4)(b)), and the
-artifact-level disclosure and watermarking duties of Article 50(2)–(4). It would
-have been easy to add a token field for each and claim a higher coverage number.
+Four clauses were marked *out of scope* in the completeness audit (§5.2.3):
+automation-bias awareness (14(4)(b)) and the artifact-level disclosure and
+watermarking duties of Article 50(2)–(4). A fifth, risk classification (12(2)(a)),
+was reclassified from out-of-scope to *partial* once the protocol began recording
+the malfunction substrate (per-step `status`/`error` and the bundle-level
+`outcome`); the residue that remains application-logic — deciding which recorded
+events constitute reportable risk — is discussed in §6.4.1. It would
+have been easy to add a token field for each remaining gap and claim a higher coverage number.
 The audit deliberately does not, because each of these obligations lives at a
 layer the record stream does not own, and a field that *records a claim* without
 *carrying the evidence* is worse than an honest gap — it invites an auditor to
@@ -186,17 +190,24 @@ look for the rest of its compliance story.
 
 ### 6.4.1 Application-logic obligations
 
-Risk classification (12(2)(a) — identifying situations that may result in risk)
-and automation-bias awareness (14(4)(b)) are properties of the *application's
-design and the operator's training*, not of any pipeline event. Whether a given
-situation constitutes an in-scope risk is a judgement encoded in the
-application's control flow and risk register; whether an overseer is aware of
-automation bias is a property of how the oversight interface is designed and how
-the overseer was trained. Neither is observable from a record stream, and a
-provenance field asserting "this risk was considered" or "the reviewer was aware
-of automation bias" would be an unfalsifiable label. These belong to the
-application's risk-management documentation under Article 9 — a different
-obligation than the Article 12 record-keeping duty this protocol targets.
+Article 12(2)(a) splits cleanly along this boundary. The protocol now records the
+*events* relevant to risk — a step or tool that malfunctioned (`status: "error"`
+with a structured `error`) and a run that ended in `error` or was `aborted`
+(`outcome`) — which is why the audit moves it to *partial*. What stays out of
+scope is the *classification* step: whether a given recorded event "may result in
+risk" within the meaning of Article 79(1) is a judgement encoded in the
+application's control flow and risk register, not a property of the event itself.
+A provenance field asserting "this event was assessed as risk" would be an
+unfalsifiable label; the protocol instead surfaces the malfunction faithfully and
+leaves the assessment to the application's risk-management documentation under
+Article 9 — a different obligation than the Article 12 record-keeping duty this
+protocol targets.
+
+Automation-bias awareness (14(4)(b)) remains fully out of scope: whether an
+overseer is aware of automation bias is a property of how the oversight interface
+is designed and how the overseer was trained, not observable from any record
+stream, and a field asserting "the reviewer was aware of automation bias" would
+be the kind of unfalsifiable label the audit avoids.
 
 ### 6.4.2 Artifact- and interface-level obligations
 
@@ -232,7 +243,7 @@ the content lives in a store keyed by hash, and on challenge the deployment
 reveals the specific content whose digest the auditor recomputes. The PoC does
 not *demonstrate* a selective-disclosure deployment — both demos hold content
 only transiently in the running process — so this remains a specified boundary
-rather than an exercised one, and §6.5.7 notes the content-store integration
+rather than an exercised one, and §6.5.8 notes the content-store integration
 that would close it.
 
 ## 6.5 Future work
@@ -384,7 +395,32 @@ pipeline structure and model the interrupt-and-resume oversight flow end to end.
 The record it produces is identical either way, which is why emitting it from the
 runner is sufficient to validate the protocol.
 
-### 6.5.7 Content-store integration and selective disclosure
+### 6.5.7 Recording oversight failures
+
+The Agent Step and Tool Invocation Records now record their failures: a call that
+raises is captured with `status: "error"` and a structured `error` object, so a
+malfunction in the automated layer is auditable (§3.3.2, Article 12(2)(a)). The
+Human Intervention Record has no equivalent. By construction it is emitted only
+when a reviewer commits a decision, and `action_type` is its outcome axis (§3.5.3);
+a *technical* failure of oversight — a reviewer who times out, is unavailable, or a
+review system that crashes before any decision is reached — currently raises in the
+host application and produces no record, leaving the failed oversight invisible in
+the bundle.
+
+This is the oversight-layer analogue of the gap the per-step `status` field closed,
+and "oversight was required but did not engage" is a first-class Article 14 signal.
+The reason it was not simply folded into the Human Intervention Record is that a
+failed review shares almost none of that record's shape — there is no committed
+`action_type`, no `output_after_hash`, and often no reviewer at all — so attaching a
+`status` field would make most of the core-novelty record conditionally absent and
+blur the before/after decision evidence that is its contribution. The cleaner
+direction is a distinct *oversight-failure* event (capturing the assigned reviewer
+or reviewer pool, the output awaiting review, the failure mode, and a timestamp),
+chained to the upstream record exactly as a Human Intervention Record is, so that a
+bundle can show "oversight was due here and did not happen" without overloading the
+record that models oversight that did.
+
+### 6.5.8 Content-store integration and selective disclosure
 
 The content-storage boundary (§6.4.3) is specified but not demonstrated. A
 natural next step is a reference content-store adapter — a hash-keyed store with
@@ -396,7 +432,7 @@ content-addressable property from a specified capability into a demonstrated one
 and would let the threat-model claims of §6.2 be evaluated against an actual
 retention-and-disclosure deployment rather than argued analytically.
 
-### 6.5.8 Behavioural constraint declaration
+### 6.5.9 Behavioural constraint declaration
 
 The most open-ended direction, and one deliberately kept out of this thesis's
 scope, is a formal, machine-readable declaration of what an agent is *not*

@@ -121,15 +121,16 @@ An emitter turns a matched lifecycle pair into a record and hands the record to 
 - `timestamp_start` — read from the frame, set when the model call began.
 - `timestamp_end` — set now, as the record is emitted.
 - `input_hash` — the canonical hash of the frame's input message list.
+- `status` — `"success"` on this path (the model call completed).
 - `output_hash` — the canonical hash of the response's semantic payload: per generation, the message content and the (name, args) of any tool calls. The full response envelope is not hashed because LangChain stamps a fresh runtime `id` on every generated message and on every tool call, which would make identical content digest differently on each run; the projection keeps only what is semantically the model's output, preserving the content-addressable property the protocol relies on. Tool calls are retained — not just `content` — because a step that emits only a tool call carries no content, and hashing content alone would make every such step collide.
 - `reference_data_id` — `null`; the reference corpus identifier is not recoverable from a generic chat model call and is left for the application layer to populate.
 - `parent_record_id` — the session's `last_record_id` (§4.7).
 
-The assembled dictionary is passed to `session.add_record`.
+The assembled dictionary is passed to `session.add_record`. The success and error paths share a `_base_record` helper that fills the fields above except `status`, `output_hash`, and `error`; the success path then adds `status: "success"` and `output_hash`, and the error path (§4.5.4) adds `status: "error"` and the `error` object instead.
 
 ### 4.5.2 Tool Invocation emitter
 
-`emit_tool_invocation` (`src/agent_prov/tool_emitter.py`) is structurally identical, called when a tool call completes. It produces a `"tool_invocation"` record, replacing `model_id`/`model_version` with `tool_name`/`tool_version` and hashing the tool's input string and output value. The symmetry is deliberate and mirrors the structural symmetry of the two record types described in §3.4.1.
+`emit_tool_invocation` (`src/agent_prov/tool_emitter.py`) is structurally identical, called when a tool call completes. It produces a `"tool_invocation"` record, replacing `model_id`/`model_version` with `tool_name`/`tool_version` and hashing the tool's input string and output value. The same `status`/`output_hash`/`error` split applies. The symmetry is deliberate and mirrors the structural symmetry of the two record types described in §3.4.1.
 
 ### 4.5.3 Field extraction and its failure modes
 
@@ -142,6 +143,14 @@ Three fields are not simply copied; they are *derived*, and each derivation has 
 **`tool_version`.** The tool version is read from an explicit `version` kwarg in the tool's serialised description, then from a caller-supplied `tool_version` metadata key, and finally defaults to the literal `"unversioned"`. The default satisfies the schema's `minLength: 1` constraint but carries no drift-detection signal, so rather than apply it silently the emitter logs a `WARNING` naming the tool and the degraded obligation. This keeps an uninstrumented tool from crashing the pipeline while making the unmet versioning obligation observable to operators and auditors, who can then supply an explicit version string. The chosen value is recorded in the record itself, so the gap is also evident on later inspection.
 
 These fallbacks share a design stance: a provenance layer must never crash the pipeline it observes, and must never emit a record that fails schema validation. Where a field's ideal source is unavailable, the emitter degrades to a well-formed but less informative value and the degradation is visible in the record itself.
+
+### 4.5.4 Recording failures
+
+A step or tool call that raises is itself an auditable event (§3.3.2, Article 12(2)(a)), so the middleware subscribes to the LangChain error callbacks alongside the success ones. `on_llm_error` and `on_tool_error` pop the still-open frame — the same frame the success callback would have consumed — and route it to `emit_agent_step_error` / `emit_tool_invocation_error`. These build the record from the shared `_base_record` helper, then set `status: "error"`, omit `output_hash` (a failed call produced none), and attach a structured `error` object: `type` (the exception class name), `message_hash` (the canonical hash of `str(error)`), and `source` (`"provider"` for a model call, `"tool"` for a tool call). The record carries the same identity, timing, and input hash as a successful one, so a failure is fully attributable.
+
+Two further points. First, popping the frame in the error callback is also what prevents a leak: without it, a frame opened on `*_start` whose run ends in error would never be removed from the in-flight dictionaries. Second, `on_chain_error` releases the node frame but emits no record — nodes are context for `agent_id` resolution, not events in their own right, so a failed node surfaces through the failed step or tool it contained, not as a record of its own.
+
+The bundle reflects failures at the run level too: the Pipeline Bundle's `outcome` field (§4.8) is derived from the records, reporting `error` when any record carries `status: "error"`.
 
 ---
 
@@ -163,7 +172,7 @@ The canonical form conforms to RFC 8785: canonicalisation is delegated to the `r
 
 - `pipeline_id` — supplied by the caller when one logical pipeline definition spans multiple runs (retries, scheduled executions), or a fresh UUID otherwise.
 - `session_id` — always a fresh UUID, identifying this single run.
-- `protocol_version` — the semver string stamped on every record, defaulting to `"0.1.0"`.
+- `protocol_version` — the semver string stamped on every record, defaulting to `"0.2.0"`.
 - `records` — the ordered list of emitted record dictionaries.
 - `last_record_id` — the `record_id` of the most recently appended record.
 
@@ -175,9 +184,13 @@ The canonical form conforms to RFC 8785: canonicalisation is delegated to the `r
 
 ## 4.8 The `BundleGenerator` and the integrity seal
 
-`BundleGenerator` (`src/agent_prov/bundle_generator.py`) runs once, after the pipeline finishes, and turns a session into a sealed Pipeline Bundle. It is constructed with the session and a `disclosure_presented` boolean — the Article 50(1) flag, which the application supplies because only the application knows whether an AI-interaction disclosure was shown to the user.
+`BundleGenerator` (`src/agent_prov/bundle_generator.py`) runs once, after the pipeline finishes, and turns a session into a sealed Pipeline Bundle. It is constructed with the session, a `disclosure_presented` boolean — the Article 50(1) flag, which the application supplies because only the application knows whether an AI-interaction disclosure was shown to the user — and an optional `outcome`.
 
-`generate()` assembles the bundle dictionary: a fresh `bundle_id`, the `"pipeline_bundle"` discriminator, the protocol version and identifiers copied from the session, a `created_at` timestamp, the `disclosure_presented` flag, the ordered `records` list, and a `bundle_hash` field initialised to the empty string. An empty session is rejected with a `ValueError` — the Pipeline Bundle schema requires at least one record, and a run that emitted nothing is an error to surface, not an empty document to seal.
+`generate()` assembles the bundle dictionary: a fresh `bundle_id`, the `"pipeline_bundle"` discriminator, the protocol version and identifiers copied from the session, a `created_at` timestamp, the `disclosure_presented` flag, the run `outcome`, the ordered `records` list, and a `bundle_hash` field initialised to the empty string. An empty session is rejected with a `ValueError` — the Pipeline Bundle schema requires at least one record, and a run that emitted nothing is an error to surface, not an empty document to seal.
+
+The `outcome` (§3.6.2) is derived when not supplied explicitly: `error` if any record carries `status: "error"`, otherwise `completed`. The application can override it — most usefully to `aborted`, which the generator cannot infer because a run stopped before its end looks, from the records alone, like one that simply finished. This is the one piece of run-level state the bundle adds on top of the per-record evidence.
+
+Once assembled, the bundle is validated through the single validation surface (§3.7.5) before it is returned — structure plus the conditional rules, for the bundle and every record — so a malformed bundle is caught at seal time rather than reaching an auditor. This runs only after the observed pipeline has finished, preserving the rule that the provenance layer never crashes the pipeline mid-run.
 
 The seal is then computed. `compute_bundle_hash` builds a copy of the bundle with the `bundle_hash` key removed and runs it through `canonical_json_sha256`; the resulting digest is written back into `bundle_hash`. Excluding the field from its own input breaks the obvious circularity of a hash that would otherwise have to contain itself. Verification is the same procedure in reverse, and the test suite performs it: strip `bundle_hash`, recompute, compare.
 
