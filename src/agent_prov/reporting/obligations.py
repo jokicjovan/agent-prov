@@ -18,6 +18,7 @@ OBLIGATION_MAP: dict[str, dict[str, list[str]]] = {
         "model_version": ["Art. 12(2)(b)", "Art. 14(4)(a)"],
         "input_hash": ["Art. 12(3)(c)"],
         "output_hash": ["Art. 12(2)(c)"],
+        "status": ["Art. 12(2)(a)"],
         "reference_data_id": ["Art. 12(3)(b)"],
         "pipeline_id": ["Art. 12(2)(c)"],
         "session_id": ["Art. 12(2)(c)"],
@@ -27,6 +28,7 @@ OBLIGATION_MAP: dict[str, dict[str, list[str]]] = {
         "timestamp_end": ["Art. 12(3)(a)"],
         "input_hash": ["Art. 12(3)(c)"],
         "output_hash": ["Art. 12(2)(c)"],
+        "status": ["Art. 12(2)(a)"],
         "reference_data_id": ["Art. 12(3)(b)"],
         "pipeline_id": ["Art. 12(2)(c)"],
         "session_id": ["Art. 12(2)(c)"],
@@ -43,6 +45,7 @@ OBLIGATION_MAP: dict[str, dict[str, list[str]]] = {
     },
     "pipeline_bundle": {
         "disclosure_presented": ["Art. 50(1)"],
+        "outcome": ["Art. 12(2)(a)"],
         "bundle_hash": ["Art. 12(1)"],
         "pipeline_id": ["Art. 12(2)(c)"],
         "session_id": ["Art. 12(2)(c)"],
@@ -52,6 +55,7 @@ OBLIGATION_MAP: dict[str, dict[str, list[str]]] = {
 
 CLAUSE_DESCRIPTION: dict[str, str] = {
     "Art. 12(1)": "Logs are technically enabled with evidentiary integrity",
+    "Art. 12(2)(a)": "Recording of events relevant to risk situations and malfunctions",
     "Art. 12(2)(b)": "Post-market monitoring - model identity and version",
     "Art. 12(2)(c)": "Operational monitoring - pipeline linkage and output integrity",
     "Art. 12(3)(a)": "Start and end time of each use",

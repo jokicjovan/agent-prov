@@ -23,7 +23,9 @@ from agent_prov.tool_emitter import (
     _extract_tool_name,
     _extract_tool_version,
     emit_tool_invocation,
+    emit_tool_invocation_error,
 )
+from agent_prov.validation import validate_record
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
@@ -89,6 +91,26 @@ def test_emit_produces_all_required_fields():
     assert r["timestamp_end"] > r["timestamp_start"]
     assert r["reference_data_id"] is None
     assert r["parent_record_id"] is None
+    assert r["status"] == "success"
+    assert "error" not in r
+
+
+def test_emit_error_produces_valid_failure_record():
+    session = StubSession()
+    frame = _make_tool_frame()
+    emit_tool_invocation_error(frame, ConnectionError("refused"), session, {})
+
+    assert len(session.records) == 1
+    r = session.records[0]
+
+    assert r["status"] == "error"
+    assert "output_hash" not in r
+    assert r["error"]["type"] == "ConnectionError"
+    assert r["error"]["source"] == "tool"
+    assert SHA256_RE.match(r["error"]["message_hash"])
+    assert SHA256_RE.match(r["input_hash"])
+    assert isinstance(r["tool_name"], str) and len(r["tool_name"]) > 0
+    validate_record(r)
 
 
 def test_emit_wires_parent_record_id_from_session():

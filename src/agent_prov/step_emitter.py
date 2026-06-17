@@ -20,8 +20,43 @@ def emit_agent_step(
     session: SessionProtocol,
     nodes: dict[UUID, _NodeFrame],
 ) -> None:
-    """Build an Agent Step Record from a matched LLM call pair and add it to the session."""
-    record = {
+    """Build a successful Agent Step Record from a matched LLM call pair."""
+    record = _base_record(frame, session, nodes)
+    record["status"] = "success"
+    record["output_hash"] = hash_content(_semantic_output(response))
+    session.add_record(record)
+
+
+def emit_agent_step_error(
+    frame: _StepFrame,
+    error: BaseException,
+    session: SessionProtocol,
+    nodes: dict[UUID, _NodeFrame],
+) -> None:
+    """Build an Agent Step Record for an LLM call that failed before completing.
+
+    A failed step is itself an auditable event (EU AI Act Art. 12(2)(a)): the
+    record carries the same identity, model, input, and timing as a successful
+    step, but ``output_hash`` is null and the failure is described by
+    ``error_type`` / ``error_hash``.
+    """
+    record = _base_record(frame, session, nodes)
+    record["status"] = "error"
+    record["error"] = {
+        "type": type(error).__name__,
+        "message_hash": hash_content(str(error)),
+        "source": "provider",
+    }
+    session.add_record(record)
+
+
+def _base_record(
+    frame: _StepFrame,
+    session: SessionProtocol,
+    nodes: dict[UUID, _NodeFrame],
+) -> dict[str, Any]:
+    """Fields shared by the success and error Agent Step Records."""
+    return {
         "record_id": str(uuid4()),
         "record_type": "agent_step",
         "protocol_version": session.protocol_version,
@@ -33,11 +68,9 @@ def emit_agent_step(
         "timestamp_start": frame.timestamp_start,
         "timestamp_end": _now_iso8601(),
         "input_hash": hash_content(_semantic_input(frame.messages)),
-        "output_hash": hash_content(_semantic_output(response)),
         "reference_data_id": None,
         "parent_record_id": getattr(session, "last_record_id", None),
     }
-    session.add_record(record)
 
 
 # ---------------------------------------------------------- semantic projection

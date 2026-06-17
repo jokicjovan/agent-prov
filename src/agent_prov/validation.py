@@ -117,6 +117,7 @@ def _check_conditionals(record: dict[str, Any]) -> None:
     rtype = record.get("record_type")
     if rtype in ("agent_step", "tool_invocation"):
         _check_timestamps_ordered(record)
+        _check_status_consistent(record)
     elif rtype == "human_intervention":
         _check_hitl_consistent(record)
 
@@ -128,6 +129,33 @@ def _check_timestamps_ordered(record: dict[str, Any]) -> None:
         raise ProtocolValidationError(
             f"timestamp_end ({end!r}) must be >= timestamp_start ({start!r})"
         )
+
+
+def _check_status_consistent(record: dict[str, Any]) -> None:
+    """Bind status to the presence of output_hash / error on Agent Step / Tool Invocation.
+
+    The schema requires status and validates the shape of output_hash and the
+    error object; this rule enforces which of the two is present for each status
+    (a value-to-presence comparison JSON Schema cannot express):
+
+    * status 'success' -> output_hash present, error absent.
+    * status 'error'   -> output_hash absent, error present.
+    """
+    status = record.get("status")
+    has_output = record.get("output_hash") is not None
+    has_error = record.get("error") is not None
+    if status == "success":
+        if not has_output:
+            raise ProtocolValidationError("status 'success': output_hash must be present")
+        if has_error:
+            raise ProtocolValidationError("status 'success': error must be absent")
+    elif status == "error":
+        if has_output:
+            raise ProtocolValidationError(
+                "status 'error': output_hash must be absent (a failed step has no output)"
+            )
+        if not has_error:
+            raise ProtocolValidationError("status 'error': error detail must be present")
 
 
 def _check_hitl_consistent(record: dict[str, Any]) -> None:

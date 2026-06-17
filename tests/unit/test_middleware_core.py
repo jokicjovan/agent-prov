@@ -33,12 +33,20 @@ class RecordingMiddleware(ProvenanceMiddleware):
         super().__init__(session)
         self.completed_steps: list[tuple[_StepFrame, Any]] = []
         self.completed_tools: list[tuple[_ToolFrame, Any]] = []
+        self.errored_steps: list[tuple[_StepFrame, BaseException]] = []
+        self.errored_tools: list[tuple[_ToolFrame, BaseException]] = []
 
     def _on_step_complete(self, frame: _StepFrame, response: Any) -> None:
         self.completed_steps.append((frame, response))
 
     def _on_tool_complete(self, frame: _ToolFrame, output: Any) -> None:
         self.completed_tools.append((frame, output))
+
+    def _on_step_error(self, frame: _StepFrame, error: BaseException) -> None:
+        self.errored_steps.append((frame, error))
+
+    def _on_tool_error(self, frame: _ToolFrame, error: BaseException) -> None:
+        self.errored_tools.append((frame, error))
 
 
 def _uuid() -> UUID:
@@ -119,6 +127,62 @@ def test_chain_start_end_open_and_close_a_node_frame():
 
     mw.on_chain_end(outputs={"draft": "..."}, run_id=run_id)
     assert mw.in_flight == {"nodes": 0, "steps": 0, "tools": 0}
+
+
+def test_llm_error_completes_step_as_failure_and_clears_state():
+    mw = RecordingMiddleware(FakeSession())
+    run_id = _uuid()
+    err = TimeoutError("provider timed out")
+
+    mw.on_chat_model_start(serialized={"name": "ChatOpenAI"}, messages=[], run_id=run_id)
+    assert mw.in_flight["steps"] == 1
+
+    mw.on_llm_error(error=err, run_id=run_id)
+
+    assert mw.in_flight == {"nodes": 0, "steps": 0, "tools": 0}
+    assert mw.completed_steps == []
+    assert len(mw.errored_steps) == 1
+    frame, error = mw.errored_steps[0]
+    assert frame.run_id == run_id
+    assert error is err
+
+
+def test_tool_error_completes_tool_as_failure_and_clears_state():
+    mw = RecordingMiddleware(FakeSession())
+    run_id = _uuid()
+    err = ConnectionError("refused")
+
+    mw.on_tool_start(serialized={"name": "web_search"}, input_str="{}", run_id=run_id)
+    assert mw.in_flight["tools"] == 1
+
+    mw.on_tool_error(error=err, run_id=run_id)
+
+    assert mw.in_flight == {"nodes": 0, "steps": 0, "tools": 0}
+    assert mw.completed_tools == []
+    assert len(mw.errored_tools) == 1
+    frame, error = mw.errored_tools[0]
+    assert frame.run_id == run_id
+    assert error is err
+
+
+def test_chain_error_releases_node_frame_without_leaking():
+    mw = RecordingMiddleware(FakeSession())
+    run_id = _uuid()
+
+    mw.on_chain_start(serialized={"name": "researcher"}, inputs={}, run_id=run_id)
+    assert mw.in_flight["nodes"] == 1
+
+    mw.on_chain_error(error=RuntimeError("node blew up"), run_id=run_id)
+    assert mw.in_flight == {"nodes": 0, "steps": 0, "tools": 0}
+
+
+def test_unmatched_error_event_is_ignored_without_error():
+    mw = RecordingMiddleware(FakeSession())
+    mw.on_llm_error(error=ValueError("x"), run_id=_uuid())
+    mw.on_tool_error(error=ValueError("y"), run_id=_uuid())
+    assert mw.in_flight == {"nodes": 0, "steps": 0, "tools": 0}
+    assert mw.errored_steps == []
+    assert mw.errored_tools == []
 
 
 def test_concurrent_runs_are_tracked_independently_by_run_id():

@@ -13,6 +13,7 @@
     "session_id",
     "created_at",
     "disclosure_presented",
+    "outcome",
     "records",
     "bundle_hash"
   ],
@@ -44,6 +45,11 @@
     "disclosure_presented": {
       "type": "boolean",
       "description": "Whether an AI-interaction disclosure was presented to the user during this pipeline run. EU AI Act Art. 50(1) — users must be informed they are interacting with an AI system."
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["completed", "aborted", "error"],
+      "description": "Terminal outcome of the pipeline run as a whole. 'completed' = the run finished normally; 'error' = the run finished but at least one step failed; 'aborted' = the run was stopped before reaching its end. EU AI Act Art. 12(2)(a) — records at the run level whether the system malfunctioned or was halted, complementing per-step status."
     },
     "records": {
       "type": "array",

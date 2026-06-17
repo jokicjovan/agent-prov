@@ -26,8 +26,8 @@ from langchain_core.callbacks import BaseCallbackHandler
 
 from agent_prov._frames import SessionProtocol, _NodeFrame, _StepFrame, _ToolFrame
 from agent_prov._hashing import _now_iso8601
-from agent_prov.step_emitter import emit_agent_step
-from agent_prov.tool_emitter import emit_tool_invocation
+from agent_prov.step_emitter import emit_agent_step, emit_agent_step_error
+from agent_prov.tool_emitter import emit_tool_invocation, emit_tool_invocation_error
 
 
 class ProvenanceMiddleware(BaseCallbackHandler):
@@ -79,6 +79,18 @@ class ProvenanceMiddleware(BaseCallbackHandler):
     ) -> None:
         self._nodes.pop(run_id, None)
 
+    def on_chain_error(
+        self,
+        error: BaseException,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        # Nodes do not emit records (they only supply agent_id context); just
+        # release the frame so a failed chain does not leak its bucket.
+        self._nodes.pop(run_id, None)
+
     # ------------------------------------------------------------ agent steps
 
     def on_chat_model_start(
@@ -115,9 +127,26 @@ class ProvenanceMiddleware(BaseCallbackHandler):
             return
         self._on_step_complete(frame, response)
 
+    def on_llm_error(
+        self,
+        error: BaseException,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        frame = self._steps.pop(run_id, None)
+        if frame is None:
+            return
+        self._on_step_error(frame, error)
+
     def _on_step_complete(self, frame: _StepFrame, response: Any) -> None:
         """Hand the matched start/end pair to the Agent Step emitter."""
         emit_agent_step(frame, response, self.session, self._nodes)
+
+    def _on_step_error(self, frame: _StepFrame, error: BaseException) -> None:
+        """Hand a failed LLM call to the Agent Step error emitter."""
+        emit_agent_step_error(frame, error, self.session, self._nodes)
 
     # ------------------------------------------------------------------ tools
 
@@ -155,9 +184,26 @@ class ProvenanceMiddleware(BaseCallbackHandler):
             return
         self._on_tool_complete(frame, output)
 
+    def on_tool_error(
+        self,
+        error: BaseException,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        frame = self._tools.pop(run_id, None)
+        if frame is None:
+            return
+        self._on_tool_error(frame, error)
+
     def _on_tool_complete(self, frame: _ToolFrame, output: Any) -> None:
         """Hand the matched start/end pair to the Tool Invocation emitter."""
         emit_tool_invocation(frame, output, self.session, self._nodes)
+
+    def _on_tool_error(self, frame: _ToolFrame, error: BaseException) -> None:
+        """Hand a failed tool call to the Tool Invocation error emitter."""
+        emit_tool_invocation_error(frame, error, self.session, self._nodes)
 
     # --------------------------------------------------------------- helpers
 

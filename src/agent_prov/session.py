@@ -12,7 +12,7 @@ from typing import Any
 from uuid import uuid4
 
 
-_DEFAULT_PROTOCOL_VERSION = "0.1.0"
+_DEFAULT_PROTOCOL_VERSION = "0.2.0"
 
 # Mirrored from the JSON Schema `$defs/uuid` and `$defs/semver` patterns. Validating
 # user-supplied identifiers at construction time fails loudly here, rather than

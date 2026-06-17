@@ -65,6 +65,7 @@ def _agent_step(record_id: str, agent_id: str, **overrides: Any) -> dict[str, An
         "timestamp_end": "2026-05-19T15:20:31.166667Z",
         "input_hash": HASH_A,
         "output_hash": HASH_B,
+        "status": "success",
         "reference_data_id": None,
         "parent_record_id": None,
     }
@@ -86,6 +87,7 @@ def _tool_invocation(record_id: str, **overrides: Any) -> dict[str, Any]:
         "timestamp_end": "2026-05-19T15:20:31.166667Z",
         "input_hash": HASH_A,
         "output_hash": HASH_B,
+        "status": "success",
         "reference_data_id": None,
         "parent_record_id": None,
     }
@@ -124,6 +126,7 @@ def _bundle(records: list[dict[str, Any]], **overrides: Any) -> dict[str, Any]:
         "session_id": SESSION_ID,
         "created_at": "2026-05-19T15:20:31.168895Z",
         "disclosure_presented": True,
+        "outcome": "completed",
         "records": records,
         "bundle_hash": BUNDLE_HASH,
     }
@@ -215,6 +218,14 @@ def test_coverage_picks_up_hitl_clauses(doc_review_bundle: dict) -> None:
     coverage = ComplianceReport(doc_review_bundle).coverage()
     for clause in ("Art. 14(4)(c)", "Art. 14(4)(d)", "Art. 14(4)(e)"):
         assert coverage[clause], f"{clause} should be satisfied by HITL records"
+
+
+def test_coverage_picks_up_outcome_and_status_for_art_12_2_a(doc_review_bundle: dict) -> None:
+    coverage = ComplianceReport(doc_review_bundle).coverage()
+    satisfiers = coverage["Art. 12(2)(a)"]
+    assert doc_review_bundle["bundle_id"] in satisfiers, "bundle outcome should satisfy Art. 12(2)(a)"
+    step_ids = [r["record_id"] for r in doc_review_bundle["records"] if r["record_type"] == "agent_step"]
+    assert any(sid in satisfiers for sid in step_ids), "agent_step status should satisfy Art. 12(2)(a)"
 
 
 def test_disclosure_false_drops_art_50_1(doc_review_bundle: dict) -> None:

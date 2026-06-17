@@ -66,6 +66,7 @@ def make_agent_step(**overrides: Any) -> dict:
         "timestamp_end": TS_END,
         "input_hash": HASH_A,
         "output_hash": HASH_B,
+        "status": "success",
         "reference_data_id": None,
         "parent_record_id": None,
     }
@@ -87,6 +88,7 @@ def make_tool_invocation(**overrides: Any) -> dict:
         "timestamp_end": TS_END,
         "input_hash": HASH_A,
         "output_hash": HASH_B,
+        "status": "success",
         "reference_data_id": None,
         "parent_record_id": UUID_AGENT_STEP,
     }
@@ -130,6 +132,7 @@ def make_bundle(records: list[dict] | None = None, **overrides: Any) -> dict:
         "session_id": UUID_SESSION,
         "created_at": TS_END,
         "disclosure_presented": True,
+        "outcome": "completed",
         "records": records,
         "bundle_hash": HASH_C,
     }

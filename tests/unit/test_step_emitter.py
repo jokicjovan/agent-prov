@@ -17,7 +17,9 @@ from agent_prov.step_emitter import (
     _extract_model_id,
     _extract_model_version,
     emit_agent_step,
+    emit_agent_step_error,
 )
+from agent_prov.validation import validate_record
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
@@ -71,9 +73,40 @@ def test_emit_produces_all_required_fields():
     assert r["timestamp_end"] > r["timestamp_start"]
     assert r["reference_data_id"] is None
     assert r["parent_record_id"] is None
+    assert r["status"] == "success"
+    assert "error" not in r
     assert isinstance(r["agent_id"], str) and len(r["agent_id"]) > 0
     assert isinstance(r["model_id"], str) and len(r["model_id"]) > 0
     assert isinstance(r["model_version"], str) and len(r["model_version"]) > 0
+
+
+def test_emit_error_produces_valid_failure_record():
+    session = StubSession()
+    frame = _make_frame()
+    emit_agent_step_error(frame, TimeoutError("provider timed out"), session, {})
+
+    assert len(session.records) == 1
+    r = session.records[0]
+
+    assert r["status"] == "error"
+    assert "output_hash" not in r
+    assert r["error"]["type"] == "TimeoutError"
+    assert r["error"]["source"] == "provider"
+    assert SHA256_RE.match(r["error"]["message_hash"])
+    # input/identity/timing are still captured on a failed step
+    assert SHA256_RE.match(r["input_hash"])
+    assert r["timestamp_start"] == frame.timestamp_start
+    assert isinstance(r["model_id"], str) and len(r["model_id"]) > 0
+    # the failure record passes the full validation surface (schema + conditional)
+    validate_record(r)
+
+
+def test_emit_error_chains_parent_record_id_like_a_normal_step():
+    session = StubSession()
+    emit_agent_step(_make_frame(), FAKE_RESPONSE, session, {})
+    first_id = session.records[0]["record_id"]
+    emit_agent_step_error(_make_frame(), ValueError("boom"), session, {})
+    assert session.records[1]["parent_record_id"] == first_id
 
 
 def test_emit_wires_parent_record_id_from_session():

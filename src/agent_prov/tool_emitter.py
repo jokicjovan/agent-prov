@@ -30,8 +30,43 @@ def emit_tool_invocation(
     session: SessionProtocol,
     nodes: dict[UUID, _NodeFrame],
 ) -> None:
-    """Build a Tool Invocation Record from a matched tool call pair and add it to the session."""
-    record = {
+    """Build a successful Tool Invocation Record from a matched tool call pair."""
+    record = _base_record(frame, session, nodes)
+    record["status"] = "success"
+    record["output_hash"] = hash_content(output)
+    session.add_record(record)
+
+
+def emit_tool_invocation_error(
+    frame: _ToolFrame,
+    error: BaseException,
+    session: SessionProtocol,
+    nodes: dict[UUID, _NodeFrame],
+) -> None:
+    """Build a Tool Invocation Record for a tool call that raised before returning.
+
+    A failed tool call is an auditable event (EU AI Act Art. 12(2)(a)): the
+    record carries the same identity, tool, input, and timing as a successful
+    call, but ``output_hash`` is null and the failure is described by
+    ``error_type`` / ``error_hash``.
+    """
+    record = _base_record(frame, session, nodes)
+    record["status"] = "error"
+    record["error"] = {
+        "type": type(error).__name__,
+        "message_hash": hash_content(str(error)),
+        "source": "tool",
+    }
+    session.add_record(record)
+
+
+def _base_record(
+    frame: _ToolFrame,
+    session: SessionProtocol,
+    nodes: dict[UUID, _NodeFrame],
+) -> dict[str, Any]:
+    """Fields shared by the success and error Tool Invocation Records."""
+    return {
         "record_id": str(uuid4()),
         "record_type": "tool_invocation",
         "protocol_version": session.protocol_version,
@@ -43,11 +78,9 @@ def emit_tool_invocation(
         "timestamp_start": frame.timestamp_start,
         "timestamp_end": _now_iso8601(),
         "input_hash": hash_content(frame.input_str),
-        "output_hash": hash_content(output),
         "reference_data_id": None,
         "parent_record_id": getattr(session, "last_record_id", None),
     }
-    session.add_record(record)
 
 
 # ------------------------------------------------------------------ extraction

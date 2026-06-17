@@ -17,7 +17,7 @@
     "timestamp_start",
     "timestamp_end",
     "input_hash",
-    "output_hash",
+    "status",
     "reference_data_id",
     "parent_record_id"
   ],
@@ -69,9 +69,18 @@
       "$ref": "#/$defs/sha256_hex",
       "description": "SHA-256 hash of canonical input (prompt) given to the model. EU AI Act Art. 12(3)(c) — record input data that produced a result. Hashing rather than storing raw content satisfies GDPR data minimisation."
     },
+    "status": {
+      "type": "string",
+      "enum": ["success", "error"],
+      "description": "Outcome of the agent step. 'success' when the model returned a completion; 'error' when the call failed (timeout, provider error, exception). Required and explicit so a record is interpretable without knowing the protocol version. EU AI Act Art. 12(2)(a): recording events relevant to identifying situations in which the system may present a risk includes capturing malfunctions and failed steps, not only successful ones. On 'success' the output_hash field is present and the error field is absent; on 'error' output_hash is absent and error is present (value-comparison rule enforced at the validation layer, not in JSON Schema)."
+    },
     "output_hash": {
       "$ref": "#/$defs/sha256_hex",
-      "description": "SHA-256 hash of canonical model output. EU AI Act Art. 12(2)(c) — supports operational monitoring by enabling integrity verification of agent output."
+      "description": "SHA-256 hash of canonical model output. Present only when status is 'success' (a failed step has no output); absent otherwise. EU AI Act Art. 12(2)(c): supports operational monitoring by enabling integrity verification of agent output."
+    },
+    "error": {
+      "$ref": "#/$defs/error_detail",
+      "description": "Structured failure detail. Present only when status is 'error'. EU AI Act Art. 12(2)(a): describes the malfunction that occurred."
     },
     "reference_data_id": {
       "type": ["string", "null"],
@@ -96,6 +105,35 @@
       "type": "string",
       "pattern": "^[a-f0-9]{64}$",
       "description": "SHA-256 digest as 64 lowercase hex characters."
+    },
+    "error_detail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Class name of the error (e.g. 'TimeoutError', 'RateLimitError'). A low-PII identifier suitable for an audit trail."
+        },
+        "message_hash": {
+          "oneOf": [
+            { "$ref": "#/$defs/sha256_hex" },
+            { "type": "null" }
+          ],
+          "description": "SHA-256 hash of the canonical error message. Mirrors the input_hash/output_hash privacy stance (GDPR data minimisation); null when no message detail is available."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["provider", "tool", "network", "middleware", "unknown"],
+          "description": "Component whose invocation raised the error (the failure boundary, not a deep root-cause classification)."
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "Whether the failure is considered transient and safe to retry, when the deployment can determine this."
+        }
+      },
+      "description": "Structured failure detail attached to a record whose status is 'error'."
     },
     "iso8601_timestamp": {
       "type": "string",
