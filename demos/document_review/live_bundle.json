@@ -1,67 +1,70 @@
 {
-  "bundle_id": "a9dbcbe8-3a93-472a-b2a0-2f3e3453640f",
+  "bundle_id": "43645c0c-dc36-4f2c-835c-ad4387d82e07",
   "record_type": "pipeline_bundle",
-  "protocol_version": "0.1.0",
+  "protocol_version": "0.2.0",
   "pipeline_id": "8f5e449c-dd8f-4a2d-91c6-db484350d39a",
-  "session_id": "a9b3f429-9bdf-4310-94ac-f8118f531479",
-  "created_at": "2026-06-13T00:33:30.956101Z",
+  "session_id": "8602660a-e39f-4a2a-89fb-b4128e0ef23a",
+  "created_at": "2026-06-16T21:55:24.959226Z",
   "disclosure_presented": true,
+  "outcome": "completed",
   "records": [
     {
-      "record_id": "0e013b13-91d6-44c8-9ba4-9efcaa9f2a6f",
+      "record_id": "66fc4826-0faf-4872-b716-198a7543fef9",
       "record_type": "agent_step",
-      "protocol_version": "0.1.0",
+      "protocol_version": "0.2.0",
       "pipeline_id": "8f5e449c-dd8f-4a2d-91c6-db484350d39a",
-      "session_id": "a9b3f429-9bdf-4310-94ac-f8118f531479",
+      "session_id": "8602660a-e39f-4a2a-89fb-b4128e0ef23a",
       "agent_id": "summarizer",
       "model_id": "gpt-4o-mini",
       "model_version": "gpt-4o-mini",
-      "timestamp_start": "2026-06-13T00:33:24.047504Z",
-      "timestamp_end": "2026-06-13T00:33:27.487622Z",
+      "timestamp_start": "2026-06-16T21:55:19.523903Z",
+      "timestamp_end": "2026-06-16T21:55:22.418969Z",
       "input_hash": "57a9d50bf6ba51cb882456ee7660c9a60b53fefaa5862fe36b6ac98beb439ecf",
-      "output_hash": "08d5d5eebbf0f00a4be1968bba3243fd8ffe379b2890ac981f4920f4120f87d5",
       "reference_data_id": null,
-      "parent_record_id": null
+      "parent_record_id": null,
+      "status": "success",
+      "output_hash": "9781ab0458ec329ed48494bcca3cbe59bcfc50ce72c6702216d250ff497aab39"
     },
     {
-      "record_id": "62363f5b-7386-4743-af91-6ae1d572cccc",
+      "record_id": "ee75e9cb-42e2-4180-a991-ae774a6b5247",
       "record_type": "human_intervention",
-      "protocol_version": "0.1.0",
+      "protocol_version": "0.2.0",
       "pipeline_id": "8f5e449c-dd8f-4a2d-91c6-db484350d39a",
-      "session_id": "a9b3f429-9bdf-4310-94ac-f8118f531479",
+      "session_id": "8602660a-e39f-4a2a-89fb-b4128e0ef23a",
       "reviewer_id": [
         "reviewer:editor-01"
       ],
       "reviewer_role": "editor",
       "action_type": "edited",
-      "output_before_hash": "a0c7250110805adc9a74acf22968f23fbc9f172c245e82cc9914330c38719900",
+      "output_before_hash": "949554925af4f303a1c46286d16b378735287a0eb806979fc934d442f2558489",
       "output_after_hash": "40e15ba522fe7cf47e6856fac1f58c54243272aad3cf0a26d1452ad3c3a03a71",
-      "intervention_timestamp": "2026-06-13T00:33:27.490231Z",
-      "parent_record_id": "0e013b13-91d6-44c8-9ba4-9efcaa9f2a6f",
+      "intervention_timestamp": "2026-06-16T21:55:22.422192Z",
+      "parent_record_id": "66fc4826-0faf-4872-b716-198a7543fef9",
       "justification_hash": "8e8b08c1dbffc072c15bb4b4ce7b8c94e9c0959fc896ec34c213bcb7c4e7402d"
     },
     {
-      "record_id": "f7b26b61-6fdf-43a8-b7ba-59cc13d7a6aa",
+      "record_id": "c72ff3ed-33e3-4260-b4c4-75f41a133d84",
       "record_type": "agent_step",
-      "protocol_version": "0.1.0",
+      "protocol_version": "0.2.0",
       "pipeline_id": "8f5e449c-dd8f-4a2d-91c6-db484350d39a",
-      "session_id": "a9b3f429-9bdf-4310-94ac-f8118f531479",
+      "session_id": "8602660a-e39f-4a2a-89fb-b4128e0ef23a",
       "agent_id": "finalizer",
       "model_id": "gpt-4o-mini",
       "model_version": "gpt-4o-mini",
-      "timestamp_start": "2026-06-13T00:33:27.492140Z",
-      "timestamp_end": "2026-06-13T00:33:30.953487Z",
+      "timestamp_start": "2026-06-16T21:55:22.424920Z",
+      "timestamp_end": "2026-06-16T21:55:24.956264Z",
       "input_hash": "30062d8b768247514ac3cc9a59c7870c43db4ac2d9c6dd85123c91eee25c0e15",
-      "output_hash": "3dbed7dc39fab4d02578ab04e26a94fdee61c71b72d0ed0f77e6869c67495a92",
       "reference_data_id": null,
-      "parent_record_id": "62363f5b-7386-4743-af91-6ae1d572cccc"
+      "parent_record_id": "ee75e9cb-42e2-4180-a991-ae774a6b5247",
+      "status": "success",
+      "output_hash": "3dbed7dc39fab4d02578ab04e26a94fdee61c71b72d0ed0f77e6869c67495a92"
     },
     {
-      "record_id": "dc2fb780-d762-45e5-a5f2-86a9fde0ead6",
+      "record_id": "c9ccfb72-e0bf-447b-811a-db7bf0655c1f",
       "record_type": "human_intervention",
-      "protocol_version": "0.1.0",
+      "protocol_version": "0.2.0",
       "pipeline_id": "8f5e449c-dd8f-4a2d-91c6-db484350d39a",
-      "session_id": "a9b3f429-9bdf-4310-94ac-f8118f531479",
+      "session_id": "8602660a-e39f-4a2a-89fb-b4128e0ef23a",
       "reviewer_id": [
         "reviewer:compliance-07"
       ],
@@ -69,10 +72,10 @@
       "action_type": "approved",
       "output_before_hash": "6ede5a3865c498096f24866a8d3880bbfbd1ace71311c04626d60c35ed39b03a",
       "output_after_hash": "6ede5a3865c498096f24866a8d3880bbfbd1ace71311c04626d60c35ed39b03a",
-      "intervention_timestamp": "2026-06-13T00:33:30.955007Z",
-      "parent_record_id": "f7b26b61-6fdf-43a8-b7ba-59cc13d7a6aa",
+      "intervention_timestamp": "2026-06-16T21:55:24.957909Z",
+      "parent_record_id": "c72ff3ed-33e3-4260-b4c4-75f41a133d84",
       "justification_hash": "79995e711204126f365746e06200e997d394b8dd9ee9d8b79dbb74fd188a00f6"
     }
   ],
-  "bundle_hash": "767453c1c28eaeb140b220d67769e300b8ea28d975cf3c39b8dc9a94f48f3744"
+  "bundle_hash": "d4553ee82082ce8bafcfe081dd9935930e16bd352234c1226fbfc6655f0a4020"
 }
