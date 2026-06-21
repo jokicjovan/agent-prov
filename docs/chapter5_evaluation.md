@@ -144,10 +144,12 @@ can guarantee and what only a deployment can:
   recorded events constitute reportable risk under Article 79(1). The protocol
   surfaces the events; it does not tag them as risk.
 - **Art. 12(3)(b)** (reference database consulted) — `reference_data_id` exists on
-  both automated record types, but the schema cannot enforce that it is populated
-  when external data was in fact used, because whether a call consulted a corpus
-  is out-of-band knowledge. Coverage is structural; substantive coverage depends
-  on the deployer instrumenting the field.
+  both automated record types and the middleware populates it from run metadata
+  (the same path as `tool_version`), so a deployer can supply the consulted-corpus
+  identifier. What the schema cannot enforce is that it is *actually* populated
+  when external data was used, because whether a call consulted a corpus is
+  out-of-band knowledge. Coverage is structural; substantive coverage depends on
+  the deployer instrumenting the field.
 - **Art. 14(4)(a)** (understand capabilities/limitations) — `model_id` and
   `model_version` give the reviewer the identifiers needed to look up capability
   documentation, but the human-readable capability summary is an oversight-UI

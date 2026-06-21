@@ -129,6 +129,28 @@ def test_sequential_tool_calls_chain_parent_record_ids():
 
 
 # ---------------------------------------------------------------------------
+# Unit tests — reference_data_id pass-through
+# ---------------------------------------------------------------------------
+
+
+def test_reference_data_id_passed_through_from_metadata():
+    """A reference dataset id supplied via metadata lands on the record (Art. 12(3)(b))."""
+    session = StubSession()
+    frame = _make_tool_frame(metadata={"reference_data_id": "kb-2026-06"})
+    emit_tool_invocation(frame, FAKE_OUTPUT, session, {})
+    r = session.records[0]
+    assert r["reference_data_id"] == "kb-2026-06"
+    validate_record(r)
+
+
+def test_reference_data_id_defaults_to_none_without_metadata():
+    """No reference data consulted -> null, the schema's documented default."""
+    session = StubSession()
+    emit_tool_invocation(_make_tool_frame(metadata={}), FAKE_OUTPUT, session, {})
+    assert session.records[0]["reference_data_id"] is None
+
+
+# ---------------------------------------------------------------------------
 # Unit tests — tool name extraction
 # ---------------------------------------------------------------------------
 

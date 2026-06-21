@@ -124,6 +124,23 @@ def test_sequential_steps_chain_parent_record_ids():
     assert session.records[1]["parent_record_id"] == first_id
 
 
+def test_reference_data_id_passed_through_from_metadata():
+    """A RAG corpus id supplied via metadata lands on the record (Art. 12(3)(b))."""
+    session = StubSession()
+    frame = _make_frame(metadata={"ls_model_name": "gpt-4o", "reference_data_id": "corpus-v3"})
+    emit_agent_step(frame, FAKE_RESPONSE, session, {})
+    r = session.records[0]
+    assert r["reference_data_id"] == "corpus-v3"
+    validate_record(r)
+
+
+def test_reference_data_id_defaults_to_none_without_metadata():
+    """No reference data consulted -> null, the schema's documented default."""
+    session = StubSession()
+    emit_agent_step(_make_frame(metadata={}), FAKE_RESPONSE, session, {})
+    assert session.records[0]["reference_data_id"] is None
+
+
 def test_model_id_from_ls_model_name_metadata():
     frame = _make_frame(
         metadata={"ls_model_name": "claude-opus-4-7"},

@@ -68,7 +68,7 @@ def _base_record(
         "timestamp_start": frame.timestamp_start,
         "timestamp_end": _now_iso8601(),
         "input_hash": hash_content(_semantic_input(frame.messages)),
-        "reference_data_id": None,
+        "reference_data_id": frame.metadata.get("reference_data_id"),
         "parent_record_id": getattr(session, "last_record_id", None),
     }
 
