@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID, uuid4
 
-from agent_prov._frames import _StepFrame, _ToolFrame
-from agent_prov.core import ProvenanceMiddleware
+from agent_prov.adapters.langchain._frames import _StepFrame, _ToolFrame
+from agent_prov.adapters.langchain import ProvenanceMiddleware
 
 
 @dataclass

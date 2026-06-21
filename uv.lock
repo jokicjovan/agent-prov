@@ -8,13 +8,15 @@ version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "jsonschema" },
-    { name = "langchain-core" },
-    { name = "langgraph" },
-    { name = "python-dotenv" },
     { name = "rfc8785" },
 ]
 
 [package.optional-dependencies]
+langchain = [
+    { name = "langchain-core" },
+    { name = "langgraph" },
+    { name = "python-dotenv" },
+]
 reporting = [
     { name = "fpdf2" },
 ]
@@ -22,26 +24,32 @@ reporting = [
 [package.dev-dependencies]
 dev = [
     { name = "fpdf2" },
+    { name = "langchain-core" },
     { name = "langchain-openai" },
+    { name = "langgraph" },
     { name = "pytest" },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "fpdf2", marker = "extra == 'reporting'", specifier = ">=2.8" },
     { name = "jsonschema", specifier = ">=4.18" },
-    { name = "langchain-core", specifier = ">=1.3.3" },
-    { name = "langgraph", specifier = ">=1.1.10" },
-    { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "langchain-core", marker = "extra == 'langchain'", specifier = ">=1.3.3" },
+    { name = "langgraph", marker = "extra == 'langchain'", specifier = ">=1.1.10" },
+    { name = "python-dotenv", marker = "extra == 'langchain'", specifier = ">=1.2.2" },
     { name = "rfc8785", specifier = ">=0.1.4" },
 ]
-provides-extras = ["reporting"]
+provides-extras = ["reporting", "langchain"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "fpdf2", specifier = ">=2.8" },
+    { name = "langchain-core", specifier = ">=1.3.3" },
     { name = "langchain-openai", specifier = ">=1.2.1" },
+    { name = "langgraph", specifier = ">=1.1.10" },
     { name = "pytest", specifier = ">=7.0" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
 ]
 
 [[package]]

@@ -94,12 +94,14 @@ installs by default.)
 
 ### Instrumenting your own pipeline
 
-The middleware is passive — it attaches through LangChain's standard `callbacks`
-mechanism and never appears inside your graph:
+The LangChain adapter ships under the `langchain` extra (`pip install
+agent-prov[langchain]`; already provided by `uv sync`). The middleware is
+passive — it attaches through LangChain's standard `callbacks` mechanism and
+never appears inside your graph:
 
 ```python
 from agent_prov.session import PipelineSession
-from agent_prov.core import ProvenanceMiddleware
+from agent_prov.adapters.langchain import ProvenanceMiddleware
 from agent_prov.bundle_generator import BundleGenerator
 
 session = PipelineSession()

@@ -23,8 +23,8 @@ from __future__ import annotations
 from typing import Any
 from uuid import uuid4
 
-from agent_prov._frames import SessionProtocol
 from agent_prov._hashing import _now_iso8601, hash_content
+from agent_prov.session import SessionProtocol
 
 
 _ACTION_TYPES = frozenset({"approved", "rejected", "edited", "escalated"})

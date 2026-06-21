@@ -1,17 +1,20 @@
-"""Agent Step Record emitter.
+"""Agent Step Record emitter for the LangChain adapter.
 
-Extracts model identity, content hashes, and agent_id from a completed
-_StepFrame / LLM response pair, assembles an Agent Step Record, and
-hands it to the PipelineSession via session.add_record().
+Extracts model identity, the run-stable semantic projection of the input/output
+messages, and agent_id from a completed ``_StepFrame`` / LLM response pair, then
+hands those primitives to the session's record factory
+(``session.add_agent_step`` / ``add_agent_step_error``). Record assembly and
+hashing live in the session; this module owns only the LangChain-specific
+extraction and message projection.
 """
 
 from __future__ import annotations
 
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from agent_prov._frames import SessionProtocol, _NodeFrame, _StepFrame
-from agent_prov._hashing import _now_iso8601, hash_content
+from agent_prov.adapters.langchain._frames import _NodeFrame, _StepFrame
+from agent_prov.session import SessionProtocol
 
 
 def emit_agent_step(
@@ -21,10 +24,15 @@ def emit_agent_step(
     nodes: dict[UUID, _NodeFrame],
 ) -> None:
     """Build a successful Agent Step Record from a matched LLM call pair."""
-    record = _base_record(frame, session, nodes)
-    record["status"] = "success"
-    record["output_hash"] = hash_content(_semantic_output(response))
-    session.add_record(record)
+    session.add_agent_step(
+        agent_id=_derive_agent_id(frame, nodes),
+        model_id=_extract_model_id(frame),
+        model_version=_extract_model_version(frame),
+        timestamp_start=frame.timestamp_start,
+        input=_semantic_input(frame.messages),
+        output=_semantic_output(response),
+        reference_data_id=frame.metadata.get("reference_data_id"),
+    )
 
 
 def emit_agent_step_error(
@@ -37,40 +45,19 @@ def emit_agent_step_error(
 
     A failed step is itself an auditable event (EU AI Act Art. 12(2)(a)): the
     record carries the same identity, model, input, and timing as a successful
-    step, but ``output_hash`` is null and the failure is described by
-    ``error_type`` / ``error_hash``.
+    step, but ``output_hash`` is absent and the failure is described by a
+    structured ``error`` object sourced from the provider boundary.
     """
-    record = _base_record(frame, session, nodes)
-    record["status"] = "error"
-    record["error"] = {
-        "type": type(error).__name__,
-        "message_hash": hash_content(str(error)),
-        "source": "provider",
-    }
-    session.add_record(record)
-
-
-def _base_record(
-    frame: _StepFrame,
-    session: SessionProtocol,
-    nodes: dict[UUID, _NodeFrame],
-) -> dict[str, Any]:
-    """Fields shared by the success and error Agent Step Records."""
-    return {
-        "record_id": str(uuid4()),
-        "record_type": "agent_step",
-        "protocol_version": session.protocol_version,
-        "pipeline_id": session.pipeline_id,
-        "session_id": session.session_id,
-        "agent_id": _derive_agent_id(frame, nodes),
-        "model_id": _extract_model_id(frame),
-        "model_version": _extract_model_version(frame),
-        "timestamp_start": frame.timestamp_start,
-        "timestamp_end": _now_iso8601(),
-        "input_hash": hash_content(_semantic_input(frame.messages)),
-        "reference_data_id": frame.metadata.get("reference_data_id"),
-        "parent_record_id": getattr(session, "last_record_id", None),
-    }
+    session.add_agent_step_error(
+        agent_id=_derive_agent_id(frame, nodes),
+        model_id=_extract_model_id(frame),
+        model_version=_extract_model_version(frame),
+        timestamp_start=frame.timestamp_start,
+        input=_semantic_input(frame.messages),
+        error_type=type(error).__name__,
+        error_message=str(error),
+        source="provider",
+    )
 
 
 # ---------------------------------------------------------- semantic projection

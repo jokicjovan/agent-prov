@@ -30,7 +30,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 
 from agent_prov.bundle_generator import BundleGenerator
-from agent_prov.core import ProvenanceMiddleware
+from agent_prov.adapters.langchain import ProvenanceMiddleware
 from agent_prov.session import PipelineSession
 
 # Load OPENAI_API_KEY (and other secrets) from a `.env` file at the repo root

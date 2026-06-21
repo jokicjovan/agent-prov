@@ -41,7 +41,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.types import Command, interrupt
 
 from agent_prov.bundle_generator import BundleGenerator
-from agent_prov.core import ProvenanceMiddleware
+from agent_prov.adapters.langchain import ProvenanceMiddleware
 from agent_prov.hitl import HumanReview
 from agent_prov.session import PipelineSession
 

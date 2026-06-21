@@ -328,7 +328,7 @@ UUIDs are used for identifiers that must be unique across deployments without co
 
 ### 3.7.2 Hashing policy
 
-All content hashes are SHA-256 over the canonical JSON form (§3.2) of the hashed object. For LLM messages this means the message list is first normalised to its serialisable dictionary form (provider-specific `BaseMessage.dict()` / `model_dump()`), then canonically serialised, then hashed. For tool inputs and outputs the same normalisation applies. The reference implementation handles this in `middleware/step_emitter.py` and `middleware/tool_emitter.py`.
+All content hashes are SHA-256 over the canonical JSON form (§3.2) of the hashed object. For LLM messages this means the message list is first normalised to its serialisable dictionary form (provider-specific `BaseMessage.dict()` / `model_dump()`), then canonically serialised, then hashed. For tool inputs and outputs the same normalisation applies. In the reference implementation the LangChain-specific message projection lives in the adapter (`agent_prov/adapters/langchain/step_emitter.py` and `tool_emitter.py`) and the canonical hashing itself lives in the framework-neutral core (`agent_prov/_hashing.py`).
 
 A practical consequence: two semantically identical model calls that differ in non-content metadata (a different request ID, a different cache header) produce identical `input_hash` values, because non-content metadata is not in the canonical form. This is intentional. The hash answers the question "was this specific content processed", not "was this specific HTTP request made".
 

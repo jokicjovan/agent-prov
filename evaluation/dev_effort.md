@@ -45,9 +45,9 @@ advertises its own model name and the mock's name-hint line is then unnecessary.
 These lines appear once per pipeline run regardless of how many nodes it has.
 
 ```python
-from agent_prov.session import PipelineSession          # 1  import
-from agent_prov.core import ProvenanceMiddleware         # 2  import
-from agent_prov.bundle_generator import BundleGenerator  # 3  import
+from agent_prov.session import PipelineSession                  # 1  import
+from agent_prov.adapters.langchain import ProvenanceMiddleware  # 2  import
+from agent_prov.bundle_generator import BundleGenerator         # 3  import
 
 session = PipelineSession(pipeline_id=PIPELINE_ID)        # 4  capture
 middleware = ProvenanceMiddleware(session)                # 5  capture

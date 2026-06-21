@@ -11,20 +11,20 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
-from agent_prov._frames import _NodeFrame, _ToolFrame
+from agent_prov.adapters.langchain._frames import _NodeFrame, _ToolFrame
 from agent_prov._hashing import hash_content
-from agent_prov.core import ProvenanceMiddleware
-from agent_prov.tool_emitter import (
+from agent_prov.adapters.langchain import ProvenanceMiddleware
+from agent_prov.adapters.langchain.tool_emitter import (
     _derive_agent_id,
     _extract_tool_name,
     _extract_tool_version,
     emit_tool_invocation,
     emit_tool_invocation_error,
 )
+from agent_prov.session import PipelineSession
 from agent_prov.validation import validate_record
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
@@ -34,19 +34,6 @@ SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-@dataclass
-class StubSession:
-    pipeline_id: str = "00000000-0000-0000-0000-000000000001"
-    session_id: str = "00000000-0000-0000-0000-000000000002"
-    protocol_version: str = "0.1.0"
-    last_record_id: str | None = None
-    records: list[dict[str, Any]] = field(default_factory=list)
-
-    def add_record(self, record: dict[str, Any]) -> None:
-        self.records.append(record)
-        self.last_record_id = record["record_id"]
 
 
 def _make_tool_frame(**overrides: Any) -> _ToolFrame:
@@ -71,7 +58,7 @@ FAKE_OUTPUT = "Here are the top results for EU AI Act Article 12..."
 
 
 def test_emit_produces_all_required_fields():
-    session = StubSession()
+    session = PipelineSession()
     frame = _make_tool_frame()
     emit_tool_invocation(frame, FAKE_OUTPUT, session, {})
 
@@ -79,7 +66,7 @@ def test_emit_produces_all_required_fields():
     r = session.records[0]
 
     assert r["record_type"] == "tool_invocation"
-    assert r["protocol_version"] == "0.1.0"
+    assert r["protocol_version"] == session.protocol_version
     assert UUID_RE.match(r["record_id"])
     assert r["pipeline_id"] == session.pipeline_id
     assert r["session_id"] == session.session_id
@@ -96,7 +83,7 @@ def test_emit_produces_all_required_fields():
 
 
 def test_emit_error_produces_valid_failure_record():
-    session = StubSession()
+    session = PipelineSession()
     frame = _make_tool_frame()
     emit_tool_invocation_error(frame, ConnectionError("refused"), session, {})
 
@@ -114,13 +101,14 @@ def test_emit_error_produces_valid_failure_record():
 
 
 def test_emit_wires_parent_record_id_from_session():
-    session = StubSession(last_record_id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+    session = PipelineSession()
+    session.last_record_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     emit_tool_invocation(_make_tool_frame(), FAKE_OUTPUT, session, {})
     assert session.records[0]["parent_record_id"] == "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
 
 def test_sequential_tool_calls_chain_parent_record_ids():
-    session = StubSession()
+    session = PipelineSession()
     emit_tool_invocation(_make_tool_frame(), FAKE_OUTPUT, session, {})
     first_id = session.records[0]["record_id"]
 
@@ -135,7 +123,7 @@ def test_sequential_tool_calls_chain_parent_record_ids():
 
 def test_reference_data_id_passed_through_from_metadata():
     """A reference dataset id supplied via metadata lands on the record (Art. 12(3)(b))."""
-    session = StubSession()
+    session = PipelineSession()
     frame = _make_tool_frame(metadata={"reference_data_id": "kb-2026-06"})
     emit_tool_invocation(frame, FAKE_OUTPUT, session, {})
     r = session.records[0]
@@ -145,7 +133,7 @@ def test_reference_data_id_passed_through_from_metadata():
 
 def test_reference_data_id_defaults_to_none_without_metadata():
     """No reference data consulted -> null, the schema's documented default."""
-    session = StubSession()
+    session = PipelineSession()
     emit_tool_invocation(_make_tool_frame(metadata={}), FAKE_OUTPUT, session, {})
     assert session.records[0]["reference_data_id"] is None
 
@@ -256,11 +244,11 @@ def test_agent_id_is_unknown_when_no_parent():
 
 def test_input_hash_is_deterministic():
     frame = _make_tool_frame(input_str='{"query": "test"}')
-    session = StubSession()
+    session = PipelineSession()
     emit_tool_invocation(frame, FAKE_OUTPUT, session, {})
     h1 = session.records[0]["input_hash"]
 
-    session2 = StubSession()
+    session2 = PipelineSession()
     emit_tool_invocation(frame, FAKE_OUTPUT, session2, {})
     h2 = session2.records[0]["input_hash"]
 
@@ -280,7 +268,7 @@ def test_different_tool_inputs_produce_different_hashes():
 
 
 def test_middleware_tool_start_end_emits_record():
-    session = StubSession()
+    session = PipelineSession()
     mw = ProvenanceMiddleware(session)
 
     run_id = uuid4()
@@ -304,7 +292,7 @@ def test_middleware_tool_start_end_emits_record():
 
 
 def test_middleware_unmatched_tool_end_is_silently_ignored():
-    session = StubSession()
+    session = PipelineSession()
     mw = ProvenanceMiddleware(session)
     mw.on_tool_end(output="orphan", run_id=uuid4())
     assert len(session.records) == 0
@@ -312,7 +300,7 @@ def test_middleware_unmatched_tool_end_is_silently_ignored():
 
 def test_middleware_step_then_tool_chains_records():
     """Agent step followed by tool call: tool record's parent_record_id == step record_id."""
-    session = StubSession()
+    session = PipelineSession()
     mw = ProvenanceMiddleware(session)
 
     step_run_id = uuid4()

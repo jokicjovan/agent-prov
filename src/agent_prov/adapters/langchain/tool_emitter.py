@@ -1,18 +1,20 @@
-"""Tool Invocation Record emitter.
+"""Tool Invocation Record emitter for the LangChain adapter.
 
-Extracts tool identity, content hashes, and agent_id from a completed
-_ToolFrame / tool output pair, assembles a Tool Invocation Record, and
-hands it to the PipelineSession via session.add_record().
+Extracts tool identity and the input string from a completed ``_ToolFrame`` /
+tool output pair, then hands those primitives to the session's record factory
+(``session.add_tool_invocation`` / ``add_tool_invocation_error``). Record
+assembly and hashing live in the session; this module owns only the
+LangChain-specific extraction.
 """
 
 from __future__ import annotations
 
 import logging
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from agent_prov._frames import SessionProtocol, _NodeFrame, _ToolFrame
-from agent_prov._hashing import _now_iso8601, hash_content
+from agent_prov.adapters.langchain._frames import _NodeFrame, _ToolFrame
+from agent_prov.session import SessionProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +33,15 @@ def emit_tool_invocation(
     nodes: dict[UUID, _NodeFrame],
 ) -> None:
     """Build a successful Tool Invocation Record from a matched tool call pair."""
-    record = _base_record(frame, session, nodes)
-    record["status"] = "success"
-    record["output_hash"] = hash_content(output)
-    session.add_record(record)
+    session.add_tool_invocation(
+        agent_id=_derive_agent_id(frame, nodes),
+        tool_name=_extract_tool_name(frame),
+        tool_version=_extract_tool_version(frame),
+        timestamp_start=frame.timestamp_start,
+        input=frame.input_str,
+        output=output,
+        reference_data_id=frame.metadata.get("reference_data_id"),
+    )
 
 
 def emit_tool_invocation_error(
@@ -47,40 +54,19 @@ def emit_tool_invocation_error(
 
     A failed tool call is an auditable event (EU AI Act Art. 12(2)(a)): the
     record carries the same identity, tool, input, and timing as a successful
-    call, but ``output_hash`` is null and the failure is described by
-    ``error_type`` / ``error_hash``.
+    call, but ``output_hash`` is absent and the failure is described by a
+    structured ``error`` object sourced from the tool boundary.
     """
-    record = _base_record(frame, session, nodes)
-    record["status"] = "error"
-    record["error"] = {
-        "type": type(error).__name__,
-        "message_hash": hash_content(str(error)),
-        "source": "tool",
-    }
-    session.add_record(record)
-
-
-def _base_record(
-    frame: _ToolFrame,
-    session: SessionProtocol,
-    nodes: dict[UUID, _NodeFrame],
-) -> dict[str, Any]:
-    """Fields shared by the success and error Tool Invocation Records."""
-    return {
-        "record_id": str(uuid4()),
-        "record_type": "tool_invocation",
-        "protocol_version": session.protocol_version,
-        "pipeline_id": session.pipeline_id,
-        "session_id": session.session_id,
-        "agent_id": _derive_agent_id(frame, nodes),
-        "tool_name": _extract_tool_name(frame),
-        "tool_version": _extract_tool_version(frame),
-        "timestamp_start": frame.timestamp_start,
-        "timestamp_end": _now_iso8601(),
-        "input_hash": hash_content(frame.input_str),
-        "reference_data_id": frame.metadata.get("reference_data_id"),
-        "parent_record_id": getattr(session, "last_record_id", None),
-    }
+    session.add_tool_invocation_error(
+        agent_id=_derive_agent_id(frame, nodes),
+        tool_name=_extract_tool_name(frame),
+        tool_version=_extract_tool_version(frame),
+        timestamp_start=frame.timestamp_start,
+        input=frame.input_str,
+        error_type=type(error).__name__,
+        error_message=str(error),
+        source="tool",
+    )
 
 
 # ------------------------------------------------------------------ extraction

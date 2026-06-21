@@ -39,7 +39,7 @@ from langgraph.graph import END, StateGraph
 
 from _helpers import PIPELINE_BUNDLE_SCHEMA, validator
 from agent_prov.bundle_generator import BundleGenerator
-from agent_prov.core import ProvenanceMiddleware
+from agent_prov.adapters.langchain import ProvenanceMiddleware
 from agent_prov.hitl import HumanReview
 from agent_prov.validation import validate_record
 from agent_prov.session import PipelineSession

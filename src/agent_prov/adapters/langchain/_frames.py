@@ -1,33 +1,24 @@
-"""Lifecycle frame types and the session seam for the provenance middleware.
+"""Lifecycle frame types for the LangChain provenance middleware.
 
 A *frame* is a short-lived bucket that holds the payload of a callback
 ``*_start`` event until its matching ``*_end`` event arrives. The middleware
-(``core``) opens and closes frames; the emitters (``step_emitter``,
-``tool_emitter``) read them.
+(``middleware``) opens and closes frames; the emitters (``step_emitter``,
+``tool_emitter``) read them and project their LangChain-specific fields
+(``serialized`` / ``messages`` / ``input_str``) before handing primitives to the
+session's record factory.
 
-Keeping the frame dataclasses and the ``SessionProtocol`` seam in this leaf
-module — imported by both ``core`` and the emitters, importing nothing from
-``middleware`` itself — is what lets every module resolve its imports at load
-time. A shared definition in ``core`` would instead force ``core`` and the
-emitters into a circular import.
+Keeping the frame dataclasses in this leaf module — imported by both
+``middleware`` and the emitters, importing nothing from them in return — is what
+lets every module in the adapter resolve its imports at load time. A shared
+definition in ``middleware`` would instead force ``middleware`` and the emitters
+into a circular import.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
 from uuid import UUID
-
-
-@runtime_checkable
-class SessionProtocol(Protocol):
-    """Minimal interface the middleware needs from a `PipelineSession`."""
-
-    pipeline_id: str
-    session_id: str
-    protocol_version: str
-
-    def add_record(self, record: dict[str, Any]) -> None: ...
 
 
 @dataclass

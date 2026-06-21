@@ -3,39 +3,26 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, LLMResult
 
-from agent_prov._frames import _NodeFrame, _StepFrame
+from agent_prov.adapters.langchain._frames import _NodeFrame, _StepFrame
 from agent_prov._hashing import hash_content
-from agent_prov.step_emitter import (
+from agent_prov.adapters.langchain.step_emitter import (
     _derive_agent_id,
     _extract_model_id,
     _extract_model_version,
     emit_agent_step,
     emit_agent_step_error,
 )
+from agent_prov.session import PipelineSession
 from agent_prov.validation import validate_record
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
-
-
-@dataclass
-class StubSession:
-    pipeline_id: str = "00000000-0000-0000-0000-000000000001"
-    session_id: str = "00000000-0000-0000-0000-000000000002"
-    protocol_version: str = "0.1.0"
-    last_record_id: str | None = None
-    records: list[dict[str, Any]] = field(default_factory=list)
-
-    def add_record(self, record: dict[str, Any]) -> None:
-        self.records.append(record)
-        self.last_record_id = record["record_id"]
 
 
 def _make_frame(**overrides: Any) -> _StepFrame:
@@ -55,7 +42,7 @@ FAKE_RESPONSE = {"generations": [[{"text": "The EU AI Act is..."}]], "llm_output
 
 
 def test_emit_produces_all_required_fields():
-    session = StubSession()
+    session = PipelineSession()
     frame = _make_frame()
     emit_agent_step(frame, FAKE_RESPONSE, session, {})
 
@@ -63,7 +50,7 @@ def test_emit_produces_all_required_fields():
     r = session.records[0]
 
     assert r["record_type"] == "agent_step"
-    assert r["protocol_version"] == "0.1.0"
+    assert r["protocol_version"] == session.protocol_version
     assert UUID_RE.match(r["record_id"])
     assert r["pipeline_id"] == session.pipeline_id
     assert r["session_id"] == session.session_id
@@ -81,7 +68,7 @@ def test_emit_produces_all_required_fields():
 
 
 def test_emit_error_produces_valid_failure_record():
-    session = StubSession()
+    session = PipelineSession()
     frame = _make_frame()
     emit_agent_step_error(frame, TimeoutError("provider timed out"), session, {})
 
@@ -102,7 +89,7 @@ def test_emit_error_produces_valid_failure_record():
 
 
 def test_emit_error_chains_parent_record_id_like_a_normal_step():
-    session = StubSession()
+    session = PipelineSession()
     emit_agent_step(_make_frame(), FAKE_RESPONSE, session, {})
     first_id = session.records[0]["record_id"]
     emit_agent_step_error(_make_frame(), ValueError("boom"), session, {})
@@ -110,13 +97,14 @@ def test_emit_error_chains_parent_record_id_like_a_normal_step():
 
 
 def test_emit_wires_parent_record_id_from_session():
-    session = StubSession(last_record_id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+    session = PipelineSession()
+    session.last_record_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     emit_agent_step(_make_frame(), FAKE_RESPONSE, session, {})
     assert session.records[0]["parent_record_id"] == "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
 
 def test_sequential_steps_chain_parent_record_ids():
-    session = StubSession()
+    session = PipelineSession()
     emit_agent_step(_make_frame(), FAKE_RESPONSE, session, {})
     first_id = session.records[0]["record_id"]
 
@@ -126,7 +114,7 @@ def test_sequential_steps_chain_parent_record_ids():
 
 def test_reference_data_id_passed_through_from_metadata():
     """A RAG corpus id supplied via metadata lands on the record (Art. 12(3)(b))."""
-    session = StubSession()
+    session = PipelineSession()
     frame = _make_frame(metadata={"ls_model_name": "gpt-4o", "reference_data_id": "corpus-v3"})
     emit_agent_step(frame, FAKE_RESPONSE, session, {})
     r = session.records[0]
@@ -136,7 +124,7 @@ def test_reference_data_id_passed_through_from_metadata():
 
 def test_reference_data_id_defaults_to_none_without_metadata():
     """No reference data consulted -> null, the schema's documented default."""
-    session = StubSession()
+    session = PipelineSession()
     emit_agent_step(_make_frame(metadata={}), FAKE_RESPONSE, session, {})
     assert session.records[0]["reference_data_id"] is None
 
@@ -239,7 +227,7 @@ def _llm_result(content: str, *, message_id: str, tool_calls: Any = None) -> LLM
 
 def test_output_hash_is_stable_across_runtime_message_ids():
     """Same content, different LangChain-assigned message id -> same output_hash."""
-    session_a, session_b = StubSession(), StubSession()
+    session_a, session_b = PipelineSession(), PipelineSession()
     emit_agent_step(_make_frame(), _llm_result("identical answer", message_id="run--aaaaaaaa-0"), session_a, {})
     emit_agent_step(_make_frame(), _llm_result("identical answer", message_id="run--bbbbbbbb-0"), session_b, {})
     assert session_a.records[0]["output_hash"] == session_b.records[0]["output_hash"]
@@ -247,7 +235,7 @@ def test_output_hash_is_stable_across_runtime_message_ids():
 
 def test_output_hash_changes_with_content():
     """Different model output -> different output_hash."""
-    session = StubSession()
+    session = PipelineSession()
     emit_agent_step(_make_frame(), _llm_result("answer one", message_id="run--a-0"), session, {})
     emit_agent_step(_make_frame(), _llm_result("answer two", message_id="run--a-0"), session, {})
     assert session.records[0]["output_hash"] != session.records[1]["output_hash"]
@@ -257,7 +245,7 @@ def test_output_hash_reflects_tool_calls_when_content_is_empty():
     """A tool-calling step carries no content; its tool call must still be hashed."""
     call_x = [{"name": "web_search", "args": {"query": "x"}, "id": "call_1", "type": "tool_call"}]
     call_y = [{"name": "web_search", "args": {"query": "y"}, "id": "call_2", "type": "tool_call"}]
-    session = StubSession()
+    session = PipelineSession()
     emit_agent_step(_make_frame(), _llm_result("", message_id="run--a-0", tool_calls=call_x), session, {})
     emit_agent_step(_make_frame(), _llm_result("", message_id="run--a-0", tool_calls=call_y), session, {})
     assert session.records[0]["output_hash"] != session.records[1]["output_hash"]
@@ -267,7 +255,7 @@ def test_output_hash_ignores_runtime_tool_call_ids():
     """Tool-call ids are runtime-assigned; identical name/args -> same output_hash."""
     call_a = [{"name": "web_search", "args": {"query": "x"}, "id": "call_aaa", "type": "tool_call"}]
     call_b = [{"name": "web_search", "args": {"query": "x"}, "id": "call_bbb", "type": "tool_call"}]
-    session = StubSession()
+    session = PipelineSession()
     emit_agent_step(_make_frame(), _llm_result("", message_id="run--a-0", tool_calls=call_a), session, {})
     emit_agent_step(_make_frame(), _llm_result("", message_id="run--a-0", tool_calls=call_b), session, {})
     assert session.records[0]["output_hash"] == session.records[1]["output_hash"]
@@ -290,7 +278,7 @@ def test_input_hash_is_stable_across_runtime_ai_message_ids():
         HumanMessage(content="hello"),
         AIMessage(content="hi back", id="run--bbbbbbbb-0"),
     ]]
-    session_a, session_b = StubSession(), StubSession()
+    session_a, session_b = PipelineSession(), PipelineSession()
     emit_agent_step(_make_frame(messages=history_a), FAKE_RESPONSE, session_a, {})
     emit_agent_step(_make_frame(messages=history_b), FAKE_RESPONSE, session_b, {})
     assert session_a.records[0]["input_hash"] == session_b.records[0]["input_hash"]
@@ -310,7 +298,7 @@ def test_input_hash_is_stable_across_runtime_tool_call_ids():
         AIMessage(content="", id="run--b-0", tool_calls=call_b),
         ToolMessage(content="result", tool_call_id="call_bbb", name="web_search"),
     ]]
-    session_a, session_b = StubSession(), StubSession()
+    session_a, session_b = PipelineSession(), PipelineSession()
     emit_agent_step(_make_frame(messages=history_a), FAKE_RESPONSE, session_a, {})
     emit_agent_step(_make_frame(messages=history_b), FAKE_RESPONSE, session_b, {})
     assert session_a.records[0]["input_hash"] == session_b.records[0]["input_hash"]
@@ -318,7 +306,7 @@ def test_input_hash_is_stable_across_runtime_tool_call_ids():
 
 def test_input_hash_changes_when_content_changes():
     """Different message content -> different input_hash."""
-    session = StubSession()
+    session = PipelineSession()
     emit_agent_step(_make_frame(messages=[[HumanMessage(content="one")]]), FAKE_RESPONSE, session, {})
     emit_agent_step(_make_frame(messages=[[HumanMessage(content="two")]]), FAKE_RESPONSE, session, {})
     assert session.records[0]["input_hash"] != session.records[1]["input_hash"]
@@ -326,7 +314,7 @@ def test_input_hash_changes_when_content_changes():
 
 def test_input_hash_distinguishes_human_from_ai_message():
     """type is part of the projection: identical content on different roles must not collide."""
-    session = StubSession()
+    session = PipelineSession()
     emit_agent_step(_make_frame(messages=[[HumanMessage(content="same")]]), FAKE_RESPONSE, session, {})
     emit_agent_step(_make_frame(messages=[[AIMessage(content="same", id="run--a-0")]]), FAKE_RESPONSE, session, {})
     assert session.records[0]["input_hash"] != session.records[1]["input_hash"]

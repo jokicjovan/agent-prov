@@ -16,16 +16,23 @@ The implementation is the reference against which the protocol is defined: where
 
 **Python 3.12+, reference environment pinned to 3.14.** The package declares `requires-python = ">=3.12"`. The development and evaluation environment is pinned to CPython 3.14 through a `.python-version` file so that `uv sync` reproduces an identical interpreter across machines.
 
-**`uv` for environment and dependency management.** The project is a `uv` project: `pyproject.toml` declares dependencies, `uv.lock` is committed for reproducibility, and `uv sync` reconstructs the environment from the lockfile. The runtime dependency set is deliberately small — `jsonschema` for schema validation, `langchain-core` and `langgraph` for the host framework, `python-dotenv` for loading API credentials in the live demos.
+**`uv` for environment and dependency management.** The project is a `uv` project: `pyproject.toml` declares dependencies, `uv.lock` is committed for reproducibility, and `uv sync` reconstructs the environment from the lockfile. The core runtime dependency set is deliberately minimal — `jsonschema` for schema validation and `rfc8785` for canonical-JSON hashing. The host framework is *not* a core dependency: `langchain-core`, `langgraph`, and `python-dotenv` are pulled by the `langchain` optional extra (§4.2.1), so a deployment that uses only the schemas, validation, session, and bundle sealing installs neither.
 
-**`src/` layout, single package.** Source lives under `src/` as one installable package, `agent_prov`, declared to the Hatchling build backend. Its import name matches the distribution name (`agent-prov`), following the standard one-package-per-distribution convention. The package has two parts:
+**`src/` layout, single package.** Source lives under `src/` as one installable package, `agent_prov`, declared to the Hatchling build backend. Its import name matches the distribution name (`agent-prov`), following the standard one-package-per-distribution convention. The package separates framework-neutral protocol logic from framework- and output-specific code:
 
-- `agent_prov` (top level) — the protocol implementation: capture, emission, session, sealing, HITL.
-- `agent_prov.reporting` — the compliance report generator, a subpackage.
+- `agent_prov` (top level) — the framework-neutral protocol implementation: the four record schemas and their validation, the `PipelineSession` with its record factory, bundle sealing, canonical hashing, and the `HumanReview` context manager. None of this imports any agent framework.
+- `agent_prov.adapters.langchain` — the LangChain/LangGraph adapter: `ProvenanceMiddleware` and the two emitters that translate LangChain callback events into record-factory calls.
+- `agent_prov.reporting` — the compliance report generator.
 
-The separation is intentional. The core has a minimal dependency footprint and is what a host application installs to instrument a pipeline. `agent_prov.reporting` depends on `fpdf2` for PDF rendering, which an instrumented application does not need at runtime. It is therefore exposed as an *optional extra*: `pip install agent-prov[reporting]` (or the equivalent `uv` invocation) pulls `fpdf2`; a plain install does not. The extra is duplicated into the development dependency group so that `uv sync` provisions a complete environment for running the test suite without a separate step.
+### 4.2.1 Optional extras and the adapter boundary
 
-The `src/` layout with an editable install means `import agent_prov` and `import agent_prov.reporting` resolve identically from the test suite, the demos, and any host application, without `PYTHONPATH` manipulation.
+The two non-core parts are exposed as *optional extras* rather than hard dependencies, because neither is needed by every consumer of the protocol.
+
+`agent_prov.reporting` depends on `fpdf2` for PDF rendering, which an instrumented application does not need at runtime: `pip install agent-prov[reporting]` pulls `fpdf2`; a plain install does not.
+
+`agent_prov.adapters.langchain` depends on `langchain-core` and `langgraph`: `pip install agent-prov[langchain]` pulls them; a plain install does not. This boundary is what makes the "framework-neutral protocol, LangGraph as one adapter" claim concrete rather than aspirational. A deployment can install the bare `agent-prov` to validate bundles, recompute hashes, or build its own adapter for a different framework, without ever pulling LangChain; importing `agent_prov.adapters.langchain` without the extra raises a clean `ModuleNotFoundError`. Both extras are duplicated into the development dependency group so that `uv sync` provisions a complete environment for running the test suite without a separate step.
+
+The `src/` layout with an editable install means `import agent_prov`, `import agent_prov.adapters.langchain`, and `import agent_prov.reporting` resolve identically from the test suite, the demos, and any host application, without `PYTHONPATH` manipulation.
 
 ---
 
@@ -68,7 +75,7 @@ Three properties of this architecture are worth stating before the component-by-
 
 ### 4.4.1 Why a callback handler
 
-`ProvenanceMiddleware` (`src/agent_prov/core.py`) subclasses LangChain's `BaseCallbackHandler`. LangChain invokes a callback handler's methods at well-defined points in the execution of a graph: when a node (a *chain*, in LangChain's vocabulary) starts and ends, when a chat model call starts and ends, and when a tool call starts and ends. The middleware implements six of these methods:
+`ProvenanceMiddleware` (`src/agent_prov/adapters/langchain/middleware.py`) subclasses LangChain's `BaseCallbackHandler`. LangChain invokes a callback handler's methods at well-defined points in the execution of a graph: when a node (a *chain*, in LangChain's vocabulary) starts and ends, when a chat model call starts and ends, and when a tool call starts and ends. The middleware implements six of these methods:
 
 | Callback method | LangGraph/LangChain event | Middleware action |
 |-----------------|---------------------------|-------------------|
@@ -91,46 +98,46 @@ Every callback event carries a `run_id` — a UUID that LangChain assigns to the
 
 A `_start` callback constructs a frame — a small dataclass capturing the start timestamp and the raw event payload (the serialised model description, the input messages, the metadata block) — and stores it under the event's `run_id`. The matching `_end` callback pops the frame back out. Because pairing is by `run_id`, concurrent or nested events do not interfere: two model calls in flight at the same time occupy two distinct `_steps` entries.
 
-The three frame types — `_NodeFrame`, `_StepFrame`, `_ToolFrame` — are deliberately thin. They are lifecycle buckets, not records. They hold what the corresponding emitter needs and nothing else. The middleware module owns only this wiring: opening a bucket, closing it, and surfacing the matched pair. All field extraction — deriving `model_id`, computing hashes, resolving `agent_id` — lives in the emitter modules (§4.5), keeping `core.py` free of protocol-specific logic.
+The three frame types — `_NodeFrame`, `_StepFrame`, `_ToolFrame` — are deliberately thin. They are lifecycle buckets, not records. They hold what the corresponding emitter needs and nothing else. The middleware module owns only this wiring: opening a bucket, closing it, and surfacing the matched pair. All field extraction — deriving `model_id`, computing hashes, resolving `agent_id` — lives in the emitter modules (§4.5), keeping the middleware free of protocol-specific logic.
 
 A node frame outlives the model and tool frames nested inside it. When a model call completes, its `_StepFrame` is gone, but the enclosing node's `_NodeFrame` is still open in `_nodes`. This is what lets the Agent Step emitter resolve which node — which *agent* — issued the call: it looks up the model frame's `parent_run_id` in the still-open `_nodes` dictionary (§4.5.3). The middleware exposes an `in_flight` property reporting the count of unmatched `_start` events; it is used by the test suite to assert that a clean pipeline run leaves no frame open.
 
 ### 4.4.3 The `SessionProtocol` seam
 
-The middleware does not import `PipelineSession`. It depends instead on `SessionProtocol`, a structural `typing.Protocol` declaring the three attributes (`pipeline_id`, `session_id`, `protocol_version`) and the one method (`add_record`) it actually uses. Any object exposing that surface is an acceptable session.
+The adapter does not depend on the concrete `PipelineSession` class. It depends instead on `SessionProtocol`, a structural `typing.Protocol` that declares the attributes (`pipeline_id`, `session_id`, `protocol_version`, `last_record_id`) and the methods the adapter actually uses: `add_record` and the four record-factory methods (§4.5). Any object exposing that surface is an acceptable session. The protocol lives in `session.py` alongside `PipelineSession`, its canonical implementor — the natural home for the contract once the record factory is a session responsibility (§4.5).
 
-This is a small decision with two payoffs. It keeps the dependency graph acyclic — `core.py` does not import `session.py` — and it makes the middleware testable against a trivial fake session without constructing the real one. It also documents, in the type system, exactly how little the capture layer needs to know about record accumulation.
+This is a small decision with two payoffs. It documents, in the type system, exactly what the capture layer needs from a session, and it makes the adapter testable against a real `PipelineSession` (or any conforming stub) without coupling to construction details. Because the adapter codes against the structural protocol rather than the class, a second adapter for a different framework reuses the same seam unchanged.
 
-The dependency graph is acyclic by construction. The frame dataclasses and `SessionProtocol` live in a leaf module, `_frames`; the canonical-JSON hashing helpers (§4.6) live in `_hashing`; both are imported by `core` and by the emitters but import nothing from `middleware` themselves. `core` can therefore import the emitter functions at module load time. An earlier layout kept the frames and hashing helpers in `core` itself, which forced function-scope imports in `_on_step_complete` and `_on_tool_complete` to break the cycle; extracting the leaves removed that workaround.
+The dependency graph is acyclic by construction. The framework-neutral leaves — `session.py` (which imports only the `_hashing` helpers) and `_hashing.py` (which imports only the standard library and `rfc8785`) — know nothing of any adapter. Within the LangChain adapter, the frame dataclasses live in their own leaf module, `adapters/langchain/_frames`, imported by both the middleware and the emitters; the middleware imports the emitters, the emitters import `_frames` and the core `session`/`_hashing` modules, and nothing in the adapter is imported back by the core. The middleware can therefore import the emitter functions at module load time. An earlier layout kept the frames and hashing helpers in the middleware module itself, which forced function-scope imports to break a cycle; extracting the leaves removed that workaround.
 
 ---
 
-## 4.5 The emitters
+## 4.5 The record factory and the emitters
 
-An emitter turns a matched lifecycle pair into a record and hands the record to the session. There are two: one for Agent Step Records, one for Tool Invocation Records. Each is a single module exposing one function.
+Record assembly is split into two layers. The framework-neutral **record factory** lives on `PipelineSession` and owns everything that is the same regardless of which framework produced the event: filling the constant and session-copied fields, hashing the supplied input and output, stamping `timestamp_end`, wiring the `parent_record_id` chain, and appending. The framework-specific **emitters** live in the adapter and own only the translation from a LangChain lifecycle pair into the primitives the factory needs.
+
+This split is what makes a second adapter cheap. The factory exposes four keyword-only methods — `add_agent_step` and `add_tool_invocation`, each with an `_error` variant — and an adapter for AutoGen or a bare-OpenAI loop would extract its own framework's identity and content and call exactly these, reusing the record shape, the hashing rules, and the parent-chain logic without reimplementing them. In the LangChain adapter there are two emitters, one per automated record type, each a single module exposing one success function and one error function.
 
 ### 4.5.1 Agent Step emitter
 
-`emit_agent_step` (`src/agent_prov/step_emitter.py`) is called by the middleware when a chat model call completes. It receives the closed `_StepFrame`, the model's response object, the session, and the still-open `_nodes` dictionary. It assembles a dictionary with every field of the Agent Step Record:
+`emit_agent_step` (`src/agent_prov/adapters/langchain/step_emitter.py`) is called by the middleware when a chat model call completes. It receives the closed `_StepFrame`, the model's response object, the session, and the still-open `_nodes` dictionary. It extracts the LangChain-specific primitives — `agent_id` from the enclosing node (§4.5.3), `model_id`/`model_version` from the frame (§4.5.3), `timestamp_start` from the frame, the semantically projected input message list and output payload (below), and `reference_data_id` from the callback metadata — and passes them to `session.add_agent_step`. The factory then assembles the full Agent Step Record:
 
 - `record_id` — a fresh UUID v4.
 - `record_type` — the constant `"agent_step"`.
 - `protocol_version`, `pipeline_id`, `session_id` — copied from the session.
-- `agent_id` — resolved from the enclosing node (§4.5.3).
-- `model_id`, `model_version` — extracted from the frame (§4.5.3).
-- `timestamp_start` — read from the frame, set when the model call began.
-- `timestamp_end` — set now, as the record is emitted.
-- `input_hash` — the canonical hash of the frame's input message list.
+- `agent_id`, `model_id`, `model_version`, `timestamp_start` — the primitives supplied by the emitter.
+- `timestamp_end` — set by the factory, as the record is assembled.
+- `input_hash` — the canonical hash of the projected input message list (the emitter projects, the factory hashes).
 - `status` — `"success"` on this path (the model call completed).
-- `output_hash` — the canonical hash of the response's semantic payload: per generation, the message content and the (name, args) of any tool calls. The full response envelope is not hashed because LangChain stamps a fresh runtime `id` on every generated message and on every tool call, which would make identical content digest differently on each run; the projection keeps only what is semantically the model's output, preserving the content-addressable property the protocol relies on. Tool calls are retained — not just `content` — because a step that emits only a tool call carries no content, and hashing content alone would make every such step collide.
-- `reference_data_id` — read from the frame's callback metadata under the `reference_data_id` key, mirroring how `tool_version` is sourced (§4.5.2); `null` when absent. The identifier cannot be recovered from a generic chat model call, so the application that knows which reference corpus a step consulted supplies it through the run metadata, for example `config={"metadata": {"reference_data_id": "corpus-v3"}}`.
+- `output_hash` — the canonical hash of the response's semantic payload: per generation, the message content and the (name, args) of any tool calls. The emitter performs this projection because it is LangChain-message-specific; the full response envelope is not hashed because LangChain stamps a fresh runtime `id` on every generated message and on every tool call, which would make identical content digest differently on each run. The projection keeps only what is semantically the model's output, preserving the content-addressable property the protocol relies on. Tool calls are retained — not just `content` — because a step that emits only a tool call carries no content, and hashing content alone would make every such step collide.
+- `reference_data_id` — read by the emitter from the frame's callback metadata under the `reference_data_id` key, mirroring how `tool_version` is sourced (§4.5.2); `null` when absent. The identifier cannot be recovered from a generic chat model call, so the application that knows which reference corpus a step consulted supplies it through the run metadata, for example `config={"metadata": {"reference_data_id": "corpus-v3"}}`.
 - `parent_record_id` — the session's `last_record_id` (§4.7).
 
-The assembled dictionary is passed to `session.add_record`. The success and error paths share a `_base_record` helper that fills the fields above except `status`, `output_hash`, and `error`; the success path then adds `status: "success"` and `output_hash`, and the error path (§4.5.4) adds `status: "error"` and the `error` object instead.
+Inside the factory, the success and error methods share an `_agent_step_base` helper that fills the fields above except `status`, `output_hash`, and `error`; the success method then adds `status: "success"` and `output_hash`, and the error method (§4.5.4) adds `status: "error"` and the `error` object instead. The factory appends the finished record through the same `add_record` path used everywhere else, so the parent-chain stays continuous.
 
 ### 4.5.2 Tool Invocation emitter
 
-`emit_tool_invocation` (`src/agent_prov/tool_emitter.py`) is structurally identical, called when a tool call completes. It produces a `"tool_invocation"` record, replacing `model_id`/`model_version` with `tool_name`/`tool_version` and hashing the tool's input string and output value. The same `status`/`output_hash`/`error` split applies. The symmetry is deliberate and mirrors the structural symmetry of the two record types described in §3.4.1.
+`emit_tool_invocation` (`src/agent_prov/adapters/langchain/tool_emitter.py`) is structurally identical, called when a tool call completes. It extracts `tool_name`/`tool_version` and the tool's input string and passes them, with the output value, to `session.add_tool_invocation`, which produces a `"tool_invocation"` record — replacing `model_id`/`model_version` with `tool_name`/`tool_version` and hashing the input string and output value. The same `status`/`output_hash`/`error` split applies, via the factory's `_tool_invocation_base` helper. The symmetry is deliberate and mirrors the structural symmetry of the two record types described in §3.4.1.
 
 ### 4.5.3 Field extraction and its failure modes
 
@@ -146,7 +153,7 @@ These fallbacks share a design stance: a provenance layer must never crash the p
 
 ### 4.5.4 Recording failures
 
-A step or tool call that raises is itself an auditable event (§3.3.2, Article 12(2)(a)), so the middleware subscribes to the LangChain error callbacks alongside the success ones. `on_llm_error` and `on_tool_error` pop the still-open frame — the same frame the success callback would have consumed — and route it to `emit_agent_step_error` / `emit_tool_invocation_error`. These build the record from the shared `_base_record` helper, then set `status: "error"`, omit `output_hash` (a failed call produced none), and attach a structured `error` object: `type` (the exception class name), `message_hash` (the canonical hash of `str(error)`), and `source` (`"provider"` for a model call, `"tool"` for a tool call). The record carries the same identity, timing, and input hash as a successful one, so a failure is fully attributable.
+A step or tool call that raises is itself an auditable event (§3.3.2, Article 12(2)(a)), so the middleware subscribes to the LangChain error callbacks alongside the success ones. `on_llm_error` and `on_tool_error` pop the still-open frame — the same frame the success callback would have consumed — and route it to `emit_agent_step_error` / `emit_tool_invocation_error`. These extract the same identity, timing, and input primitives as the success emitters, plus the exception's class name and message, and call the factory's `add_agent_step_error` / `add_tool_invocation_error`. The factory builds the record from the shared base helper, then sets `status: "error"`, omits `output_hash` (a failed call produced none), and attaches a structured `error` object: `type` (the exception class name), `message_hash` (the canonical hash of `str(error)`), and `source` (`"provider"` for a model call, `"tool"` for a tool call). The record carries the same identity, timing, and input hash as a successful one, so a failure is fully attributable.
 
 Two further points. First, popping the frame in the error callback is also what prevents a leak: without it, a frame opened on `*_start` whose run ends in error would never be removed from the in-flight dictionaries. Second, `on_chain_error` releases the node frame but emits no record — nodes are context for `agent_id` resolution, not events in their own right, so a failed node surfaces through the failed step or tool it contained, not as a record of its own.
 

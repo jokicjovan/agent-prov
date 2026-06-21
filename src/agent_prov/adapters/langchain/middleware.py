@@ -2,19 +2,20 @@
 
 The middleware subscribes to LangGraph/LangChain lifecycle events (node, chat
 model, tool) and routes them to per-run-id state buckets. The buckets are
-drained by emitter helpers (`step_emitter`, `tool_emitter`) that complete the
-record and hand it to the `PipelineSession`.
+drained by emitter helpers (`step_emitter`, `tool_emitter`) that project the
+LangChain-specific payload and hand the resulting primitives to the
+`PipelineSession` record factory.
 
 This module owns only the lifecycle wiring: opening a bucket on `*_start`,
 closing it on `*_end`, and surfacing the matched start/end pair to the
 emitter. Field extraction (model identity, hashes, agent_id derivation) lives
-in the emitter modules; the lifecycle frame types and the `SessionProtocol`
-seam live in `_frames`; canonical hashing lives in `_hashing`. Splitting
-those out keeps the import graph acyclic — `core` imports the emitters at
-module load time, and the emitters import only the two leaf modules.
+in the emitter modules; the lifecycle frame types live in `_frames`; the
+`SessionProtocol` seam and canonical hashing live in the framework-neutral core.
+Splitting those out keeps the import graph acyclic — `middleware` imports the
+emitters at module load time, and the emitters import only the leaf modules.
 
-Public surface: ``ProvenanceMiddleware``. Frame types, ``SessionProtocol``,
-and the hashing helpers are package-internal and live in their own modules.
+Public surface: ``ProvenanceMiddleware``. Frame types are adapter-internal and
+live in their own module.
 """
 
 from __future__ import annotations
@@ -24,10 +25,17 @@ from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
 
-from agent_prov._frames import SessionProtocol, _NodeFrame, _StepFrame, _ToolFrame
 from agent_prov._hashing import _now_iso8601
-from agent_prov.step_emitter import emit_agent_step, emit_agent_step_error
-from agent_prov.tool_emitter import emit_tool_invocation, emit_tool_invocation_error
+from agent_prov.adapters.langchain._frames import _NodeFrame, _StepFrame, _ToolFrame
+from agent_prov.adapters.langchain.step_emitter import (
+    emit_agent_step,
+    emit_agent_step_error,
+)
+from agent_prov.adapters.langchain.tool_emitter import (
+    emit_tool_invocation,
+    emit_tool_invocation_error,
+)
+from agent_prov.session import SessionProtocol
 
 
 class ProvenanceMiddleware(BaseCallbackHandler):
