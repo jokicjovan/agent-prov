@@ -92,6 +92,32 @@ This renders a PDF that maps each record to the EU AI Act clauses its fields
 substantiate. (PDF rendering needs the `reporting` extra, which `uv sync`
 installs by default.)
 
+### Independently verify a bundle
+
+A sealed bundle is evidence only if a third party can recompute its guarantees
+without trusting the producer. The verifier does exactly that — recompute the
+`bundle_hash`, re-run schema and conditional validation, and check parent-chain
+and identifier integrity — and reports every problem it finds:
+
+```bash
+uv run python -m agent_prov.verify demos/langchain/research/mock_bundle.json
+```
+
+It runs on the bare core (no extras) and exits non-zero if any check fails. The
+same checks are available programmatically:
+
+```python
+from agent_prov import verify_bundle
+
+result = verify_bundle(bundle)        # VerificationResult(ok=..., errors=(...))
+```
+
+The core protocol surface — `PipelineSession`, `BundleGenerator`,
+`verify_bundle`, `validate_bundle`, `now_iso8601` — is re-exported from the
+top-level `agent_prov` package and pulls in no optional extra. (The
+`ProvenanceMiddleware` adapter and the `ComplianceReport` renderer stay behind
+their `langchain` / `reporting` extras and are imported from their own modules.)
+
 ### Instrumenting your own pipeline
 
 The LangChain adapter ships under the `langchain` extra (`pip install
@@ -146,6 +172,7 @@ This runs on the bare `agent-prov` core (no `langchain` extra). See
 ```
 src/agent_prov/ framework-neutral protocol core (session + record factory, schemas, validation, sealing, HITL)
   schemas/      JSON Schema for the four record types (shipped with the package)
+  verify/       independent bundle verifier + `python -m agent_prov.verify` CLI
   adapters/
     langchain/  LangChain/LangGraph adapter — middleware + emitters (optional `langchain` extra)
   reporting/    compliance report generator (optional `reporting` extra)

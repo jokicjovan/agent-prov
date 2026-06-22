@@ -230,6 +230,17 @@ The seal is then computed. `compute_bundle_hash` builds a copy of the bundle wit
 
 `to_file(path)` calls `generate()` and writes the bundle to disk as pretty-printed, UTF-8, non-ASCII-preserving JSON. The on-disk indentation is purely for human readability — it is *not* the canonical form. The hash was computed over the compact canonical serialisation before pretty-printing; a verifier re-canonicalises the parsed document and never hashes the file's bytes directly. Keeping the readable file and the hashed form distinct is deliberate: an auditor can open the bundle in any text editor, and the integrity check is unaffected by how the file was formatted on disk.
 
+### 4.8.1 The independent verifier
+
+The seal is worth only as much as a third party's ability to recompute it without trusting the producer. The `agent_prov.verify` package promotes that recomputation from a property the test suite asserts to a public, auditor-facing call. `verify_bundle(bundle)` performs four checks and returns a `VerificationResult` (`ok`, plus a list of human-readable `errors`):
+
+1. **Schema and conditional validation**, delegated to the single validation surface (§3.7.5) — the same door `generate()` uses at seal time, so a verifier applies identical structural and value-comparison rules.
+2. **The `bundle_hash` seal** — strip `bundle_hash`, re-canonicalise, recompute, and compare against the stored digest. A mismatch is positive evidence that the document was altered after sealing.
+3. **Parent-chain integrity** — referential integrity of `parent_record_id`: the head record has no parent, and every other parent reference resolves to a record appearing earlier in the bundle. This catches dangling and forward references without asserting strict linear chaining, which is a deliberate choice — emission-order linearity is an approximation that does not survive parallel branches (§4.7), so the verifier checks the weaker property that actually holds.
+4. **Identifier consistency** — `pipeline_id` and `session_id` are uniform across the bundle and every record, and no two records share a `record_id`.
+
+The verifier collects *all* failures in one pass rather than stopping at the first, so an auditor sees the complete picture. It is read-only, raises nothing for an invalid bundle (defects are returned as data, not exceptions), and runs on the bare protocol core with no optional extra installed — the concrete demonstration that "any independent verifier reproduces the digests" (§4.6) is a real capability and not just a property of this codebase's tests. A command-line entry point, `python -m agent_prov.verify <bundle.json>`, exposes the same checks and exits non-zero on failure.
+
 ---
 
 ## 4.9 Human intervention capture: the `HumanReview` context manager
