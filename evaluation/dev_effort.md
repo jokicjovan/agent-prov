@@ -33,8 +33,8 @@ automated path costs nothing per step while human capture costs a fixed amount
 per oversight act.
 
 The two demonstration pipelines are the measured subjects: the fully-automated
-research assistant (`demos/research/`) and the document review pipeline with two
-human interventions (`demos/document_review/`). For each, the `live.py` variant
+research assistant (`demos/langchain/research/`) and the document review pipeline with two
+human interventions (`demos/langchain/document_review/`). For each, the `live.py` variant
 (real `ChatOpenAI`) is the reference for bucket B, because a real provider
 advertises its own model name and the mock's name-hint line is then unnecessary.
 

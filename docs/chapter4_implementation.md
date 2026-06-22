@@ -6,7 +6,7 @@ Chapter 3 specified the protocol as a static artefact: four record types, their 
 
 The chapter is organised around the path a single pipeline run takes through the implementation. It opens with the technology choices and project layout (§4.2) and an architecture overview (§4.3). It then follows the data flow: the middleware that listens to pipeline lifecycle events (§4.4), the emitters that turn matched events into records (§4.5), the canonical hashing primitive (§4.6), the session that accumulates records (§4.7), and the bundle generator that seals them (§4.8). Human intervention capture (§4.9) and the compliance report generator (§4.10) follow. The chapter then describes the two demonstration pipelines that exercise the implementation end to end (§4.11), the testing strategy (§4.12), and the limitations of the current implementation (§4.13).
 
-The implementation is the reference against which the protocol is defined: where Chapter 3's tables and the JSON Schemas disagree, the schemas are authoritative; where the protocol's hashing convention is ambiguous, the implementation in `middleware/_hashing.py` is authoritative. This chapter therefore doubles as the specification of the canonical hashing form that an independent verifier must reproduce.
+The implementation is the reference against which the protocol is defined: where Chapter 3's tables and the JSON Schemas disagree, the schemas are authoritative; where the protocol's hashing convention is ambiguous, the implementation in `agent_prov/_hashing.py` is authoritative. This chapter therefore doubles as the specification of the canonical hashing form that an independent verifier must reproduce.
 
 ---
 
@@ -159,6 +159,33 @@ Two further points. First, popping the frame in the error callback is also what 
 
 The bundle reflects failures at the run level too: the Pipeline Bundle's `outcome` field (§4.8) is derived from the records, reporting `error` when any record carries `status: "error"`.
 
+### 4.5.5 The adapter contract, and instrumenting a framework without callbacks
+
+The record factory is the protocol's framework-neutral seam (§4.5). An *adapter* is any code that observes some agent runtime, extracts the primitives a record needs — identity, model or tool name, the start timestamp, and the projected input and output content — and calls the four factory methods. The factory owns everything that is the same regardless of provenance source: the constant and session-copied fields, canonical hashing, `timestamp_end`, the `parent_record_id` chain, and the append. An adapter never reimplements any of that. This is what makes the protocol's central claim — framework-neutral, with LangGraph as *one* adapter — concrete rather than aspirational: a second adapter targets the same factory, and the verifier, the validator, and the bundle format never learn which adapter produced a record.
+
+The LangChain adapter (§4.4–§4.5) is the elaborate case, because LangChain exposes a rich extension point — the callback system — and the adapter is built to exploit it: a `BaseCallbackHandler`, `run_id`-keyed lifecycle frames, and start/end pairing. That machinery is reusable across every LangGraph application, which is exactly why it is worth packaging as a library subpackage behind the `langchain` extra.
+
+Not every runtime offers such a hook. A great many agents are written as a plain loop directly against a provider SDK — `client.chat.completions.create(...)` in a `while` loop, with tool calls dispatched by hand — and have no callback system to subscribe to. The protocol instruments these by the same contract, but without any adapter machinery: the loop simply calls the factory at the two points that matter. `demos/openai_loop/mock.py` is a complete worked example. Its entire provenance integration is two calls:
+
+```python
+ts = _now_iso8601()
+completion = client.create(model=MODEL, messages=messages, tools=tools)
+message = completion.choices[0].message
+session.add_agent_step(
+    agent_id=agent_id, model_id=MODEL, model_version=MODEL,
+    timestamp_start=ts, input=_project_all(messages), output=_project(message),
+)
+# ... and around each dispatched tool call:
+session.add_tool_invocation(
+    agent_id=agent_id, tool_name=call.function.name, tool_version="1.0.0",
+    timestamp_start=ts, input=args, output=result,
+)
+```
+
+There is no callback handler, no frame bookkeeping, and no `agent_id` derivation from a graph — the loop already knows which agent it is running, so it passes the name as a string. Only the semantic projection survives from the LangChain adapter, and for the same reason: the provider response carries a runtime `id` per message and per tool call, so the loop projects to (role, content, tool-call name/args) before hashing, keeping `input_hash` / `output_hash` replay-stable (§4.5.1). The demo runs on the bare `agent-prov` core — it imports no agent framework and does not need the `langchain` extra — and its sealed bundle validates and recomputes identically to the LangChain demos' bundles.
+
+The asymmetry between the packaged adapter and the framework-free loop is deliberate and is itself the argument for where the abstraction boundary sits. A framework with reusable extension machinery (LangGraph) earns a packaged adapter; a framework with none (a hand-written loop) is instrumented inline by calling the factory directly. Both converge on the same `PipelineSession`, produce the same record shapes, and seal into the same bundle format — which is the strongest available evidence that the factory, not the LangChain middleware, is the protocol's true integration surface.
+
 ---
 
 ## 4.6 Canonical hashing
@@ -246,13 +273,15 @@ The `reporting` package consumes a sealed bundle and produces the auditor-facing
 
 `to_pdf(path)` renders the report. The layout proceeds from bundle metadata, through a record summary, to a per-record section — each record's fields followed by the Act clauses those fields map to — and closes with the clause-coverage matrix. Rendering uses `fpdf2`'s table API and the built-in Helvetica core font only, so the PDF carries no font dependency and reproduces identically across machines.
 
-**The command-line entry point.** `agent_prov/reporting/__main__.py` exposes the generator as `python -m agent_prov.reporting <bundle.json> <out.pdf>`. An auditor needs no knowledge of the Python API to turn a bundle into a report. Sample reports for both demonstration pipelines are committed to the repository alongside their bundles.
+**The command-line entry point.** `agent_prov/reporting/__main__.py` exposes the generator as `python -m agent_prov.reporting <bundle.json> <out.pdf>`. An auditor needs no knowledge of the Python API to turn a bundle into a report. Sample reports for the demonstration pipelines are committed to the repository alongside their bundles.
 
 ---
 
 ## 4.11 Demonstration pipelines
 
-Two demonstration pipelines exercise the implementation end to end. Each ships in two variants: a `mock.py` that uses a deterministic fake LLM and makes no network calls, and a `live.py` that uses `ChatOpenAI` against the real API. The mock variants are the ones used as running examples throughout: they are deterministic, reproducible in CI, and produce committed bundles that the reader can inspect. The live variants exist to confirm the middleware behaves identically against a real provider and serve as the target for the overhead benchmark in Chapter 5.
+Two LangGraph demonstration pipelines exercise the LangChain adapter end to end. They live under `demos/langchain/`, grouped to mirror the adapter subpackage they exercise (`agent_prov.adapters.langchain`). Each ships in two variants: a `mock.py` that uses a deterministic fake LLM and makes no network calls, and a `live.py` that uses `ChatOpenAI` against the real API. The mock variants are the ones used as running examples throughout: they are deterministic, reproducible in CI, and produce committed bundles that the reader can inspect. The live variants exist to confirm the middleware behaves identically against a real provider and serve as the target for the overhead benchmark in Chapter 5.
+
+A third demonstration, `demos/openai_loop/`, is the framework-free adapter discussed in §4.5.5: a hand-written agent loop instrumented inline against the record factory, with no LangChain present. It is kept outside `demos/langchain/` precisely because it uses no adapter package — the directory layout reflects the adapter boundary. It is not one of the evaluation subjects (Chapter 5 measures the two LangGraph pipelines); its role is to demonstrate that the factory seam carries a non-callback mechanism and that a bundle can be produced on the bare core.
 
 The fake LLM is a small `BaseChatModel` subclass returning a fixed response. It is a genuine LangChain chat model, so a call to it triggers the same `on_chat_model_start` / `on_llm_end` callbacks as a real provider — the middleware cannot tell the difference, which is exactly what makes the mock variant a valid test of the capture path.
 
@@ -260,13 +289,13 @@ Instrumenting either pipeline requires three lines: construct a `PipelineSession
 
 ### 4.11.1 Research assistant pipeline
 
-The first pipeline (`demos/research/`) is a three-agent research assistant: a `researcher` node, a `summarizer` node, and a `writer` node, wired as a linear LangGraph. The researcher first calls a `web_search` tool, then synthesises the tool's result with its LLM; the summarizer condenses the researcher's notes; the writer produces a final report.
+The first pipeline (`demos/langchain/research/`) is a three-agent research assistant: a `researcher` node, a `summarizer` node, and a `writer` node, wired as a linear LangGraph. The researcher first calls a `web_search` tool, then synthesises the tool's result with its LLM; the summarizer condenses the researcher's notes; the writer produces a final report.
 
 This pipeline exercises the fully automated path. Its bundle contains four records — one `tool_invocation` for the web search, followed by three `agent_step` records, one per node — chained chronologically. It demonstrates the structural symmetry of the two automated record types and the chronological-chain property where a tool invocation precedes the agent step that consumed it (§3.7.3). The pipeline is run with `disclosure_presented=True`.
 
 ### 4.11.2 Document review pipeline
 
-The second pipeline (`demos/document_review/`) is the one that exercises the protocol's central contribution. It models a credit-decision workflow: a `summarizer` agent condenses a loan application, a human editor reviews and *edits* the summary, a `finalizer` agent drafts a decision letter from the edited summary, and a compliance officer *approves* the letter. The resulting bundle contains four records in the order `agent_step`, `human_intervention`, `agent_step`, `human_intervention`.
+The second pipeline (`demos/langchain/document_review/`) is the one that exercises the protocol's central contribution. It models a credit-decision workflow: a `summarizer` agent condenses a loan application, a human editor reviews and *edits* the summary, a `finalizer` agent drafts a decision letter from the edited summary, and a compliance officer *approves* the letter. The resulting bundle contains four records in the order `agent_step`, `human_intervention`, `agent_step`, `human_intervention`.
 
 This bundle is the concrete demonstration of two claims. First, the `parent_record_id` chain runs continuously through human and automated records alike: the finaliser's `agent_step` points at the editor's `human_intervention` record, not at the summarizer's `agent_step`. Second, it shows two of the four `action_type` values — `edited` and `approved` — with their distinct `output_after_hash` shapes: the edited record carries a hash that differs from `output_before_hash`, the approved record carries one equal to it.
 

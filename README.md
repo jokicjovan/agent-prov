@@ -71,10 +71,10 @@ dependency management.
 uv sync
 
 # run a fully-automated pipeline (researcher -> summarizer -> writer)
-uv run python demos/research/mock.py
+uv run python demos/langchain/research/mock.py
 
 # run a pipeline with human-in-the-loop review
-uv run python demos/document_review/mock.py
+uv run python demos/langchain/document_review/mock.py
 ```
 
 Each demo writes a sealed bundle (`*_bundle.json`) next to its script and prints
@@ -85,7 +85,7 @@ calls; the `live.py` variants run the same graphs against a real model (set
 ### Generate a compliance report
 
 ```bash
-uv run python -m agent_prov.reporting demos/research/mock_bundle.json report.pdf
+uv run python -m agent_prov.reporting demos/langchain/research/mock_bundle.json report.pdf
 ```
 
 This renders a PDF that maps each record to the EU AI Act clauses its fields
@@ -115,15 +115,39 @@ BundleGenerator(session, disclosure_presented=True).to_file("bundle.json")
 For human oversight, wrap the decision point in a `HumanReview` block, which emits
 a Human Intervention Record with the before/after evidence.
 
+### Instrumenting a framework we don't adapt
+
+The LangChain adapter is one consumer of a framework-neutral seam: the record
+factory on `PipelineSession` (`add_agent_step` / `add_tool_invocation` and their
+`_error` variants). An agent with no orchestration framework — a plain loop
+against a provider SDK — is instrumented by calling the factory directly, with no
+adapter machinery:
+
+```python
+session = PipelineSession()
+
+ts = _now_iso8601()
+resp = client.chat.completions.create(model="gpt-4o", messages=messages, tools=tools)
+session.add_agent_step(
+    agent_id="planner", model_id="gpt-4o", model_version="gpt-4o-2024-11-20",
+    timestamp_start=ts, input=messages, output=resp.choices[0].message,
+)
+```
+
+This runs on the bare `agent-prov` core (no `langchain` extra). See
+`demos/openai_loop/mock.py` for a complete, runnable example.
+
 ---
 
 ## Repository layout
 
 ```
-src/agent_prov/ reference implementation (middleware, emitters, session, HITL, sealing)
+src/agent_prov/ framework-neutral protocol core (session + record factory, schemas, validation, sealing, HITL)
   schemas/      JSON Schema for the four record types (shipped with the package)
+  adapters/
+    langchain/  LangChain/LangGraph adapter — middleware + emitters (optional `langchain` extra)
   reporting/    compliance report generator (optional `reporting` extra)
-demos/          two example pipelines, each with a deterministic and a live variant
+demos/          example pipelines: two LangGraph (mock + live), one framework-free loop
 evaluation/     completeness audit, overhead benchmark, developer-effort measurement
 docs/           protocol design, EU AI Act obligation mapping, gap analysis, design & evaluation write-up
 tests/          unit + integration test suite
@@ -141,8 +165,12 @@ uv run pytest
 
 ## Scope and limitations
 
-- **LangGraph only.** The record schemas are framework-agnostic, but the reference
-  implementation targets LangGraph. Adapters for other frameworks are future work.
+- **One packaged adapter.** The protocol core is framework-neutral and the record
+  factory is the integration seam; LangGraph is the one adapter shipped as a
+  library subpackage. A framework-free agent loop (`demos/openai_loop/`) is
+  instrumented inline against the same seam, demonstrating that the factory
+  generalizes, but packaged adapters for other frameworks (AutoGen, CrewAI) are
+  future work.
 - **Research artifact.** This is a research proof-of-concept, not a production
   library. It demonstrates the protocol; it has not been hardened for production
   deployment.

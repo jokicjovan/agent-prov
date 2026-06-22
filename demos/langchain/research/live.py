@@ -2,7 +2,7 @@
 
 Graph:  researcher  →  summarizer  →  writer
 
-Same structure as ``demos/research/mock.py``, but the three nodes call a
+Same structure as ``demos/langchain/research/mock.py``, but the three nodes call a
 real OpenAI chat model via langchain-openai so that middleware overhead is
 measured against realistic LLM latency rather than a synchronous stub. The
 mock variant remains the deterministic reference run.
@@ -13,7 +13,7 @@ Requires:
     OPENAI_MODEL    (optional, default "gpt-4o-mini")
 
 Usage:
-    uv run python demos/research/live.py
+    uv run python demos/langchain/research/live.py
 """
 
 from __future__ import annotations
@@ -111,13 +111,13 @@ def _build_graph():
 
 def run(
     topic: str = "AI agents in multi-agent systems",
-    output_dir: str | pathlib.Path = "demos/research",
+    output_dir: str | pathlib.Path = "demos/langchain/research",
 ) -> dict:
     """Run the live research pipeline and write the sealed bundle to *output_dir*."""
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError(
             "OPENAI_API_KEY is not set. Export it in your shell before running "
-            "the live demo, or run demos/research/mock.py for a deterministic "
+            "the live demo, or run demos/langchain/research/mock.py for a deterministic "
             "offline variant."
         )
 

@@ -14,7 +14,7 @@
       "name": "Demo: research (mock)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/demos/research/mock.py",
+      "program": "${workspaceFolder}/demos/langchain/research/mock.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "justMyCode": false
@@ -23,7 +23,7 @@
       "name": "Demo: document_review (mock)",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/demos/document_review/mock.py",
+      "program": "${workspaceFolder}/demos/langchain/document_review/mock.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "justMyCode": false
@@ -34,7 +34,7 @@
       "request": "launch",
       "module": "reporting",
       "args": [
-        "demos/research/mock_bundle.json",
+        "demos/langchain/research/mock_bundle.json",
         "${workspaceFolder}/debug_report.pdf"
       ],
       "console": "integratedTerminal",

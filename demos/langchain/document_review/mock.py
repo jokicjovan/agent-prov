@@ -20,10 +20,10 @@ Record chains onto the agent step it reviewed. A node-level interrupt requires a
 checkpointer, so the graph is compiled with an in-memory ``MemorySaver``.
 
 Deterministic; no external API calls. For a real-API counterpart see
-``demos/document_review/live.py``.
+``demos/langchain/document_review/live.py``.
 
 Usage:
-    uv run python demos/document_review/mock.py
+    uv run python demos/langchain/document_review/mock.py
 """
 
 from __future__ import annotations
@@ -201,7 +201,7 @@ def _interrupt_value(state: dict) -> str:
 # Runner
 # ---------------------------------------------------------------------------
 
-def run(output_dir: str | pathlib.Path = "demos/document_review") -> dict:
+def run(output_dir: str | pathlib.Path = "demos/langchain/document_review") -> dict:
     """Run the document review pipeline and write the sealed bundle."""
     session = PipelineSession(pipeline_id=PIPELINE_ID)
     middleware = ProvenanceMiddleware(session)

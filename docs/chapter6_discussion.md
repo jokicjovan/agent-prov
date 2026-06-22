@@ -241,7 +241,7 @@ different requirement. The operational pattern the protocol assumes is
 selective: the tamper-evident bundle goes to the auditor as the chain of events,
 the content lives in a store keyed by hash, and on challenge the deployment
 reveals the specific content whose digest the auditor recomputes. The PoC does
-not *demonstrate* a selective-disclosure deployment — both demos hold content
+not *demonstrate* a selective-disclosure deployment — the demos hold content
 only transiently in the running process — so this remains a specified boundary
 rather than an exercised one, and §6.5.8 notes the content-store integration
 that would close it.

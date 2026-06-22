@@ -2,7 +2,7 @@
 
 Flow:  summarizer  →  [interrupt: edit]  →  finalizer  →  [interrupt: approve]
 
-Same structure as ``demos/document_review/mock.py`` — one multi-node LangGraph
+Same structure as ``demos/langchain/document_review/mock.py`` — one multi-node LangGraph
 with ``interrupt()`` gates at the two review points — but the two agent nodes
 call a real OpenAI chat model via langchain-openai so that middleware overhead
 on a HITL-bearing pipeline is measured against realistic LLM latency rather
@@ -14,7 +14,7 @@ Requires:
     OPENAI_MODEL    (optional, default "gpt-4o-mini")
 
 Usage:
-    uv run python demos/document_review/live.py
+    uv run python demos/langchain/document_review/live.py
 """
 
 from __future__ import annotations
@@ -129,12 +129,12 @@ def _interrupt_value(state: dict) -> str:
     return state["__interrupt__"][0].value["value"]
 
 
-def run(output_dir: str | pathlib.Path = "demos/document_review") -> dict:
+def run(output_dir: str | pathlib.Path = "demos/langchain/document_review") -> dict:
     """Run the live document review pipeline and write the sealed bundle."""
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError(
             "OPENAI_API_KEY is not set. Export it in your shell before running "
-            "the live demo, or run demos/document_review/mock.py for a "
+            "the live demo, or run demos/langchain/document_review/mock.py for a "
             "deterministic offline variant."
         )
 

@@ -6,10 +6,10 @@ The researcher node calls a mock web_search tool before synthesising with a
 fake LLM, so the resulting bundle contains both agent_step and
 tool_invocation records. Deterministic; no external API calls.
 
-For a real-API counterpart see ``demos/research/live.py``.
+For a real-API counterpart see ``demos/langchain/research/live.py``.
 
 Usage:
-    uv run python demos/research/mock.py
+    uv run python demos/langchain/research/mock.py
 """
 
 from __future__ import annotations
@@ -175,7 +175,7 @@ def _build_graph():
 
 def run(
     topic: str = "AI agents in multi-agent systems",
-    output_dir: str | pathlib.Path = "demos/research",
+    output_dir: str | pathlib.Path = "demos/langchain/research",
 ) -> dict:
     """Run the research pipeline and write the sealed bundle to *output_dir*."""
     session = PipelineSession(pipeline_id=PIPELINE_ID)
