@@ -13,7 +13,11 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from agent_prov.adapters.langchain._frames import _NodeFrame, _StepFrame
+from agent_prov.adapters.langchain._frames import (
+    _NodeFrame,
+    _StepFrame,
+    _derive_agent_id,
+)
 from agent_prov.session import SessionProtocol
 
 
@@ -162,11 +166,3 @@ def _extract_model_version(frame: _StepFrame) -> str:
     # When no distinct version is available the model_id string serves as both
     # identifier and version (e.g. "gpt-4o-2024-11-20" or "claude-opus-4-7").
     return _extract_model_id(frame)
-
-
-def _derive_agent_id(frame: _StepFrame, nodes: dict[UUID, _NodeFrame]) -> str:
-    if frame.parent_run_id is not None and frame.parent_run_id in nodes:
-        return nodes[frame.parent_run_id].node_name
-    if frame.parent_run_id is not None:
-        return str(frame.parent_run_id)
-    return "unknown"

@@ -1,12 +1,14 @@
 """Canonical-JSON serialization, content hashing, and record timestamps.
 
-Leaf module: depends only on the standard library and ``rfc8785``, and imports
-nothing from ``middleware`` itself, so both the middleware (``core``) and the
-emitters can import it at load time without forming a cycle.
+Framework-neutral leaf module: depends only on the standard library and
+``rfc8785`` and imports nothing else in the package, so the session (its record
+factory), ``HumanReview``, ``bundle_generator``, and any adapter can import it at
+load time without forming a cycle.
 
 ``canonical_json_sha256`` defines the protocol's canonical hash form;
-``hash_content`` is the convenience wrapper the emitters and ``HumanReview``
-call; ``_now_iso8601`` stamps the UTC timestamps that records carry.
+``hash_content`` is the convenience wrapper the session factory and
+``HumanReview`` call; ``_now_iso8601`` stamps the UTC timestamps that records
+carry.
 """
 
 from __future__ import annotations

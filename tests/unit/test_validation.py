@@ -1,4 +1,4 @@
-"""Tests for the single validation surface (middleware.validation).
+"""Tests for the single validation surface (agent_prov.validation).
 
 Covers validate_record (structural + conditional, per record type) and
 validate_bundle (bundle structure + per-record conditionals), plus the

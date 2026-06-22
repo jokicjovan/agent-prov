@@ -13,7 +13,11 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from agent_prov.adapters.langchain._frames import _NodeFrame, _ToolFrame
+from agent_prov.adapters.langchain._frames import (
+    _NodeFrame,
+    _ToolFrame,
+    _derive_agent_id,
+)
 from agent_prov.session import SessionProtocol
 
 logger = logging.getLogger(__name__)
@@ -93,11 +97,3 @@ def _extract_tool_version(frame: _ToolFrame) -> str:
         _UNVERSIONED,
     )
     return _UNVERSIONED
-
-
-def _derive_agent_id(frame: _ToolFrame, nodes: dict[UUID, _NodeFrame]) -> str:
-    if frame.parent_run_id is not None and frame.parent_run_id in nodes:
-        return nodes[frame.parent_run_id].node_name
-    if frame.parent_run_id is not None:
-        return str(frame.parent_run_id)
-    return "unknown"

@@ -5,7 +5,7 @@ Lives at ``tests/_helpers.py`` so test files under ``tests/unit/`` and
 ``tests/`` is on the pytest pythonpath (see ``pyproject.toml``).
 
 The loaded schemas and cross-$ref registry are sourced from
-``middleware.validation`` so there is a single place that loads and wires the
+``agent_prov.validation`` so there is a single place that loads and wires the
 protocol schemas. The conditional rules (action_type ↔ output_after_hash,
 timestamp ordering) also live there — tests call ``validate_record`` /
 ``validate_bundle`` rather than re-implementing them here. What remains below is

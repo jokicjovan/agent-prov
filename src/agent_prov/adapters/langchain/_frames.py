@@ -12,6 +12,10 @@ Keeping the frame dataclasses in this leaf module — imported by both
 lets every module in the adapter resolve its imports at load time. A shared
 definition in ``middleware`` would instead force ``middleware`` and the emitters
 into a circular import.
+
+This module also exposes ``_derive_agent_id``, the resolver both emitters use to
+turn a frame's enclosing node into an ``agent_id`` — it lives here because it
+operates purely on the frame types and is shared by the two emitters.
 """
 
 from __future__ import annotations
@@ -54,3 +58,21 @@ class _ToolFrame:
     serialized: dict[str, Any]
     input_str: str
     metadata: dict[str, Any]
+
+
+def _derive_agent_id(
+    frame: _StepFrame | _ToolFrame,
+    nodes: dict[UUID, _NodeFrame],
+) -> str:
+    """Resolve the ``agent_id`` for a step or tool frame from its enclosing node.
+
+    A model or tool call runs inside a graph node, and the node's name is the
+    agent_id. Resolve it by looking up the frame's ``parent_run_id`` in the
+    still-open ``nodes`` map; fall back to the raw parent id, then ``"unknown"``,
+    so the field stays a schema-valid non-empty string under unusual graph shapes.
+    """
+    if frame.parent_run_id is not None and frame.parent_run_id in nodes:
+        return nodes[frame.parent_run_id].node_name
+    if frame.parent_run_id is not None:
+        return str(frame.parent_run_id)
+    return "unknown"

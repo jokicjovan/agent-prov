@@ -9,10 +9,13 @@ from uuid import uuid4
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, LLMResult
 
-from agent_prov.adapters.langchain._frames import _NodeFrame, _StepFrame
+from agent_prov.adapters.langchain._frames import (
+    _NodeFrame,
+    _StepFrame,
+    _derive_agent_id,
+)
 from agent_prov._hashing import hash_content
 from agent_prov.adapters.langchain.step_emitter import (
-    _derive_agent_id,
     _extract_model_id,
     _extract_model_version,
     emit_agent_step,
