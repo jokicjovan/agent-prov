@@ -348,7 +348,7 @@ framing. The differentiation, established analytically in the gap analysis
 | EU AI Act clause mapping | ❌ | ✅ Arts. 12, 14, 50 — 13/21 clauses covered, 0 uncovered |
 | Privacy-preserving content hashing | ❌ (raw text default) | ✅ SHA-256, content stored out of band |
 | Pipeline integrity seal | ❌ | ✅ `bundle_hash` (RFC 8785 canonical JSON) |
-| Multi-framework support | ✅ (LangChain, CrewAI, OpenAI) | LangGraph only (PoC scope) |
+| Multi-framework support | ✅ (LangChain, CrewAI, OpenAI) | LangGraph adapter + a framework-free adapter; packaged AutoGen/CrewAI future work |
 
 The comparison is not a scoreboard. PROV-AGENT and this protocol target different
 problems: PROV-AGENT optimises reproducibility for scientific HPC workflows and
@@ -357,8 +357,10 @@ single framework and adds the one record type — human oversight — that the A
 requires and PROV-AGENT does not model. The two rows where PROV-AGENT leads
 (multi-framework support, scientific-workflow optimisation) are scope decisions of
 this PoC rather than protocol limitations: the record schemas are
-framework-agnostic, and Chapter 6 notes adapters for AutoGen and CrewAI as future
-work. The rows where this protocol leads — the HITL record, the before/after
+framework-agnostic, the framework-neutrality is demonstrated — not merely
+asserted — by a second, framework-free adapter (§4.5.5) that seals a valid bundle
+with no framework present, and Chapter 6 notes packaged adapters for AutoGen and
+CrewAI as future work. The rows where this protocol leads — the HITL record, the before/after
 evidence, the EU AI Act mapping, the integrity seal — are the thesis
 contribution, and §5.2–§5.4 are the evidence that they are not merely specified
 but implemented, complete against the obligations they target, and cheap to adopt.

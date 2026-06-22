@@ -122,15 +122,21 @@ its boundaries. The threats to the *evaluation numbers* specifically are in §5.
 and are not repeated; this section concerns limitations of the protocol and
 implementation themselves.
 
-**Single framework.** The reference implementation instruments LangGraph only
-(§4.2). The record *schemas* are framework-agnostic — they describe agent steps,
-tool calls, and human decisions in terms no LangGraph concept leaks into — but
-the *capture* layer is bound to LangChain's callback system. Nothing in the
-evaluation demonstrates that the same passive-capture property holds in a
-framework whose execution model exposes different extension points. Adapters for
-other frameworks (§6.5.1) are the direct response, and the clean separation
-between the framework-specific middleware and the framework-agnostic session and
-bundle layers (§4.3) is what is intended to make them tractable.
+**Single packaged framework adapter.** The reference implementation ships one
+packaged adapter, for LangGraph (§4.2). The record *schemas* are
+framework-agnostic — they describe agent steps, tool calls, and human decisions
+in terms no LangGraph concept leaks into — and the capture *seam* is the
+framework-neutral record factory (§4.5), not the callback system: the
+framework-free adapter of §4.5.5 records a complete bundle with no LangChain
+present, so the seam itself is demonstrably not bound to one framework. What
+remains LangGraph-specific is the *passive* capture property — recording without
+touching the pipeline's own code. Nothing in the evaluation demonstrates that
+this passive property holds in a framework whose execution model exposes
+different (or no) extension points; the framework-free demo in fact instruments
+more invasively, by inline calls. Packaged adapters for other frameworks (§6.5.1)
+are the direct response, and the clean separation between the framework-specific
+adapter and the framework-agnostic factory, session, and bundle layers (§4.3) is
+what makes them tractable.
 
 **Chronological parent chain.** As discussed in §4.13 and §6.2.2,
 `parent_record_id` records order rather than causation. For the linear demo
@@ -254,17 +260,31 @@ open-ended research direction.
 
 ### 6.5.1 Adapters for further agent frameworks
 
-The most direct extension is capture adapters for AutoGen and CrewAI, the two
-frameworks PROV-AGENT supports that this PoC does not (§5.5). Because the
-session, bundle, sealing, and reporting layers are framework-agnostic and depend
-on the capture layer only through the `add_record` surface (the `SessionProtocol`
-seam, §4.4.3), a new adapter is in principle a new middleware that maps each
-framework's lifecycle events to `emit_agent_step` and `emit_tool_invocation`
-calls — the rest of the stack is reused unchanged. The open question each adapter
-answers is whether the target framework exposes a *passive* extension point
-comparable to LangChain's callbacks, or whether instrumentation there is
-necessarily more invasive; the answer determines whether the non-invasiveness
-result of §5.4 generalises or is specific to LangGraph.
+The most direct extension is *packaged* capture adapters for AutoGen and CrewAI,
+the two frameworks PROV-AGENT supports that this PoC does not (§5.5). The
+groundwork is in place and already partially demonstrated. The session, bundle,
+sealing, and reporting layers are framework-agnostic and reach the capture layer
+only through the record factory on `PipelineSession` — `add_agent_step` /
+`add_tool_invocation` and their `_error` variants, the `SessionProtocol` seam of
+§4.4.3. A new adapter extracts its framework's primitives and calls that factory;
+record shape, canonical hashing, and the parent chain are reused unchanged.
+
+Crucially, an adapter need not be a callback middleware. The LangChain adapter is
+one because LangChain exposes a passive callback system worth exploiting; where a
+framework offers no such hook, instrumentation is inline factory calls at each
+model and tool call site. This is not hypothetical: the framework-free demo of
+§4.5.5 (`demos/openai_loop/`) is exactly such an adapter, and it seals a valid,
+recomputable bundle on the bare core with no framework present. What a packaged
+AutoGen or CrewAI adapter adds over that demo is reusable machinery for *its*
+framework, not a new path through the protocol.
+
+The open question each adapter answers is therefore not whether the seam
+generalises — the framework-free demo shows it does — but whether the target
+framework exposes a *passive* extension point comparable to LangChain's callbacks.
+Where it does, the non-invasiveness result of §5.4 carries over; where it does
+not, capture is more invasive (code at each call site, as in the framework-free
+demo) even though the sealed bundle is identical. Non-invasiveness, in other
+words, is the property that is framework-specific; the factory seam is not.
 
 ### 6.5.2 Canonical identifier rewriting
 

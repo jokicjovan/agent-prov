@@ -116,7 +116,7 @@ PROV-AGENT has no equivalent to the Pipeline Bundle with a `bundle_hash`. There 
 | EU AI Act mapping | ❌ | ✅ (Arts. 12, 14, 50) |
 | Content hashing (privacy-preserving) | ❌ (raw text) | ✅ (SHA-256) |
 | Pipeline integrity seal | ❌ | ✅ (`bundle_hash`) |
-| Multi-framework support | ✅ | LangGraph only (PoC scope) |
+| Multi-framework support | ✅ | LangGraph adapter + a framework-free adapter; packaged AutoGen/CrewAI future work |
 | Scientific workflow optimisation | ✅ | ❌ (not the target domain) |
 
 ---
@@ -128,7 +128,7 @@ This protocol does not replace PROV-AGENT. It extends and differentiates from it
 - **Extends:** The automated step and tool invocation capture mirrors PROV-AGENT's `AIModelInvocation` and `AgentTool` patterns. It inherits the same PROV-O foundation.
 - **Differentiates:** The Human Intervention Record is novel — it models a class of provenance event that PROV-AGENT explicitly does not address. The EU AI Act mapping is novel — it frames provenance as compliance evidence, not just scientific audit trail. The SHA-256 hashing approach addresses privacy constraints absent from the scientific workflow context.
 
-The LangGraph-only implementation is a PoC scope decision, not a protocol limitation: the record schemas are framework-agnostic and could be emitted by adapters for AutoGen, CrewAI, or LangChain in future work.
+The single packaged adapter (LangGraph) is a PoC scope decision, not a protocol limitation: the record schemas are framework-agnostic, and the framework-neutral record factory is already exercised by two adapters — the LangGraph one and a framework-free agent loop (`demos/openai_loop/`) — so adapters for AutoGen or CrewAI are additional future work, not a redesign.
 
 The contribution is targeted: one new record type (HITL) and one new framing (regulatory compliance) on top of a well-established provenance foundation.
 
