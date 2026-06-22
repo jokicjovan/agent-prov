@@ -23,7 +23,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import uuid4
 
-from agent_prov._hashing import _now_iso8601, hash_content
+from agent_prov._hashing import now_iso8601, hash_content
 from agent_prov.session import SessionProtocol
 
 
@@ -114,7 +114,7 @@ class HumanReview:
             "action_type": self._action_type,
             "output_before_hash": self._output_before_hash,
             "output_after_hash": self._output_after_hash,
-            "intervention_timestamp": _now_iso8601(),
+            "intervention_timestamp": now_iso8601(),
             "parent_record_id": parent_record_id,
         }
         if self._justification_hash is not None:

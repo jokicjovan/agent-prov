@@ -168,7 +168,7 @@ The LangChain adapter (§4.4–§4.5) is the elaborate case, because LangChain e
 Not every runtime offers such a hook. A great many agents are written as a plain loop directly against a provider SDK — `client.chat.completions.create(...)` in a `while` loop, with tool calls dispatched by hand — and have no callback system to subscribe to. The protocol instruments these by the same contract, but without any adapter machinery: the loop simply calls the factory at the two points that matter. `demos/openai_loop/mock.py` is a complete worked example. Its entire provenance integration is two calls:
 
 ```python
-ts = _now_iso8601()
+ts = now_iso8601()
 completion = client.create(model=MODEL, messages=messages, tools=tools)
 message = completion.choices[0].message
 session.add_agent_step(
@@ -182,7 +182,7 @@ session.add_tool_invocation(
 )
 ```
 
-There is no callback handler, no frame bookkeeping, and no `agent_id` derivation from a graph — the loop already knows which agent it is running, so it passes the name as a string. Only the semantic projection survives from the LangChain adapter, and for the same reason: the provider response carries a runtime `id` per message and per tool call, so the loop projects to (role, content, tool-call name/args) before hashing, keeping `input_hash` / `output_hash` replay-stable (§4.5.1). The demo runs on the bare `agent-prov` core — it imports no agent framework and does not need the `langchain` extra — and its sealed bundle validates and recomputes identically to the LangChain demos' bundles.
+There is no callback handler, no frame bookkeeping, and no `agent_id` derivation from a graph — the loop already knows which agent it is running, so it passes the name as a string. Only the semantic projection survives from the LangChain adapter, and for the same reason: the provider response carries a runtime `id` per message and per tool call, so the loop projects to (role, content, tool-call name/args) before hashing, keeping `input_hash` / `output_hash` replay-stable (§4.5.1). The demo runs on the bare `agent-prov` core — it imports no agent framework and does not need the `langchain` extra — and its sealed bundle validates and recomputes identically to the LangChain demos' bundles. The one helper it needs beyond the factory — `now_iso8601`, to stamp `timestamp_start` before the call — is re-exported from `agent_prov.session`, so an adapter author imports everything from one public module and never reaches into package internals.
 
 The asymmetry between the packaged adapter and the framework-free loop is deliberate and is itself the argument for where the abstraction boundary sits. A framework with reusable extension machinery (LangGraph) earns a packaged adapter; a framework with none (a hand-written loop) is instrumented inline by calling the factory directly. Both converge on the same `PipelineSession`, produce the same record shapes, and seal into the same bundle format — which is the strongest available evidence that the factory, not the LangChain middleware, is the protocol's true integration surface.
 

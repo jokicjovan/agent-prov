@@ -25,7 +25,6 @@ from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
 
-from agent_prov._hashing import _now_iso8601
 from agent_prov.adapters.langchain._frames import _NodeFrame, _StepFrame, _ToolFrame
 from agent_prov.adapters.langchain.step_emitter import (
     emit_agent_step,
@@ -35,7 +34,7 @@ from agent_prov.adapters.langchain.tool_emitter import (
     emit_tool_invocation,
     emit_tool_invocation_error,
 )
-from agent_prov.session import SessionProtocol
+from agent_prov.session import SessionProtocol, now_iso8601
 
 
 class ProvenanceMiddleware(BaseCallbackHandler):
@@ -73,7 +72,7 @@ class ProvenanceMiddleware(BaseCallbackHandler):
             run_id=run_id,
             parent_run_id=parent_run_id,
             node_name=node_name,
-            timestamp_start=_now_iso8601(),
+            timestamp_start=now_iso8601(),
             inputs=inputs or {},
         )
 
@@ -115,7 +114,7 @@ class ProvenanceMiddleware(BaseCallbackHandler):
         self._steps[run_id] = _StepFrame(
             run_id=run_id,
             parent_run_id=parent_run_id,
-            timestamp_start=_now_iso8601(),
+            timestamp_start=now_iso8601(),
             serialized=serialized or {},
             messages=messages or [],
             metadata=metadata or {},
@@ -173,7 +172,7 @@ class ProvenanceMiddleware(BaseCallbackHandler):
         self._tools[run_id] = _ToolFrame(
             run_id=run_id,
             parent_run_id=parent_run_id,
-            timestamp_start=_now_iso8601(),
+            timestamp_start=now_iso8601(),
             serialized=serialized or {},
             input_str=input_str or "",
             metadata=metadata or {},

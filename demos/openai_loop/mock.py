@@ -33,9 +33,8 @@ import pathlib
 from dataclasses import dataclass, field
 from typing import Any
 
-from agent_prov._hashing import _now_iso8601
 from agent_prov.bundle_generator import BundleGenerator
-from agent_prov.session import PipelineSession
+from agent_prov.session import PipelineSession, now_iso8601
 
 
 PIPELINE_ID = "c7a2e9d4-3b16-4f8a-9e20-1d5c8b7f2a44"
@@ -232,7 +231,7 @@ def _run_agent(
     """
     while True:
         # --- model call -----------------------------------------------------
-        ts = _now_iso8601()  # the factory stamps timestamp_end itself
+        ts = now_iso8601()  # the factory stamps timestamp_end itself
         completion = client.create(model=MODEL, messages=messages, tools=tools)
         message = completion.choices[0].message
 
@@ -252,7 +251,7 @@ def _run_agent(
         # --- tool calls -----------------------------------------------------
         for call in message.tool_calls:
             args = _parse_args(call.function.arguments)
-            ts = _now_iso8601()
+            ts = now_iso8601()
             result = _TOOL_FNS[call.function.name](**args)
 
             session.add_tool_invocation(

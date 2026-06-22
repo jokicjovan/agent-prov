@@ -7,7 +7,7 @@ load time without forming a cycle.
 
 ``canonical_json_sha256`` defines the protocol's canonical hash form;
 ``hash_content`` is the convenience wrapper the session factory and
-``HumanReview`` call; ``_now_iso8601`` stamps the UTC timestamps that records
+``HumanReview`` call; ``now_iso8601`` stamps the UTC timestamps that records
 carry.
 """
 
@@ -20,7 +20,7 @@ from typing import Any
 import rfc8785
 
 
-def _now_iso8601() -> str:
+def now_iso8601() -> str:
     """UTC ISO 8601 timestamp with `Z` suffix (matches schema `iso8601_timestamp`)."""
     return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
 

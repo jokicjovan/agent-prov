@@ -124,9 +124,11 @@ against a provider SDK — is instrumented by calling the factory directly, with
 adapter machinery:
 
 ```python
+from agent_prov.session import PipelineSession, now_iso8601
+
 session = PipelineSession()
 
-ts = _now_iso8601()
+ts = now_iso8601()
 resp = client.chat.completions.create(model="gpt-4o", messages=messages, tools=tools)
 session.add_agent_step(
     agent_id="planner", model_id="gpt-4o", model_version="gpt-4o-2024-11-20",

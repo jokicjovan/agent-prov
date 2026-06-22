@@ -7,7 +7,7 @@ import pathlib
 from typing import Any
 from uuid import uuid4
 
-from agent_prov._hashing import _now_iso8601, canonical_json_sha256
+from agent_prov._hashing import now_iso8601, canonical_json_sha256
 from agent_prov.validation import validate_bundle
 
 
@@ -83,7 +83,7 @@ class BundleGenerator:
             "protocol_version": self._session.protocol_version,
             "pipeline_id": self._session.pipeline_id,
             "session_id": self._session.session_id,
-            "created_at": _now_iso8601(),
+            "created_at": now_iso8601(),
             "disclosure_presented": self._disclosure_presented,
             "outcome": self._resolve_outcome(),
             "records": list(self._session.records),

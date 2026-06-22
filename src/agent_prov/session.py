@@ -11,6 +11,11 @@ and append. An adapter's only job is to extract framework primitives and call
 these — record shape and hashing live here, not in any one adapter. The
 ``SessionProtocol`` seam below is the framework-neutral interface those adapters
 code against; ``PipelineSession`` is its canonical implementor.
+
+``now_iso8601`` is re-exported here so that ``agent_prov.session`` is the single
+public import home for everything an adapter needs to drive the factory by hand:
+the session, the ``SessionProtocol`` seam, the ``add_*`` methods, and the
+start-timestamp helper an adapter stamps before each observed call.
 """
 
 from __future__ import annotations
@@ -19,7 +24,7 @@ import re
 from typing import Any, Protocol, runtime_checkable
 from uuid import uuid4
 
-from agent_prov._hashing import _now_iso8601, hash_content
+from agent_prov._hashing import now_iso8601, hash_content
 
 
 _DEFAULT_PROTOCOL_VERSION = "0.2.0"
@@ -302,7 +307,7 @@ class PipelineSession:
             "model_id": model_id,
             "model_version": model_version,
             "timestamp_start": timestamp_start,
-            "timestamp_end": _now_iso8601(),
+            "timestamp_end": now_iso8601(),
             "input_hash": hash_content(input),
             "reference_data_id": reference_data_id,
             "parent_record_id": self.last_record_id,
@@ -329,7 +334,7 @@ class PipelineSession:
             "tool_name": tool_name,
             "tool_version": tool_version,
             "timestamp_start": timestamp_start,
-            "timestamp_end": _now_iso8601(),
+            "timestamp_end": now_iso8601(),
             "input_hash": hash_content(input),
             "reference_data_id": reference_data_id,
             "parent_record_id": self.last_record_id,
