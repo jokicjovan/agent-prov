@@ -67,10 +67,13 @@ def _to_serializable(obj: Any) -> Any:
     """
     if obj is None or isinstance(obj, (str, bool, int, float)):
         return obj
+    # `model_dump` (Pydantic v2) covers every model object that reaches this
+    # function: LangChain messages on the pinned langchain-core are Pydantic v2,
+    # so they expose it. No Pydantic-v1 `.dict()` fallback is kept on purpose --
+    # it would have to duck-type on a method named `dict`, which any unrelated
+    # object could define, and nothing in the current input set needs it.
     if hasattr(obj, "model_dump"):
         return _to_serializable(obj.model_dump())
-    if hasattr(obj, "dict") and callable(obj.dict):
-        return _to_serializable(obj.dict())
     if isinstance(obj, dict):
         return {str(k): _to_serializable(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):

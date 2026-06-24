@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://provenance-protocol.thesis/schemas/pipeline_bundle.schema.json",
+  "$id": "https://jokicjovan.github.io/agent-prov/schemas/v0.2/pipeline_bundle.schema.json",
   "title": "Pipeline Bundle",
   "description": "Top-level container wrapping all records for a single pipeline run. Carries the integrity seal (bundle_hash) and the disclosure flag. Primary EU AI Act mapping: Art. 12(1), 12(2), 50(1).",
   "type": "object",
@@ -56,9 +56,9 @@
       "minItems": 1,
       "items": {
         "oneOf": [
-          { "$ref": "https://provenance-protocol.thesis/schemas/agent_step.schema.json" },
-          { "$ref": "https://provenance-protocol.thesis/schemas/tool_invocation.schema.json" },
-          { "$ref": "https://provenance-protocol.thesis/schemas/human_intervention.schema.json" }
+          { "$ref": "https://jokicjovan.github.io/agent-prov/schemas/v0.2/agent_step.schema.json" },
+          { "$ref": "https://jokicjovan.github.io/agent-prov/schemas/v0.2/tool_invocation.schema.json" },
+          { "$ref": "https://jokicjovan.github.io/agent-prov/schemas/v0.2/human_intervention.schema.json" }
         ]
       },
       "description": "Ordered list of provenance records produced during the pipeline run. Each item must validate against exactly one of the Agent Step, Tool Invocation, or Human Intervention record schemas (discriminated by record_type). EU AI Act Art. 12(2) — the ordered chain is the traceability evidence."

@@ -46,6 +46,13 @@ class ProvenanceMiddleware(BaseCallbackHandler):
 
     def __init__(self, session: SessionProtocol) -> None:
         self.session = session
+        # Per-run-id frame buckets, keyed open on `*_start` and popped on `*_end`.
+        # These dicts are mutated directly in the callbacks without a lock, which
+        # is safe for synchronous graph execution (callbacks fire on one thread,
+        # one event at a time). Under async or thread-parallel execution the
+        # start/end events for concurrent runs can interleave across threads;
+        # guard these three dicts (and the session's append) with a lock, or hold
+        # one middleware instance per run, before relying on the adapter there.
         self._nodes: dict[UUID, _NodeFrame] = {}
         self._steps: dict[UUID, _StepFrame] = {}
         self._tools: dict[UUID, _ToolFrame] = {}
