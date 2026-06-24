@@ -68,13 +68,16 @@ signature: anyone who can alter a bundle can recompute a fresh, internally
 consistent `bundle_hash` over the altered contents. The seal therefore protects
 a bundle in transit to an auditor who already holds the expected digest through
 a trusted channel, and it protects against silent corruption — but it does not
-on its own bind the bundle to the party that produced it, and it does not stop a
+*on its own* bind the bundle to the party that produced it, and it does not stop a
 malicious producer from generating a wholly fabricated-but-consistent bundle
 after the fact. Closing this gap requires a digital signature over `bundle_hash`
-by a key the deployer controls, and ideally a trusted timestamp; both are noted
-in §6.5.4. The current protocol provides the canonical form that such a
-signature would sign, which is the prerequisite, but it does not specify the
-signature itself.
+by a key the deployer controls, and ideally a trusted timestamp. The
+implementation now ships the first of these as an optional detached signature
+layer (`agent_prov.signing`, §6.5.4): a deployment that opts in binds the seal to
+a signing key, so the unkeyed-recompute attack above no longer produces a valid
+bundle. The bare protocol core remains unsigned by design — signing is an opt-in
+layer over the canonical seal, not a property of every bundle — and trusted
+timestamping remains future work.
 
 **The chain proves order, not causation, and not completeness.** As recorded in
 §4.13 and §3.7.3, `parent_record_id` is a chronological cursor — it links each
@@ -370,20 +373,33 @@ addressed multi-agent provenance.
 
 ### 6.5.4 Cryptographic signing and trusted timestamping
 
-The authenticity gap identified in §6.2.2 is closed by signing. A digital
-signature over `bundle_hash` by a key the deployer controls binds the bundle to
-its producer and converts tamper-*evidence* into non-repudiable attestation: an
-auditor verifies not only that the bundle is internally consistent but that it
-was sealed by the claimed party and not fabricated by a third one. Pairing the
-signature with a timestamp from a trusted timestamping authority (RFC 3161)
-additionally binds the seal to a point in time, which matters for an oversight
-record whose evidentiary value depends on *when* the human decision was attested.
-The protocol already produces the canonical, stable byte form that such a
-signature must sign — this is why RFC 8785 canonicalisation was chosen over an
-ad-hoc serialisation — so the extension is additive: a signature envelope around
-the existing seal, not a change to the records. The harder, deployment-specific
-question is key management and the chain of trust for the signing key, which is
-why the PoC stops at the integrity layer.
+The authenticity gap identified in §6.2.2 is closed by signing, and the
+implementation now provides it as an optional layer. A digital signature over
+`bundle_hash` by a key the deployer controls binds the bundle to its producer and
+converts tamper-*evidence* into non-repudiable attestation: an auditor verifies
+not only that the bundle is internally consistent but that it was sealed by the
+claimed party and not fabricated by a third one. The `agent_prov.signing` package
+(behind the `agent-prov[signing]` extra, so the protocol core stays crypto-free)
+implements this as a *detached* envelope rather than a field inside the bundle,
+keeping the record set byte-stable and independently hashable. Following
+established provenance-signing practice (in-toto / SLSA / DSSE / Sigstore), it
+uses an asymmetric scheme (Ed25519) so a verifier needs only the public key, and
+it signs a *bound* payload — `{payload_type, algorithm, signed_hash}`
+canonicalised through the same RFC 8785 path used for the seal — rather than the
+bare digest, so a signature cannot be lifted and replayed in another context.
+This is also why RFC 8785 canonicalisation was chosen over an ad-hoc
+serialisation: the signature is additive, an envelope around the existing seal,
+not a change to the records.
+
+Two things remain genuinely future work. First, *trusted timestamping*: pairing
+the signature with a timestamp from a timestamping authority (RFC 3161) binds the
+seal to a point in time, which matters for an oversight record whose evidentiary
+value depends on *when* the human decision was attested. Second, the
+*chain of trust* for the signing key: the PoC envelope self-describes its public
+key (trust on first use), which proves a bundle was signed by *some* key but not
+*whose* — production use needs a certificate chain or a transparency log
+(Sigstore/Rekor-style) to anchor key identity. The signing layer deliberately
+stops at the cryptographic primitive and names key management as the next step.
 
 ### 6.5.5 Deployment-profile schema variants
 

@@ -25,6 +25,17 @@ def now_iso8601() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
 
 
+def canonical_json_bytes(obj: Any) -> bytes:
+    """Return the RFC 8785 canonical-JSON bytes of *obj*.
+
+    The single canonicalization entry point. *obj* must already be pure JSON
+    primitives -- ``rfc8785.dumps`` rejects anything else. Use this when the
+    canonical *bytes* are needed directly (e.g. signing a bound payload);
+    :func:`canonical_json_sha256` is the digest of these same bytes.
+    """
+    return rfc8785.dumps(obj)
+
+
 def canonical_json_sha256(obj: Any) -> str:
     """Return the SHA-256 hex digest of *obj* serialized as canonical JSON.
 
@@ -36,13 +47,13 @@ def canonical_json_sha256(obj: Any) -> str:
     these digests byte-for-byte, rather than having to match this reference
     implementation's incidental quirks.
 
-    *obj* must already be pure JSON primitives — ``rfc8785.dumps`` rejects
+    *obj* must already be pure JSON primitives -- ``rfc8785.dumps`` rejects
     anything else. This is the direct entry point for data that is already
     JSON-shaped (e.g. a fully assembled bundle in ``compute_bundle_hash``).
     Callers holding richer objects (LangChain messages, ``UUID``, ``datetime``)
     should use :func:`hash_content`, which normalises first.
     """
-    return hashlib.sha256(rfc8785.dumps(obj)).hexdigest()
+    return hashlib.sha256(canonical_json_bytes(obj)).hexdigest()
 
 
 def hash_content(obj: Any) -> str:

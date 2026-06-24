@@ -40,6 +40,11 @@ langchain = [
     "langgraph>=1.1.10",
     "python-dotenv>=1.2.2",
 ]
+# Detached bundle signing (agent_prov.signing). Adds Ed25519 sign/verify over
+# the bundle seal; the protocol core stays crypto-free.
+signing = [
+    "cryptography>=42",
+]
 
 [dependency-groups]
 dev = [
@@ -49,6 +54,7 @@ dev = [
     "python-dotenv>=1.2.2",
     "pytest>=7.0",
     "fpdf2>=2.8",
+    "cryptography>=42",
 ]
 
 [tool.pytest.ini_options]
