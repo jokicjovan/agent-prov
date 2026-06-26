@@ -55,6 +55,7 @@ dev = [
     "pytest>=7.0",
     "fpdf2>=2.8",
     "cryptography>=42",
+    "check-jsonschema>=0.37.3",
 ]
 
 [tool.pytest.ini_options]

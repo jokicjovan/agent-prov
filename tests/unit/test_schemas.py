@@ -1,6 +1,6 @@
 """Schema validation and bundle-hash unit tests.
 
-Twelve test cases covering:
+Test cases covering:
   1-4  Happy-path validation for each of the four record schemas.
   5    Missing required field rejected (schema-level).
   6    additionalProperties: false rejects an unknown field (schema-level).
@@ -11,15 +11,20 @@ Twelve test cases covering:
   11   timestamp_end >= timestamp_start enforced (validate_record).
   12   canonical_json_sha256 + compute_bundle_hash properties:
         determinism, key-order independence, content sensitivity, bundle_hash exclusion.
+  13   Schemas load as package resources (wheel-install code path).
+  14   Each schema file is itself a well-formed draft 2020-12 schema.
+  15   Example documents validate (or are rejected) as expected.
 """
 
 from __future__ import annotations
 
 import copy
 import json
+import pathlib
 from typing import Any
 
 import pytest
+from jsonschema import Draft202012Validator
 
 from _helpers import (
     AGENT_STEP_SCHEMA,
@@ -295,3 +300,45 @@ def test_13_schemas_load_as_package_resources():
     for name in schema_files:
         loaded = json.loads(root.joinpath(name).read_text(encoding="utf-8"))
         assert loaded["$id"].endswith(name), name
+
+
+# ---------------------------------------------------------------------------
+# Tests 14-15 — the schema files are conformant, and example documents
+# validate as expected. Replaces the external (ajv/Node) schema-linting step
+# with the same engine the protocol already uses, keeping validation in one
+# Python toolchain (no cross-implementation independence is claimed).
+# ---------------------------------------------------------------------------
+
+SCHEMA_EXAMPLES = pathlib.Path(__file__).resolve().parent.parent / "schema_examples"
+
+
+def _load_example(name: str) -> dict:
+    return json.loads((SCHEMA_EXAMPLES / name).read_text(encoding="utf-8"))
+
+
+def test_14_all_schemas_are_valid_draft_2020_12():
+    """Each schema file is itself a well-formed draft 2020-12 schema.
+
+    ``check_schema`` validates a schema against the draft 2020-12 meta-schema --
+    the lint that catches a malformed schema (bad keyword, wrong type) before it
+    ever reaches a record. This is the check the external ajv tooling performed.
+    """
+    for schema in (
+        AGENT_STEP_SCHEMA,
+        TOOL_INVOCATION_SCHEMA,
+        HUMAN_INTERVENTION_SCHEMA,
+        PIPELINE_BUNDLE_SCHEMA,
+    ):
+        Draft202012Validator.check_schema(schema)
+
+
+def test_15_example_documents_validate_as_expected():
+    valid = _load_example("agent_step.valid.json")
+    assert _is_valid(AGENT_STEP_SCHEMA, valid)
+    validate_record(valid)  # full surface: structural + conditional rules
+
+    for bad in (
+        "agent_step.invalid_bad_hash.json",
+        "agent_step.invalid_missing_required.json",
+    ):
+        assert not _is_valid(AGENT_STEP_SCHEMA, _load_example(bad)), bad

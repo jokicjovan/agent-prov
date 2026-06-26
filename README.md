@@ -190,6 +190,19 @@ tests/          unit + integration test suite
 uv run pytest
 ```
 
+The suite also checks that the schema files are well-formed and that the
+example documents validate (`tests/unit/test_schemas.py`). To lint the schemas
+or validate a document by hand, use the `check-jsonschema` CLI (a dev
+dependency):
+
+```bash
+# lint the schema files themselves (well-formed draft 2020-12)
+uv run check-jsonschema --check-metaschema src/agent_prov/schemas/*.schema.json
+
+# validate a document against a schema
+uv run check-jsonschema --schemafile src/agent_prov/schemas/agent_step.schema.json tests/schema_examples/agent_step.valid.json
+```
+
 ---
 
 ## Scope and limitations
