@@ -180,6 +180,21 @@ Enforcing it requires a deployment-profile schema variant that tightens the
 constraint for the biometric population without forcing it on every pipeline
 (§6.5.5).
 
+**The durability log is operational, not evidential.** The optional event log
+(§4.7.1) closes the window in which an unsealed run lives only in process memory,
+but it is deliberately a recovery aid rather than a second evidentiary artefact:
+it is plain JSON, carries no integrity hash of its own, and is trusted only to
+the extent the host's filesystem is. Its guarantee is "a record `add_record`
+accepted is on disk", not "this log was not tampered with" — the tamper-evidence
+and tamper-proof properties belong to the sealed bundle and its signature
+(§6.2), which a recovered run is put through unchanged. Three operational
+boundaries remain a deployment's responsibility: the log grows unbounded within a
+run (no segment rotation or compaction), a single session writes a single log
+from scratch (resuming an existing log across a process restart is not modelled),
+and the log is not itself signed. None of these affect the evidentiary force of
+the bundle a recovered session produces; they are the difference between a
+proof-of-concept durability layer and a production log subsystem.
+
 ## 6.4 The boundaries the out-of-scope obligations mark
 
 Four clauses were marked *out of scope* in the completeness audit (§5.2.3):

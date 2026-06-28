@@ -118,6 +118,32 @@ top-level `agent_prov` package and pulls in no optional extra. (The
 `ProvenanceMiddleware` adapter and the `ComplianceReport` renderer stay behind
 their `langchain` / `reporting` extras and are imported from their own modules.)
 
+### Survive a crash before sealing
+
+Records live in memory until the bundle is sealed, so a crash mid-run would lose
+the evidence — including the failed run an auditor most wants. Attach an
+append-only NDJSON event log and every record is streamed to disk (flushed and
+`fsync`'d) as it is added:
+
+```python
+from agent_prov import PipelineSession, EventLog
+
+with EventLog("run.ndjson") as log:
+    session = PipelineSession(event_log=log)
+    ...  # run the pipeline; records are now durable as they are emitted
+```
+
+After a crash, recover the log into a session and seal it as usual — from the
+CLI, or programmatically with `recover_session`:
+
+```bash
+uv run python -m agent_prov.persistence run.ndjson recovered_bundle.json --outcome aborted
+```
+
+A half-written final line (a crash mid-write) is tolerated; the recovered bundle
+is re-validated and its `bundle_hash` recomputed at seal time. This is core
+functionality — no extra required.
+
 ### Instrumenting your own pipeline
 
 The LangChain adapter ships under the `langchain` extra (`pip install
@@ -173,6 +199,7 @@ This runs on the bare `agent-prov` core (no `langchain` extra). See
 src/agent_prov/ framework-neutral protocol core (session + record factory, schemas, validation, sealing, HITL)
   schemas/      JSON Schema for the four record types (shipped with the package)
   verify/       independent bundle verifier + `python -m agent_prov.verify` CLI
+  persistence/  crash-safe append-only event log + recovery CLI (`python -m agent_prov.persistence`)
   adapters/
     langchain/  LangChain/LangGraph adapter — middleware + emitters (optional `langchain` extra)
   reporting/    compliance report generator (optional `reporting` extra)

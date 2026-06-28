@@ -22,6 +22,7 @@ of the optional extras:
 from __future__ import annotations
 
 from agent_prov.bundle_generator import BundleGenerator, compute_bundle_hash
+from agent_prov.persistence import EventLog, EventLogError, recover_session
 from agent_prov.session import PipelineSession, SessionProtocol, now_iso8601
 from agent_prov.validation import (
     ProtocolValidationError,
@@ -36,6 +37,9 @@ __all__ = [
     "PipelineSession",
     "SessionProtocol",
     "now_iso8601",
+    "EventLog",
+    "EventLogError",
+    "recover_session",
     "ProtocolValidationError",
     "validate_bundle",
     "validate_record",

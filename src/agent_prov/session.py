@@ -42,6 +42,22 @@ _SEMVER_RE = re.compile(
 
 
 @runtime_checkable
+class EventSink(Protocol):
+    """Durability sink a session streams records to as they are appended.
+
+    Implemented by :class:`agent_prov.persistence.EventLog`. Declared here as a
+    structural type so ``session.py`` stays a framework-neutral leaf: it never
+    imports ``persistence`` (which imports it), avoiding a cycle.
+    """
+
+    def write_header(
+        self, *, pipeline_id: str, session_id: str, protocol_version: str
+    ) -> None: ...
+
+    def append_record(self, record: dict[str, Any]) -> None: ...
+
+
+@runtime_checkable
 class SessionProtocol(Protocol):
     """Framework-neutral interface an adapter needs from a `PipelineSession`.
 
@@ -125,6 +141,11 @@ class PipelineSession:
             scheduled runs). Must be a lowercase RFC 4122 UUID; omit to generate
             a fresh one.
         protocol_version: Semver string stamped on every emitted record.
+        event_log: Optional durability sink (an
+            :class:`agent_prov.persistence.EventLog`). When supplied, the
+            session header is written immediately and every appended record is
+            streamed to it, so an unsealed run survives a crash and can be
+            recovered with :func:`agent_prov.persistence.recover_session`.
 
     Raises:
         ValueError: if a supplied ``pipeline_id`` is not a lowercase UUID, or
@@ -139,6 +160,7 @@ class PipelineSession:
         *,
         pipeline_id: str | None = None,
         protocol_version: str = _DEFAULT_PROTOCOL_VERSION,
+        event_log: EventSink | None = None,
     ) -> None:
         if pipeline_id is not None and not _UUID_RE.match(pipeline_id):
             raise ValueError(
@@ -154,11 +176,25 @@ class PipelineSession:
         self.protocol_version: str = protocol_version
         self.records: list[dict[str, Any]] = []
         self.last_record_id: str | None = None
+        self._event_log = event_log
+        if event_log is not None:
+            event_log.write_header(
+                pipeline_id=self.pipeline_id,
+                session_id=self.session_id,
+                protocol_version=self.protocol_version,
+            )
 
     def add_record(self, record: dict[str, Any]) -> None:
-        """Append *record* to the session and update last_record_id."""
+        """Append *record* to the session and update last_record_id.
+
+        When an event log is attached the record is streamed to it after the
+        in-memory state is updated, so the in-memory bundle stays complete even
+        if the durable write raises (e.g. the disk is full).
+        """
         self.records.append(record)
         self.last_record_id = record["record_id"]
+        if self._event_log is not None:
+            self._event_log.append_record(record)
 
     # ----------------------------------------------------------- record factory
     #
