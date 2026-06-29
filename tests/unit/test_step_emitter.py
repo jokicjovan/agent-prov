@@ -1,4 +1,4 @@
-"""Tests for AgentStepEmitter — field extraction, hash determinism, schema shape."""
+"""Tests for AgentStepEmitter - field extraction, hash determinism, schema shape."""
 
 from __future__ import annotations
 

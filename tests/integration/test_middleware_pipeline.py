@@ -1,7 +1,7 @@
 """End-to-end middleware integration test.
 
-Builds a minimal LangGraph pipeline in-process — agent (with tool call) →
-human review (edit) → finaliser agent — exercises it through
+Builds a minimal LangGraph pipeline in-process - agent (with tool call) ->
+human review (edit) -> finaliser agent - exercises it through
 ``ProvenanceMiddleware`` + ``PipelineSession`` + ``HumanReview`` +
 ``BundleGenerator``, and validates the resulting bundle against the
 Pipeline Bundle schema and the chronological parent-chain contract.
@@ -17,7 +17,7 @@ What this exercises that the unit tests do not:
   ``on_llm_end``, ``on_tool_start/end``) under a real ``StateGraph.invoke``.
 * Composition of two emitters (``AgentStepEmitter``,
   ``ToolInvocationEmitter``) with ``HumanReview`` between graph segments.
-* ``parent_record_id`` chaining across the human/agent boundary —
+* ``parent_record_id`` chaining across the human/agent boundary -
   the finaliser agent must point at the HITL record, not the previous
   agent step.
 * ``BundleGenerator.to_file`` + canonical hashing on a real session.
@@ -161,7 +161,7 @@ def test_full_pipeline_with_hitl_produces_valid_bundle(tmp_path: pathlib.Path) -
         "agent_step",
     ], f"unexpected record sequence: {types}"
 
-    # 3. Chronological parent chain — head has no parent; every subsequent
+    # 3. Chronological parent chain - head has no parent; every subsequent
     #    record points at the immediately preceding record_id. The third
     #    record's parent must be the HITL, crossing the human boundary.
     assert records[0].get("parent_record_id") is None
@@ -174,7 +174,7 @@ def test_full_pipeline_with_hitl_produces_valid_bundle(tmp_path: pathlib.Path) -
         "finaliser agent_step must point at the HITL record"
     )
 
-    # 4. HITL action ↔ output_after_hash conventions
+    # 4. HITL action <-> output_after_hash conventions
     validate_record(records[2])
     assert records[2]["action_type"] == "edited"
     assert records[2]["output_before_hash"] != records[2]["output_after_hash"]

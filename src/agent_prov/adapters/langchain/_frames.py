@@ -7,14 +7,14 @@ A *frame* is a short-lived bucket that holds the payload of a callback
 (``serialized`` / ``messages`` / ``input_str``) before handing primitives to the
 session's record factory.
 
-Keeping the frame dataclasses in this leaf module — imported by both
-``middleware`` and the emitters, importing nothing from them in return — is what
+Keeping the frame dataclasses in this leaf module - imported by both
+``middleware`` and the emitters, importing nothing from them in return - is what
 lets every module in the adapter resolve its imports at load time. A shared
 definition in ``middleware`` would instead force ``middleware`` and the emitters
 into a circular import.
 
 This module also exposes ``_derive_agent_id``, the resolver both emitters use to
-turn a frame's enclosing node into an ``agent_id`` — it lives here because it
+turn a frame's enclosing node into an ``agent_id`` - it lives here because it
 operates purely on the frame types and is shared by the two emitters.
 """
 

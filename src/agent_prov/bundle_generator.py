@@ -67,7 +67,7 @@ class BundleGenerator:
         The sealed bundle is validated through the single protocol validation
         surface (structure of the bundle and every record, plus the conditional
         rules JSON Schema cannot express) before it is returned. This runs at
-        seal time — after the observed pipeline has finished — so enforcement
+        seal time - after the observed pipeline has finished - so enforcement
         never crashes the pipeline mid-run.
 
         Raises:

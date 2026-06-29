@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Sentinel written to tool_version when no version can be resolved. It satisfies
 # the schema's minLength constraint and keeps an uninstrumented tool from
-# crashing the pipeline, but it carries no drift-detection signal — so the
+# crashing the pipeline, but it carries no drift-detection signal - so the
 # fallback is logged at WARNING level rather than applied silently. Deployments
 # that care about version drift should supply an explicit tool_version.
 _UNVERSIONED = "unversioned"
@@ -83,7 +83,7 @@ def _extract_tool_name(frame: _ToolFrame) -> str:
 
 
 def _extract_tool_version(frame: _ToolFrame) -> str:
-    # Explicit version declared in serialized kwargs — set by tool author
+    # Explicit version declared in serialized kwargs - set by tool author
     if v := (frame.serialized or {}).get("kwargs", {}).get("version"):
         return str(v)
     # Version supplied via metadata by the caller

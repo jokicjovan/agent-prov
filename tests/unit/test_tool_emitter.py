@@ -1,4 +1,4 @@
-"""Tests for ToolInvocationEmitter — field extraction, hash determinism, schema shape.
+"""Tests for ToolInvocationEmitter - field extraction, hash determinism, schema shape.
 
 Covers:
   Unit tests: emit output shape, tool name/version extraction, agent_id derivation,
@@ -56,7 +56,7 @@ FAKE_OUTPUT = "Here are the top results for EU AI Act Article 12..."
 
 
 # ---------------------------------------------------------------------------
-# Unit tests — emit_tool_invocation output shape
+# Unit tests - emit_tool_invocation output shape
 # ---------------------------------------------------------------------------
 
 
@@ -120,7 +120,7 @@ def test_sequential_tool_calls_chain_parent_record_ids():
 
 
 # ---------------------------------------------------------------------------
-# Unit tests — reference_data_id pass-through
+# Unit tests - reference_data_id pass-through
 # ---------------------------------------------------------------------------
 
 
@@ -142,7 +142,7 @@ def test_reference_data_id_defaults_to_none_without_metadata():
 
 
 # ---------------------------------------------------------------------------
-# Unit tests — tool name extraction
+# Unit tests - tool name extraction
 # ---------------------------------------------------------------------------
 
 
@@ -162,7 +162,7 @@ def test_tool_name_falls_back_to_unknown_when_serialized_is_empty_dict():
 
 
 # ---------------------------------------------------------------------------
-# Unit tests — tool version extraction
+# Unit tests - tool version extraction
 # ---------------------------------------------------------------------------
 
 
@@ -210,7 +210,7 @@ def test_tool_version_no_warning_when_version_present(caplog):
 
 
 # ---------------------------------------------------------------------------
-# Unit tests — agent_id derivation
+# Unit tests - agent_id derivation
 # ---------------------------------------------------------------------------
 
 
@@ -241,7 +241,7 @@ def test_agent_id_is_unknown_when_no_parent():
 
 
 # ---------------------------------------------------------------------------
-# Unit tests — hash properties
+# Unit tests - hash properties
 # ---------------------------------------------------------------------------
 
 
@@ -266,7 +266,7 @@ def test_different_tool_inputs_produce_different_hashes():
 
 
 # ---------------------------------------------------------------------------
-# Integration tests — ProvenanceMiddleware lifecycle
+# Integration tests - ProvenanceMiddleware lifecycle
 # ---------------------------------------------------------------------------
 
 

@@ -8,16 +8,16 @@ network/model variance and the benchmark does not couple to demo internals.
 
 Two parametric workloads are swept over a record-count grid:
 
-* ``agent_steps`` — a linear chain of N fake-LLM nodes whose first node also
+* ``agent_steps`` - a linear chain of N fake-LLM nodes whose first node also
   calls a tool. Produces N ``agent_step`` records + 1 ``tool_invocation``.
-* ``hitl`` — one seed agent step followed by M ``HumanReview`` blocks. Produces
+* ``hitl`` - one seed agent step followed by M ``HumanReview`` blocks. Produces
   1 ``agent_step`` + M ``human_intervention`` records.
 
 Each (workload, size) is run under two paired conditions:
 
-* **baseline**     — graphs run with no callbacks; no records, no bundle. The
+* **baseline**     - graphs run with no callbacks; no records, no bundle. The
   pipeline as it would run without the protocol.
-* **instrumented** — the same compiled graphs run with ``ProvenanceMiddleware``
+* **instrumented** - the same compiled graphs run with ``ProvenanceMiddleware``
   attached (and ``HumanReview`` blocks for the HITL workload), then the session
   is sealed into a bundle. ``seal_ms`` (canonical-JSON hashing + validation +
   file write) is timed separately from graph execution.

@@ -1,6 +1,6 @@
 """Single validation surface for protocol records and bundles.
 
-Validity has two mechanisms that cannot be merged into one — JSON Schema
+Validity has two mechanisms that cannot be merged into one - JSON Schema
 expresses structure (required fields, types, patterns, enums) but cannot
 compare two field *values* to each other. This module composes both behind one
 entry point so callers and tests go through a single door:
@@ -8,7 +8,7 @@ entry point so callers and tests go through a single door:
 * structural validation against the JSON Schema files (``jsonschema``, Draft
   2020-12), and
 * the conditional rules JSON Schema cannot express:
-    - ``action_type`` ↔ ``output_after_hash`` on Human Intervention records, and
+    - ``action_type`` <-> ``output_after_hash`` on Human Intervention records, and
     - ``timestamp_end >= timestamp_start`` on Agent Step / Tool Invocation.
 
 ``validate_record`` validates a single record; ``validate_bundle`` validates a

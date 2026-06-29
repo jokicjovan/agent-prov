@@ -90,7 +90,7 @@ def test_04_dangling_parent_detected():
 
 def test_05_forward_parent_reference_detected():
     bundle = _sealed_bundle()
-    # Head record points at the second (later) record — a forward reference.
+    # Head record points at the second (later) record - a forward reference.
     bundle["records"][0]["parent_record_id"] = bundle["records"][1]["record_id"]
     result = verify_bundle(_reseal(bundle))
     assert not result.ok
@@ -179,6 +179,6 @@ def test_14_curated_top_level_api_is_importable():
         "VerificationResult",
     ):
         assert hasattr(agent_prov, name), f"agent_prov.{name} should be re-exported"
-    # The adapter and reporting surfaces stay behind their extras — not top-level.
+    # The adapter and reporting surfaces stay behind their extras - not top-level.
     assert not hasattr(agent_prov, "ProvenanceMiddleware")
     assert not hasattr(agent_prov, "ComplianceReport")

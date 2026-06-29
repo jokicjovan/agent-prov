@@ -70,7 +70,7 @@ def emit_agent_step_error(
 # every generated ``AIMessage`` (and a fresh ``tool_call_id`` on every
 # ``ToolMessage``). Replaying the same pipeline with the same prompt would then
 # yield a different ``input_hash`` / ``output_hash`` on each run, even when
-# nothing semantically changed — defeating the auditor's "did this input
+# nothing semantically changed - defeating the auditor's "did this input
 # produce this output" check. The projection below keeps only the semantic
 # fields (type, content, tool-call name/args, tool name on tool responses) and
 # is applied symmetrically on both sides so a single conversation digests
@@ -83,7 +83,7 @@ def _semantic_message(msg: Any) -> dict[str, Any]:
     Keeps ``type`` (so HumanMessage / AIMessage / ToolMessage do not collide
     on identical content), ``content``, and any ``tool_calls`` (themselves
     projected to drop runtime ids). Includes a ToolMessage's ``name`` when
-    present — the tool name is semantic and lets the auditor see which tool
+    present - the tool name is semantic and lets the auditor see which tool
     produced a given response.
     """
     payload: dict[str, Any] = {
@@ -113,7 +113,7 @@ def _semantic_output(response: Any) -> Any:
     """Reduce an LLM response to its run-stable semantic payload.
 
     Falls back to hashing the response whole if it has no recognisable
-    ``generations`` structure — better an opaque digest than a dropped output.
+    ``generations`` structure - better an opaque digest than a dropped output.
     """
     generations = _get(response, "generations")
     if not generations:
@@ -147,7 +147,7 @@ def _get(obj: Any, key: str) -> Any:
 
 
 def _extract_model_id(frame: _StepFrame) -> str:
-    # LangSmith standard metadata key — most reliable source
+    # LangSmith standard metadata key - most reliable source
     if name := frame.metadata.get("ls_model_name"):
         return str(name)
     # Provider-specific serialized kwargs
@@ -155,7 +155,7 @@ def _extract_model_id(frame: _StepFrame) -> str:
     for key in ("model", "model_name"):
         if val := kwargs.get(key):
             return str(val)
-    # Fall back to the class name (e.g. "ChatOpenAI") — coarse but non-empty
+    # Fall back to the class name (e.g. "ChatOpenAI") - coarse but non-empty
     return frame.serialized.get("name", "unknown") or "unknown"
 
 

@@ -1,4 +1,4 @@
-"""AI Agent Provenance & Compliance Protocol — reference implementation.
+"""AI Agent Provenance & Compliance Protocol - reference implementation.
 
 A provenance layer for LLM multi-agent pipelines. It captures automated agent
 steps, tool calls, and human oversight interventions as four record types,
@@ -13,9 +13,9 @@ verify_bundle`` works on a bare ``pip install agent-prov``.
 Two surfaces are deliberately *not* re-exported here, to keep this import free
 of the optional extras:
 
-* ``ProvenanceMiddleware`` (the LangChain/LangGraph adapter) — import from
+* ``ProvenanceMiddleware`` (the LangChain/LangGraph adapter) - import from
   ``agent_prov.adapters.langchain``; needs the ``agent-prov[langchain]`` extra.
-* ``ComplianceReport`` (PDF reporting) — import from
+* ``ComplianceReport`` (PDF reporting) - import from
   ``agent_prov.reporting``; needs the ``agent-prov[reporting]`` extra.
 """
 

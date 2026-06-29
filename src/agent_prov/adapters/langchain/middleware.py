@@ -1,4 +1,4 @@
-"""ProvenanceMiddleware — LangChain callback handler that drives record emission.
+"""ProvenanceMiddleware - LangChain callback handler that drives record emission.
 
 The middleware subscribes to LangGraph/LangChain lifecycle events (node, chat
 model, tool) and routes them to per-run-id state buckets. The buckets are
@@ -11,7 +11,7 @@ closing it on `*_end`, and surfacing the matched start/end pair to the
 emitter. Field extraction (model identity, hashes, agent_id derivation) lives
 in the emitter modules; the lifecycle frame types live in `_frames`; the
 `SessionProtocol` seam and canonical hashing live in the framework-neutral core.
-Splitting those out keeps the import graph acyclic — `middleware` imports the
+Splitting those out keeps the import graph acyclic - `middleware` imports the
 emitters at module load time, and the emitters import only the leaf modules.
 
 Public surface: ``ProvenanceMiddleware``. Frame types are adapter-internal and
@@ -223,7 +223,7 @@ class ProvenanceMiddleware(BaseCallbackHandler):
 
     @property
     def in_flight(self) -> dict[str, int]:
-        """Counts of unmatched `*_start` events — useful for tests."""
+        """Counts of unmatched `*_start` events - useful for tests."""
         return {
             "nodes": len(self._nodes),
             "steps": len(self._steps),

@@ -1,4 +1,4 @@
-"""Tests for BundleGenerator — session serialization, hash sealing, file output.
+"""Tests for BundleGenerator - session serialization, hash sealing, file output.
 
 Fifteen test cases covering:
   1    generate() output validates against pipeline_bundle.schema.json.
@@ -96,7 +96,7 @@ def _session_with_one_step() -> PipelineSession:
 
 
 # ---------------------------------------------------------------------------
-# Tests 1-11 — generate()
+# Tests 1-11 - generate()
 # ---------------------------------------------------------------------------
 
 
@@ -168,7 +168,7 @@ def test_11_two_generate_calls_produce_distinct_bundle_ids():
 
 
 # ---------------------------------------------------------------------------
-# Test 12 — empty session guard
+# Test 12 - empty session guard
 # ---------------------------------------------------------------------------
 
 
@@ -178,7 +178,7 @@ def test_12_empty_session_raises_value_error():
 
 
 # ---------------------------------------------------------------------------
-# Tests 13-14 — to_file()
+# Tests 13-14 - to_file()
 # ---------------------------------------------------------------------------
 
 
@@ -199,7 +199,7 @@ def test_14_to_file_returns_the_same_bundle_written_to_disk(tmp_path: pathlib.Pa
 
 
 # ---------------------------------------------------------------------------
-# Test 15 — mixed record types
+# Test 15 - mixed record types
 # ---------------------------------------------------------------------------
 
 

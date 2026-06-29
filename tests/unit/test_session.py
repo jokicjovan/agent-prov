@@ -1,4 +1,4 @@
-"""Tests for PipelineSession — ID generation, record accumulation, parent-chain
+"""Tests for PipelineSession - ID generation, record accumulation, parent-chain
 wiring, and the framework-neutral record factory.
 
 Test cases covering:
@@ -11,7 +11,7 @@ Test cases covering:
   10   Records accumulate in insertion order.
   11   last_record_id always tracks the most recently added record.
   12   __len__ mirrors len(session.records).
-  13   SessionProtocol interface — required attributes are all present.
+  13   SessionProtocol interface - required attributes are all present.
   14   Integration: ProvenanceMiddleware + PipelineSession round-trip emits
        a valid, parent-chained record sequence.
   15   Construction rejects a pipeline_id that is not a lowercase UUID.
@@ -40,7 +40,7 @@ FIXED_PIPELINE_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
 
 # ---------------------------------------------------------------------------
-# Tests 1-2 — UUID generation
+# Tests 1-2 - UUID generation
 # ---------------------------------------------------------------------------
 
 
@@ -55,7 +55,7 @@ def test_02_default_session_id_is_a_valid_lowercase_uuid():
 
 
 # ---------------------------------------------------------------------------
-# Tests 3-4 — custom pipeline_id / session uniqueness
+# Tests 3-4 - custom pipeline_id / session uniqueness
 # ---------------------------------------------------------------------------
 
 
@@ -73,7 +73,7 @@ def test_04_two_instances_with_same_pipeline_id_get_distinct_session_ids():
 
 
 # ---------------------------------------------------------------------------
-# Tests 5-6 — protocol version
+# Tests 5-6 - protocol version
 # ---------------------------------------------------------------------------
 
 
@@ -88,7 +88,7 @@ def test_06_custom_protocol_version_is_respected():
 
 
 # ---------------------------------------------------------------------------
-# Test 7 — initial state
+# Test 7 - initial state
 # ---------------------------------------------------------------------------
 
 
@@ -99,7 +99,7 @@ def test_07_last_record_id_is_none_before_any_record_is_added():
 
 
 # ---------------------------------------------------------------------------
-# Tests 8-9 — add_record basic behaviour
+# Tests 8-9 - add_record basic behaviour
 # ---------------------------------------------------------------------------
 
 
@@ -123,7 +123,7 @@ def test_09_add_record_updates_last_record_id_to_the_new_record_id():
 
 
 # ---------------------------------------------------------------------------
-# Test 10 — insertion order
+# Test 10 - insertion order
 # ---------------------------------------------------------------------------
 
 
@@ -140,7 +140,7 @@ def test_10_records_accumulate_in_insertion_order():
 
 
 # ---------------------------------------------------------------------------
-# Test 11 — last_record_id always points to most recent
+# Test 11 - last_record_id always points to most recent
 # ---------------------------------------------------------------------------
 
 
@@ -153,7 +153,7 @@ def test_11_last_record_id_always_tracks_the_most_recent_record():
 
 
 # ---------------------------------------------------------------------------
-# Test 12 — __len__
+# Test 12 - __len__
 # ---------------------------------------------------------------------------
 
 
@@ -167,7 +167,7 @@ def test_12_len_mirrors_records_list_length():
 
 
 # ---------------------------------------------------------------------------
-# Test 13 — SessionProtocol interface
+# Test 13 - SessionProtocol interface
 # ---------------------------------------------------------------------------
 
 
@@ -185,7 +185,7 @@ def test_13_session_satisfies_session_protocol_interface():
 
 
 # ---------------------------------------------------------------------------
-# Test 14 — integration with ProvenanceMiddleware
+# Test 14 - integration with ProvenanceMiddleware
 # ---------------------------------------------------------------------------
 
 
@@ -227,7 +227,7 @@ def test_14_integration_middleware_emits_records_into_session_with_parent_chaini
     assert SHA256_RE.match(first_record["output_hash"])
     assert first_record["parent_record_id"] is None  # first record has no parent
 
-    # Second LLM call — parent_record_id must point to the first record
+    # Second LLM call - parent_record_id must point to the first record
     run_b = uuid4()
     mw.on_chat_model_start(
         serialized={"name": "ChatOpenAI", "kwargs": {"model": "gpt-4o"}},
@@ -250,15 +250,15 @@ def test_14_integration_middleware_emits_records_into_session_with_parent_chaini
 
 
 # ---------------------------------------------------------------------------
-# Tests 15-16 — input validation at construction
+# Tests 15-16 - input validation at construction
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
     "bad_pipeline_id",
     [
-        "research-pipeline-v1",                          # arbitrary slug — the documented footgun
-        "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",          # uppercase UUID — protocol mandates lowercase
+        "research-pipeline-v1",                          # arbitrary slug - the documented footgun
+        "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",          # uppercase UUID - protocol mandates lowercase
         "aaaaaaaa-aaaa-aaaa-aaaa",                       # truncated
         "",                                              # empty
     ],
@@ -285,7 +285,7 @@ def test_16_construction_rejects_non_semver_protocol_version(bad_version: str):
 
 
 # ---------------------------------------------------------------------------
-# Tests 17-24 — framework-neutral record factory (add_agent_step /
+# Tests 17-24 - framework-neutral record factory (add_agent_step /
 # add_tool_invocation and their _error variants). These exercise the assembly,
 # hashing, status binding, and parent-chaining that adapters delegate to.
 # ---------------------------------------------------------------------------

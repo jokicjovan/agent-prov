@@ -1,6 +1,6 @@
-"""Research Assistant pipeline — live variant (real OpenAI chat model).
+"""Research Assistant pipeline - live variant (real OpenAI chat model).
 
-Graph:  researcher  →  summarizer  →  writer
+Graph:  researcher  ->  summarizer  ->  writer
 
 Same structure as ``demos/langchain/research/mock.py``, but the three nodes call a
 real OpenAI chat model via langchain-openai so that middleware overhead is

@@ -59,9 +59,9 @@ def canonical_json_sha256(obj: Any) -> str:
 def hash_content(obj: Any) -> str:
     """Canonical SHA-256 of *obj*, normalised to JSON-compatible form first.
 
-    Passes *obj* through :func:`_to_serializable` — which recursively unwraps
+    Passes *obj* through :func:`_to_serializable` - which recursively unwraps
     Pydantic / LangChain objects and stringifies non-JSON leaves (``UUID``,
-    ``datetime``, …) — then delegates to :func:`canonical_json_sha256`. Use
+    ``datetime``, ...) - then delegates to :func:`canonical_json_sha256`. Use
     this for emitter inputs (LLM messages, tool outputs, reviewer-supplied
     content) where the value may not already be pure JSON.
     """
@@ -74,7 +74,7 @@ def _to_serializable(obj: Any) -> Any:
     Unwraps Pydantic / LangChain objects (anything with ``model_dump`` or
     ``dict``) and recurses into the result; coerces mapping keys to strings;
     and stringifies any leaf that is not a JSON scalar (``UUID``, ``datetime``,
-    ``Decimal``, …), matching the old ``json.dumps(default=str)`` fallback.
+    ``Decimal``, ...), matching the old ``json.dumps(default=str)`` fallback.
     """
     if obj is None or isinstance(obj, (str, bool, int, float)):
         return obj

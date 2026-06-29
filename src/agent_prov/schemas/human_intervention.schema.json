@@ -34,11 +34,11 @@
     },
     "pipeline_id": {
       "$ref": "#/$defs/uuid",
-      "description": "Identifier of the pipeline this record belongs to. EU AI Act Art. 12(2)(c) — supports operational monitoring (Art. 26(5)) by linking records to a pipeline run."
+      "description": "Identifier of the pipeline this record belongs to. EU AI Act Art. 12(2)(c) - supports operational monitoring (Art. 26(5)) by linking records to a pipeline run."
     },
     "session_id": {
       "$ref": "#/$defs/uuid",
-      "description": "Identifier of the execution session within the pipeline. EU AI Act Art. 12(2)(c) — supports operational monitoring."
+      "description": "Identifier of the execution session within the pipeline. EU AI Act Art. 12(2)(c) - supports operational monitoring."
     },
     "reviewer_id": {
       "type": "array",
@@ -48,36 +48,36 @@
       },
       "minItems": 1,
       "uniqueItems": true,
-      "description": "Identifiers of the natural persons who carried out the oversight decision. EU AI Act Art. 12(3)(d) — identify natural persons who verified results. Art. 14(5) — for biometric identification systems, no decision may be taken unless verified by at least two natural persons; biometric pipelines must therefore enforce minItems: 2 at the application/profile layer (the base schema accepts minItems: 1 to remain usable for non-biometric high-risk systems, mirroring the universal-floor approach taken for the Art. 12(3) biometric minimums)."
+      "description": "Identifiers of the natural persons who carried out the oversight decision. EU AI Act Art. 12(3)(d) - identify natural persons who verified results. Art. 14(5) - for biometric identification systems, no decision may be taken unless verified by at least two natural persons; biometric pipelines must therefore enforce minItems: 2 at the application/profile layer (the base schema accepts minItems: 1 to remain usable for non-biometric high-risk systems, mirroring the universal-floor approach taken for the Art. 12(3) biometric minimums)."
     },
     "reviewer_role": {
       "type": "string",
       "minLength": 1,
-      "description": "Role of the reviewer(s) within the deploying organisation (e.g. 'editor', 'compliance_officer', 'domain_expert', 'operator'). Free-form to accommodate deployment-specific role taxonomies. EU AI Act Art. 50(4) exception requires that AI-generated text was reviewed with editorial responsibility — a reviewer_role of 'editor' (or equivalent) is the field that anchors this exemption claim."
+      "description": "Role of the reviewer(s) within the deploying organisation (e.g. 'editor', 'compliance_officer', 'domain_expert', 'operator'). Free-form to accommodate deployment-specific role taxonomies. EU AI Act Art. 50(4) exception requires that AI-generated text was reviewed with editorial responsibility - a reviewer_role of 'editor' (or equivalent) is the field that anchors this exemption claim."
     },
     "action_type": {
       "type": "string",
       "enum": ["approved", "rejected", "edited", "escalated"],
-      "description": "The decision the reviewer committed at this oversight point. EU AI Act Art. 14(4)(d) — disregard/override/reverse output is captured by 'rejected'/'edited'. Art. 14(4)(e) — intervention/halt via stop mechanism is captured by 'escalated'. Art. 50(4) exception is anchored by 'approved' combined with reviewer_role='editor'. Conditional semantics on output_after_hash (see that field) are bound to this enum and verified at the unit-test layer."
+      "description": "The decision the reviewer committed at this oversight point. EU AI Act Art. 14(4)(d) - disregard/override/reverse output is captured by 'rejected'/'edited'. Art. 14(4)(e) - intervention/halt via stop mechanism is captured by 'escalated'. Art. 50(4) exception is anchored by 'approved' combined with reviewer_role='editor'. Conditional semantics on output_after_hash (see that field) are bound to this enum and enforced by the protocol validation layer at bundle seal time."
     },
     "output_before_hash": {
       "$ref": "#/$defs/sha256_hex",
-      "description": "SHA-256 hash of canonical agent output as it was presented to the reviewer (before any human modification). EU AI Act Art. 14(4)(c) — proves the human saw the actual output before deciding, supporting correct interpretation of the system's output."
+      "description": "SHA-256 hash of canonical agent output as it was presented to the reviewer (before any human modification). EU AI Act Art. 14(4)(c) - proves the human saw the actual output before deciding, supporting correct interpretation of the system's output."
     },
     "output_after_hash": {
       "oneOf": [
         { "$ref": "#/$defs/sha256_hex" },
         { "type": "null" }
       ],
-      "description": "SHA-256 hash of canonical output committed downstream after the reviewer's decision. EU AI Act Art. 14(4)(d) — proves any override was recorded. Conventions bound to action_type (enforced at the unit-test layer, not in JSON Schema): 'approved' → equal to output_before_hash (no change committed); 'edited' → differs from output_before_hash (override applied); 'rejected' → null (downstream output discarded); 'escalated' → null (no decision committed at this point; awaiting higher authority)."
+      "description": "SHA-256 hash of canonical output committed downstream after the reviewer's decision. EU AI Act Art. 14(4)(d) - proves any override was recorded. Conventions bound to action_type (enforced by the protocol validation layer at bundle seal time, not in JSON Schema): 'approved' -> equal to output_before_hash (no change committed); 'edited' -> differs from output_before_hash (override applied); 'rejected' -> null (downstream output discarded); 'escalated' -> null (no decision committed at this point; awaiting higher authority)."
     },
     "intervention_timestamp": {
       "$ref": "#/$defs/iso8601_timestamp",
-      "description": "ISO 8601 / RFC 3339 timestamp marking the moment the reviewer committed their decision. EU AI Act Art. 14(4)(e) — proves timely intervention before the next automated step (the chronological ordering against the next record in the bundle is the evidence of timeliness). The human action is treated as instantaneous from the protocol's perspective; reviewer deliberation time is out of scope for this schema."
+      "description": "ISO 8601 / RFC 3339 timestamp marking the moment the reviewer committed their decision. EU AI Act Art. 14(4)(e) - proves timely intervention before the next automated step (the chronological ordering against the next record in the bundle is the evidence of timeliness). The human action is treated as instantaneous from the protocol's perspective; reviewer deliberation time is out of scope for this schema."
     },
     "justification_hash": {
       "$ref": "#/$defs/sha256_hex",
-      "description": "Optional SHA-256 hash of canonical reviewer rationale text. Hashing rather than storing raw content mirrors the input_hash/output_hash privacy stance and preserves GDPR data minimisation — the original rationale remains in application storage. Useful evidence under EU AI Act Art. 14(4)(c) for interpretability of the oversight decision; not strictly required by Art. 14, hence optional."
+      "description": "Optional SHA-256 hash of canonical reviewer rationale text. Hashing rather than storing raw content mirrors the input_hash/output_hash privacy stance and preserves GDPR data minimisation - the original rationale remains in application storage. Useful evidence under EU AI Act Art. 14(4)(c) for interpretability of the oversight decision; not strictly required by Art. 14, hence optional."
     },
     "parent_record_id": {
       "$ref": "#/$defs/uuid",

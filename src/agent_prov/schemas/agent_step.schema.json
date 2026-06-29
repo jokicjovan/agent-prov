@@ -36,38 +36,38 @@
     },
     "pipeline_id": {
       "$ref": "#/$defs/uuid",
-      "description": "Identifier of the pipeline this record belongs to. EU AI Act Art. 12(2)(c) — supports operational monitoring (Art. 26(5)) by linking records to a pipeline run."
+      "description": "Identifier of the pipeline this record belongs to. EU AI Act Art. 12(2)(c) - supports operational monitoring (Art. 26(5)) by linking records to a pipeline run."
     },
     "session_id": {
       "$ref": "#/$defs/uuid",
-      "description": "Identifier of the execution session within the pipeline. EU AI Act Art. 12(2)(c) — supports operational monitoring."
+      "description": "Identifier of the execution session within the pipeline. EU AI Act Art. 12(2)(c) - supports operational monitoring."
     },
     "agent_id": {
       "type": "string",
       "minLength": 1,
-      "description": "Stable identifier of the agent node that produced this record. EU AI Act Art. 12(2)(c) — supports operational monitoring by identifying the agent."
+      "description": "Stable identifier of the agent node that produced this record. EU AI Act Art. 12(2)(c) - supports operational monitoring by identifying the agent."
     },
     "model_id": {
       "type": "string",
       "minLength": 1,
-      "description": "Identifier of the LLM model used (e.g. 'claude-opus-4-7'). EU AI Act Art. 12(2)(b) — enables post-market monitoring (Art. 72) and drift detection. Art. 14(4)(a) — enables oversight-time review of capabilities/limitations."
+      "description": "Identifier of the LLM model used (e.g. 'claude-opus-4-7'). EU AI Act Art. 12(2)(b) - enables post-market monitoring (Art. 72) and drift detection. Art. 14(4)(a) - enables oversight-time review of capabilities/limitations."
     },
     "model_version": {
       "type": "string",
       "minLength": 1,
-      "description": "Specific version/snapshot of the model (e.g. '20260101', '1.2.3'). EU AI Act Art. 12(2)(b) — version granularity needed for drift detection. Art. 14(4)(a) — enables oversight-time review."
+      "description": "Specific version/snapshot of the model (e.g. '20260101', '1.2.3'). EU AI Act Art. 12(2)(b) - version granularity needed for drift detection. Art. 14(4)(a) - enables oversight-time review."
     },
     "timestamp_start": {
       "$ref": "#/$defs/iso8601_timestamp",
-      "description": "ISO 8601 / RFC 3339 timestamp marking the start of this agent step. EU AI Act Art. 12(3)(a) — record start time of each use (biometric minimum, applied universally per thesis policy)."
+      "description": "ISO 8601 / RFC 3339 timestamp marking the start of this agent step. EU AI Act Art. 12(3)(a) - record start time of each use (biometric minimum, applied universally per thesis policy)."
     },
     "timestamp_end": {
       "$ref": "#/$defs/iso8601_timestamp",
-      "description": "ISO 8601 / RFC 3339 timestamp marking the end of this agent step. EU AI Act Art. 12(3)(a) — record end time of each use. Constraint timestamp_end >= timestamp_start is not expressible in JSON Schema 2020-12; enforced at the unit-test layer (tests/test_schemas.py)."
+      "description": "ISO 8601 / RFC 3339 timestamp marking the end of this agent step. EU AI Act Art. 12(3)(a) - record end time of each use. Constraint timestamp_end >= timestamp_start is not expressible in JSON Schema 2020-12; enforced by the protocol validation layer at bundle seal time."
     },
     "input_hash": {
       "$ref": "#/$defs/sha256_hex",
-      "description": "SHA-256 hash of canonical input (prompt) given to the model. EU AI Act Art. 12(3)(c) — record input data that produced a result. Hashing rather than storing raw content satisfies GDPR data minimisation."
+      "description": "SHA-256 hash of canonical input (prompt) given to the model. EU AI Act Art. 12(3)(c) - record input data that produced a result. Hashing rather than storing raw content satisfies GDPR data minimisation."
     },
     "status": {
       "type": "string",
@@ -85,7 +85,7 @@
     "reference_data_id": {
       "type": ["string", "null"],
       "minLength": 1,
-      "description": "Identifier of any reference dataset/database consulted for this step (e.g. RAG corpus version). EU AI Act Art. 12(3)(b) — record the reference database consulted (biometric minimum, applied universally where relevant). Null when no external reference data is consulted."
+      "description": "Identifier of any reference dataset/database consulted for this step (e.g. RAG corpus version). EU AI Act Art. 12(3)(b) - record the reference database consulted (biometric minimum, applied universally where relevant). Null when no external reference data is consulted."
     },
     "parent_record_id": {
       "oneOf": [

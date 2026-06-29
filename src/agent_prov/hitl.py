@@ -6,13 +6,13 @@ presented to the reviewer on entry, then commits exactly one decision inside
 the ``with`` block via :meth:`HumanReview.approve`, :meth:`HumanReview.edit`,
 :meth:`HumanReview.reject`, or :meth:`HumanReview.escalate`.
 
-The action_type ↔ output_after_hash conventions documented in
+The action_type <-> output_after_hash conventions documented in
 ``agent_prov/schemas/human_intervention.schema.json`` are enforced here:
 
-* ``approved``  → ``output_after_hash`` equals ``output_before_hash``
-* ``edited``    → ``output_after_hash`` differs from ``output_before_hash``
-* ``rejected``  → ``output_after_hash`` is ``null``
-* ``escalated`` → ``output_after_hash`` is ``null``
+* ``approved``  -> ``output_after_hash`` equals ``output_before_hash``
+* ``edited``    -> ``output_after_hash`` differs from ``output_before_hash``
+* ``rejected``  -> ``output_after_hash`` is ``null``
+* ``escalated`` -> ``output_after_hash`` is ``null``
 
 ``parent_record_id`` is taken from ``session.last_record_id`` and must be
 non-null: a Human Intervention Record always reviews an upstream record.
@@ -43,7 +43,7 @@ class HumanReview:
         reviewer_id: One or more identifiers of the natural persons who
             performed the review. Required by EU AI Act Art. 12(3)(d); for
             biometric-identification pipelines Art. 14(5) requires at least
-            two reviewers — enforce that at the application layer.
+            two reviewers - enforce that at the application layer.
         reviewer_role: Role of the reviewer(s) (e.g. ``"editor"``,
             ``"compliance_officer"``). Free-form to accommodate
             deployment-specific role taxonomies.
@@ -88,7 +88,7 @@ class HumanReview:
         tb: Any,
     ) -> None:
         if exc is not None:
-            # Body raised — do not emit a half-built record.
+            # Body raised - do not emit a half-built record.
             return None
         if not self._decided:
             raise HITLError(

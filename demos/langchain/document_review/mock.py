@@ -1,6 +1,6 @@
-"""Document Review pipeline — mock variant.
+"""Document Review pipeline - mock variant.
 
-Flow:  summarizer  →  [interrupt: edit]  →  finalizer  →  [interrupt: approve]
+Flow:  summarizer  ->  [interrupt: edit]  ->  finalizer  ->  [interrupt: approve]
 
 A document is summarised by an agent, a human reviewer edits the summary to
 correct an omission, a second agent drafts a decision letter from the edited
@@ -9,11 +9,11 @@ bundle contains two ``agent_step`` records interleaved with two
 ``human_intervention`` records, demonstrating the ``parent_record_id`` chain
 crossing automated and human nodes.
 
-The workflow is one multi-node LangGraph — ``summarizer → review_summary →
-finalizer → approve_letter → END`` — where the two review points are gate nodes
+The workflow is one multi-node LangGraph - ``summarizer -> review_summary ->
+finalizer -> approve_letter -> END`` - where the two review points are gate nodes
 that call LangGraph's ``interrupt()``. When a gate is reached the graph pauses
 and returns control to the runner, which collects the human decision in a
-``HumanReview`` block and resumes the graph with ``Command(resume=…)``. Because
+``HumanReview`` block and resumes the graph with ``Command(resume=...)``. Because
 every invocation shares one ``PipelineSession`` and ``ProvenanceMiddleware``,
 ``session.last_record_id`` persists across the pause and each Human Intervention
 Record chains onto the agent step it reviewed. A node-level interrupt requires a
@@ -121,7 +121,7 @@ REVIEWER_EDIT = (
     "Stable employment (5 years, EUR 1,850 net/month) and limited "
     "existing obligations (EUR 400 credit card). Credit history is "
     "clean apart from one late payment 18 months ago. Two dependants "
-    "declared — factor into affordability assessment."
+    "declared - factor into affordability assessment."
 )
 
 
@@ -175,7 +175,7 @@ def approve_letter(state: ReviewState) -> ReviewState:
 
 
 # ---------------------------------------------------------------------------
-# Graph — one multi-node pipeline with two interrupt gates
+# Graph - one multi-node pipeline with two interrupt gates
 # ---------------------------------------------------------------------------
 
 def _build_graph():
@@ -211,11 +211,11 @@ def run(output_dir: str | pathlib.Path = "demos/langchain/document_review") -> d
         "configurable": {"thread_id": session.session_id},
     }
 
-    # 1. Run until the first gate — summarizer emits its agent_step, then pauses.
+    # 1. Run until the first gate - summarizer emits its agent_step, then pauses.
     state = graph.invoke({"document": DOCUMENT}, config=config)
     agent_summary = _interrupt_value(state)
 
-    # 2. Human review — editor edits the summary (chains onto the summarizer step).
+    # 2. Human review - editor edits the summary (chains onto the summarizer step).
     with HumanReview(
         session=session,
         reviewer_id=["reviewer:editor-01"],
@@ -227,11 +227,11 @@ def run(output_dir: str | pathlib.Path = "demos/langchain/document_review") -> d
             justification="Summary omitted declared dependants; added for affordability.",
         )
 
-    # 3. Resume with the edited summary — finalizer runs, then pauses at the second gate.
+    # 3. Resume with the edited summary - finalizer runs, then pauses at the second gate.
     state = graph.invoke(Command(resume=REVIEWER_EDIT), config=config)
     final_decision = _interrupt_value(state)
 
-    # 4. Human review — compliance officer approves the letter unchanged.
+    # 4. Human review - compliance officer approves the letter unchanged.
     with HumanReview(
         session=session,
         reviewer_id=["reviewer:compliance-07"],
@@ -240,7 +240,7 @@ def run(output_dir: str | pathlib.Path = "demos/langchain/document_review") -> d
     ) as review:
         review.approve(justification="Decision aligns with internal credit policy.")
 
-    # 5. Final resume — approve_letter returns and the graph reaches END.
+    # 5. Final resume - approve_letter returns and the graph reaches END.
     graph.invoke(Command(resume=True), config=config)
 
     output_path = pathlib.Path(output_dir) / "mock_bundle.json"

@@ -1,4 +1,4 @@
-"""PipelineSession — collects provenance records for one pipeline execution.
+"""PipelineSession - collects provenance records for one pipeline execution.
 
 Generates pipeline_id and session_id UUIDs, maintains the ordered record
 list, and tracks last_record_id so the parent-record chain is wired without
@@ -8,7 +8,7 @@ This module also owns the framework-neutral record factory: ``add_agent_step``
 and ``add_tool_invocation`` (plus their ``_error`` variants) assemble a record,
 hash the supplied input/output, stamp the end timestamp, wire the parent chain,
 and append. An adapter's only job is to extract framework primitives and call
-these — record shape and hashing live here, not in any one adapter. The
+these - record shape and hashing live here, not in any one adapter. The
 ``SessionProtocol`` seam below is the framework-neutral interface those adapters
 code against; ``PipelineSession`` is its canonical implementor.
 

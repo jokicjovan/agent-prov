@@ -147,7 +147,7 @@ def make_bundle(records: list[dict] | None = None, **overrides: Any) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Tests 1-4 — happy-path schema validation for each record type
+# Tests 1-4 - happy-path schema validation for each record type
 # ---------------------------------------------------------------------------
 
 
@@ -178,7 +178,7 @@ def test_04_pipeline_bundle_happy_path_validates():
 
 
 # ---------------------------------------------------------------------------
-# Tests 5-8 — schema-level negative cases
+# Tests 5-8 - schema-level negative cases
 # ---------------------------------------------------------------------------
 
 
@@ -199,7 +199,7 @@ def test_07_invalid_sha256_hex_pattern_is_rejected():
     assert not _is_valid(AGENT_STEP_SCHEMA, record)
     record_uppercase = make_agent_step(input_hash="A" * 64)
     assert not _is_valid(AGENT_STEP_SCHEMA, record_uppercase), (
-        "uppercase hex must be rejected — protocol uses lowercase canonical form"
+        "uppercase hex must be rejected - protocol uses lowercase canonical form"
     )
 
 
@@ -209,7 +209,7 @@ def test_08_wrong_record_type_discriminator_is_rejected():
 
 
 # ---------------------------------------------------------------------------
-# Tests 9-11 — conditional rules: structurally valid, but rejected by the
+# Tests 9-11 - conditional rules: structurally valid, but rejected by the
 # single validation surface (validate_record), which JSON Schema cannot express
 # ---------------------------------------------------------------------------
 
@@ -241,7 +241,7 @@ def test_11_timestamp_end_before_timestamp_start_is_rejected():
 
 
 # ---------------------------------------------------------------------------
-# Test 12 — canonical_json_sha256 + compute_bundle_hash properties
+# Test 12 - canonical_json_sha256 + compute_bundle_hash properties
 # ---------------------------------------------------------------------------
 
 
@@ -250,7 +250,7 @@ def test_12_canonical_hash_properties():
     obj_a_reordered = {"c": [3, 2, 1], "a": 1, "b": 2}
     obj_b = {"b": 2, "a": 1, "c": [3, 2, 0]}
 
-    # determinism: same input twice → same hash
+    # determinism: same input twice -> same hash
     assert canonical_json_sha256(obj_a) == canonical_json_sha256(obj_a)
 
     # key-order independence: insertion order must not affect the hash
@@ -277,7 +277,7 @@ def test_12_canonical_hash_properties():
 
 
 # ---------------------------------------------------------------------------
-# Test 13 — schemas ship as package resources (wheel-install code path)
+# Test 13 - schemas ship as package resources (wheel-install code path)
 # ---------------------------------------------------------------------------
 
 
@@ -303,7 +303,7 @@ def test_13_schemas_load_as_package_resources():
 
 
 # ---------------------------------------------------------------------------
-# Tests 14-15 — the schema files are conformant, and example documents
+# Tests 14-15 - the schema files are conformant, and example documents
 # validate as expected. Replaces the external (ajv/Node) schema-linting step
 # with the same engine the protocol already uses, keeping validation in one
 # Python toolchain (no cross-implementation independence is claimed).

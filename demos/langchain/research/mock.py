@@ -1,6 +1,6 @@
-"""Research Assistant pipeline — mock variant.
+"""Research Assistant pipeline - mock variant.
 
-Graph:  researcher  →  summarizer  →  writer
+Graph:  researcher  ->  summarizer  ->  writer
 
 The researcher node calls a mock web_search tool before synthesising with a
 fake LLM, so the resulting bundle contains both agent_step and
@@ -68,7 +68,7 @@ _researcher_llm = _FakeLLM(
     response=(
         "Key findings: LLM-powered agents use tool calls and memory for "
         "multi-step reasoning. Multi-agent pipelines distribute work across "
-        "specialised nodes — researcher, summariser, writer — improving "
+        "specialised nodes - researcher, summariser, writer - improving "
         "quality and auditability."
     ),
 )
@@ -87,8 +87,8 @@ _writer_llm = _FakeLLM(
         "# AI Agents in Multi-Agent Systems\n\n"
         "Modern AI agents use large language models as reasoning engines, "
         "augmented with tool use and memory. In multi-agent architectures, "
-        "specialised agents collaborate — each handling research, summarisation, "
-        "or synthesis — enabling scalable and auditable AI pipelines."
+        "specialised agents collaborate - each handling research, summarisation, "
+        "or synthesis - enabling scalable and auditable AI pipelines."
     ),
 )
 

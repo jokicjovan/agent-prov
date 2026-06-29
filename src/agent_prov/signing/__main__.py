@@ -13,6 +13,7 @@ import argparse
 import json
 import pathlib
 import sys
+from typing import Any
 
 from cryptography.hazmat.primitives import serialization
 
@@ -47,8 +48,21 @@ def _cmd_keygen(args: argparse.Namespace) -> int:
     return 0
 
 
+class _CliError(Exception):
+    """Raised for a clean, traceback-free CLI failure (bad path or JSON)."""
+
+
+def _load_json(path: pathlib.Path) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise _CliError(f"cannot read {path}: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise _CliError(f"{path} is not valid JSON: {exc}") from exc
+
+
 def _cmd_sign(args: argparse.Namespace) -> int:
-    bundle = json.loads(args.bundle.read_text(encoding="utf-8"))
+    bundle = _load_json(args.bundle)
     private_key = load_private_key(args.key.read_bytes())
     envelope = sign_bundle(bundle, private_key)
     out = args.out if args.out is not None else args.bundle.with_suffix(
@@ -60,11 +74,11 @@ def _cmd_sign(args: argparse.Namespace) -> int:
 
 
 def _cmd_verify(args: argparse.Namespace) -> int:
-    bundle = json.loads(args.bundle.read_text(encoding="utf-8"))
+    bundle = _load_json(args.bundle)
     sig_path = args.signature if args.signature is not None else args.bundle.with_suffix(
         args.bundle.suffix + ".sig"
     )
-    envelope = json.loads(sig_path.read_text(encoding="utf-8"))
+    envelope = _load_json(sig_path)
     public_key = load_public_key(args.key.read_bytes()) if args.key is not None else None
 
     result = verify_signature(bundle, envelope, public_key=public_key)
@@ -118,6 +132,9 @@ def _cli(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     try:
         return args.func(args)
+    except _CliError as exc:
+        print(f"FAILED: {exc}", file=sys.stderr)
+        return 1
     except BundleSignatureError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1

@@ -32,11 +32,11 @@
     },
     "pipeline_id": {
       "$ref": "#/$defs/uuid",
-      "description": "Identifier of the pipeline this bundle captures. EU AI Act Art. 12(2)(c) — supports operational monitoring (Art. 26(5))."
+      "description": "Identifier of the pipeline this bundle captures. EU AI Act Art. 12(2)(c) - supports operational monitoring (Art. 26(5))."
     },
     "session_id": {
       "$ref": "#/$defs/uuid",
-      "description": "Identifier of the execution session within the pipeline. EU AI Act Art. 12(2)(c) — supports operational monitoring."
+      "description": "Identifier of the execution session within the pipeline. EU AI Act Art. 12(2)(c) - supports operational monitoring."
     },
     "created_at": {
       "$ref": "#/$defs/iso8601_timestamp",
@@ -44,12 +44,12 @@
     },
     "disclosure_presented": {
       "type": "boolean",
-      "description": "Whether an AI-interaction disclosure was presented to the user during this pipeline run. EU AI Act Art. 50(1) — users must be informed they are interacting with an AI system."
+      "description": "Whether an AI-interaction disclosure was presented to the user during this pipeline run. EU AI Act Art. 50(1) - users must be informed they are interacting with an AI system."
     },
     "outcome": {
       "type": "string",
       "enum": ["completed", "aborted", "error"],
-      "description": "Terminal outcome of the pipeline run as a whole. 'completed' = the run finished normally; 'error' = the run finished but at least one step failed; 'aborted' = the run was stopped before reaching its end. EU AI Act Art. 12(2)(a) — records at the run level whether the system malfunctioned or was halted, complementing per-step status."
+      "description": "Terminal outcome of the pipeline run as a whole. 'completed' = the run finished normally; 'error' = the run finished but at least one step failed; 'aborted' = the run was stopped before reaching its end. EU AI Act Art. 12(2)(a) - records at the run level whether the system malfunctioned or was halted, complementing per-step status."
     },
     "records": {
       "type": "array",
@@ -61,11 +61,11 @@
           { "$ref": "https://jokicjovan.github.io/agent-prov/schemas/v0.2/human_intervention.schema.json" }
         ]
       },
-      "description": "Ordered list of provenance records produced during the pipeline run. Each item must validate against exactly one of the Agent Step, Tool Invocation, or Human Intervention record schemas (discriminated by record_type). EU AI Act Art. 12(2) — the ordered chain is the traceability evidence."
+      "description": "Ordered list of provenance records produced during the pipeline run. Each item must validate against exactly one of the Agent Step, Tool Invocation, or Human Intervention record schemas (discriminated by record_type). EU AI Act Art. 12(2) - the ordered chain is the traceability evidence."
     },
     "bundle_hash": {
       "$ref": "#/$defs/sha256_hex",
-      "description": "SHA-256 hex digest computed over the canonical JSON of this bundle with the bundle_hash field itself removed. Provides a tamper-evident integrity seal for the entire record set. EU AI Act Art. 12(1) — the 'technically allow' obligation requires logs that are fit for evidentiary use, which mutable record sets are not. Verification recomputes the same exclusion-and-hash; mismatch indicates tampering. The canonical-JSON form follows RFC 8785 (JCS) — sorted keys, compact separators, UTF-8 with non-ASCII preserved, ECMAScript number formatting, no NaN/Infinity — so any verifier using a conformant JCS implementation reproduces the digest exactly."
+      "description": "SHA-256 hex digest computed over the canonical JSON of this bundle with the bundle_hash field itself removed. Provides a tamper-evident integrity seal for the entire record set. EU AI Act Art. 12(1) - the 'technically allow' obligation requires logs that are fit for evidentiary use, which mutable record sets are not. Verification recomputes the same exclusion-and-hash; mismatch indicates tampering. The canonical-JSON form follows RFC 8785 (JCS) - sorted keys, compact separators, UTF-8 with non-ASCII preserved, ECMAScript number formatting, no NaN/Infinity - so any verifier using a conformant JCS implementation reproduces the digest exactly."
     }
   },
   "$defs": {

@@ -1,17 +1,17 @@
-"""Independent bundle verifier — the auditor-facing entry point.
+"""Independent bundle verifier - the auditor-facing entry point.
 
 A sealed Pipeline Bundle is only useful as evidence if a third party can
 *recompute* its guarantees without trusting the producer. This module is that
 recomputation, gathered into one public call:
 
-* **schema + conditional rules** — delegated to the single validation surface
+* **schema + conditional rules** - delegated to the single validation surface
   (:func:`agent_prov.validation.validate_bundle`),
-* **bundle_hash** — recompute the canonical-JSON SHA-256 with ``bundle_hash``
+* **bundle_hash** - recompute the canonical-JSON SHA-256 with ``bundle_hash``
   excluded and compare against the stored seal (tamper evidence),
-* **parent-chain integrity** — referential integrity of ``parent_record_id``:
+* **parent-chain integrity** - referential integrity of ``parent_record_id``:
   the head record has no parent and every other parent reference points at a
   record that appears earlier in the bundle, and
-* **internal consistency** — ``pipeline_id`` / ``session_id`` are uniform across
+* **internal consistency** - ``pipeline_id`` / ``session_id`` are uniform across
   the bundle and its records, and no two records share a ``record_id``.
 
 :func:`verify_bundle` collects *all* failures rather than stopping at the first
@@ -64,7 +64,7 @@ def verify_bundle(bundle: Any) -> VerificationResult:
     except ProtocolValidationError as exc:
         errors.append(f"schema/conditional validation failed: {exc}")
 
-    # 2. bundle_hash seal — recompute and compare.
+    # 2. bundle_hash seal - recompute and compare.
     errors.extend(_check_bundle_hash(bundle))
 
     records = bundle.get("records")
@@ -100,7 +100,7 @@ def _check_parent_chain(records: list[Any]) -> list[str]:
     present, must reference a ``record_id`` that appears *earlier* in the list.
     This catches dangling references (parent that names no record) and forward
     references (parent that names a later record), without enforcing strict
-    linear chaining — emission-order linearity is a known approximation that
+    linear chaining - emission-order linearity is a known approximation that
     does not hold under parallel branches.
     """
     errors: list[str] = []
