@@ -46,7 +46,7 @@ The gaps relative to the requirements of this protocol are detailed in §2.6. Br
 
 ### 2.3.2 Other AI/ML provenance work
 
-A handful of other standards address adjacent problems. **PROV-ML** (Pimentel et al.) extends PROV to ML experiment tracking, focusing on training artefacts — datasets, hyperparameters, model versions, evaluation metrics. It is centred on the model-development lifecycle, not the deployed-inference lifecycle, and has no concept of an interactive agent or a human reviewer.
+A handful of other standards address adjacent problems. **PROV-ML** (Souza et al., WORKS 2019) extends PROV to the scientific ML lifecycle, focusing on training-side artefacts — datasets, hyperparameters, model versions, evaluation metrics. It is centred on the model-development lifecycle, not the deployed-inference lifecycle, and has no concept of an interactive agent or a human reviewer. It is notably the work of the same research line that later produced PROV-AGENT, which situates the present contribution as an extension of an established trajectory of PROV specialisation rather than a departure from it.
 
 **ProvONE** extends PROV with constructs for scientific workflow systems (Kepler, Taverna, VisTrails). Its concerns — workflow templates, parameter sweeps, sub-workflow nesting — predate the LLM-agent paradigm and do not map cleanly onto it.
 
