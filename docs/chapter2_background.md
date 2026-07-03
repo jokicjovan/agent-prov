@@ -50,7 +50,7 @@ A handful of other standards address adjacent problems. **PROV-ML** (Souza et al
 
 **ProvONE** extends PROV with constructs for scientific workflow systems (Kepler, Taverna, VisTrails). Its concerns — workflow templates, parameter sweeps, sub-workflow nesting — predate the LLM-agent paradigm and do not map cleanly onto it.
 
-**PROV-DfA** (Provenance for Data-from-Activities, in some literatures rendered as Data-flow Analysis) addresses human-steered scientific workflows where a human selects parameters or directs branching. It models human *actions* as activities, not human *oversight of AI output*. The distinction matters: in PROV-DfA the human is the actor whose work is being recorded; in the EU AI Act framing, the AI is the actor and the human is the supervisor whose approval, rejection, or override constitutes regulatory evidence.
+**PROV-DfA** (Souza and Mattoso, IPAW 2018; introduced in "Provenance of Dynamic Adaptations in User-Steered Dataflows") addresses human-steered scientific workflows where a human selects parameters or directs branching. It models human *steering actions* as activities, not human *oversight of AI output*. The distinction matters: in PROV-DfA the human is the actor whose work is being recorded; in the EU AI Act framing, the AI is the actor and the human is the supervisor whose approval, rejection, or override constitutes regulatory evidence.
 
 **FAIR4ML** applies the FAIR principles (Findable, Accessible, Interoperable, Reusable) to ML model artefacts. It is a metadata schema for model registries, not an execution-trace standard.
 
