@@ -52,3 +52,26 @@ IEEE-style and will be finalised at manuscript-assembly time.
 10. LangChain, *LangGraph — Building stateful, multi-actor applications with
     LLMs*, software documentation. https://langchain-ai.github.io/langgraph/ —
     The framework targeted by the reference implementation.
+
+## To finalise at manuscript assembly
+
+The following works are named in the chapter prose but do not yet have verified
+bibliographic entries above. Each must have its author list, venue, and year
+confirmed from the primary source before assembly — details are deliberately left
+blank here rather than guessed, to avoid propagating a wrong citation.
+
+- **PROV-ML** — ML-experiment-tracking extension of PROV (Ch. 2 §2.3.2,
+  `gap_analysis.md` §6). NOTE: §2.3.2 currently attributes it to "Pimentel et
+  al."; verify authorship — Pimentel is associated with ProvONE/noWorkflow, so
+  this attribution is suspect.
+- **ProvONE** — PROV extension for scientific-workflow provenance (Ch. 2 §2.3.2,
+  `gap_analysis.md` §6).
+- **PROV-DfA** — provenance for human-steered / data-from-activities workflows
+  (Ch. 2 §2.3.2, `gap_analysis.md` §6).
+- **FAIR4ML** — FAIR-principles metadata schema for ML models (Ch. 2 §2.3.2,
+  `gap_analysis.md` §6).
+- **in-toto / SLSA / DSSE / Sigstore (Rekor)** — the software-supply-chain
+  attestation and transparency-log practice the signing layer follows (Ch. 4
+  §4.8.1, Ch. 6 §6.5.4).
+- **A2A Agent Cards; MCP tool schemas** — capability-declaration prior art
+  contrasted with the behavioural-constraint future direction (Ch. 6 §6.5.9).

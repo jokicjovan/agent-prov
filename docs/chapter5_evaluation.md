@@ -126,8 +126,8 @@ approved` combined with a `reviewer_role`.
 More broadly, the Article 14 oversight cluster is the coverage most directly
 attributable to the Human Intervention Record. The before/after override evidence
 (`output_before_hash`, `output_after_hash`), the action type, and the intervention
-timestamp together substantiate the "disregard, override, reverse, and halt"
-requirements of 14(4)(c)–(e) — obligations that turn on *what a human did to an
+timestamp together substantiate the "interpret, disregard, override, reverse, and
+halt" requirements of 14(4)(c)–(e) — obligations that turn on *what a human did to an
 agent's output and when*, which no prior provenance schema records. Without that
 record type these five Article 14 rows would be uncovered; with it, they are the
 protocol's strongest evidence.
