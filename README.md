@@ -5,10 +5,10 @@ steps, tool calls, and **human oversight intervention events** — designed to
 produce verifiable evidence for EU AI Act Articles 12 (record-keeping), 14 (human
 oversight), and 50 (transparency).
 
-> **Status: research proof-of-concept, work in progress.** This repository
-> accompanies an MSc thesis. The protocol schemas and the LangGraph reference
-> implementation are functional and tested, but the project is still under active
-> development and APIs may change before a `1.0` release.
+> **Status: research proof-of-concept (v1.0.0).** This repository accompanies an
+> MSc thesis. The protocol schemas and the LangGraph reference implementation are
+> functional and tested and the core API is stable as of `1.0.0`; the
+> accompanying thesis is still in progress.
 
 ---
 
@@ -147,6 +147,31 @@ A half-written final line (a crash mid-write) is tolerated; the recovered bundle
 is re-validated and its `bundle_hash` recomputed at seal time. This is core
 functionality — no extra required.
 
+### Sign a bundle for attributable evidence
+
+The `bundle_hash` makes a bundle tamper-*evident* — but anyone can recompute it,
+so a modified bundle can simply be re-sealed. A detached Ed25519 signature closes
+that gap: it can only be produced by the private-key holder, giving an auditor
+non-repudiation and forgery resistance over the seal. The signature covers a
+bound payload (`{payload_type, algorithm, signed_hash}`, canonicalized via the
+same RFC 8785 path), following in-toto / SLSA / DSSE practice, so it cannot be
+lifted to another context. Signing lives behind the `signing` extra; the protocol
+core stays crypto-free.
+
+```bash
+# generate an Ed25519 keypair
+uv run python -m agent_prov.signing keygen --out-private priv.pem --out-public pub.pem
+
+# sign a sealed bundle -> detached bundle.json.sig envelope
+uv run python -m agent_prov.signing sign demos/langchain/research/mock_bundle.json --key priv.pem
+
+# verify the bundle against its signature (bind authorship with a trusted key)
+uv run python -m agent_prov.signing verify demos/langchain/research/mock_bundle.json --key pub.pem
+```
+
+The same operations are available programmatically from `agent_prov.signing`
+(`generate_keypair`, `sign_bundle`, `verify_signature`).
+
 ### Instrumenting your own pipeline
 
 The LangChain adapter ships under the `langchain` extra (`pip install
@@ -203,6 +228,7 @@ src/agent_prov/ framework-neutral protocol core (session + record factory, schem
   schemas/      JSON Schema for the four record types (shipped with the package)
   verify/       independent bundle verifier + `python -m agent_prov.verify` CLI
   persistence/  crash-safe append-only event log + recovery CLI (`python -m agent_prov.persistence`)
+  signing/      detached Ed25519 bundle signing + CLI (optional `signing` extra)
   adapters/
     langchain/  LangChain/LangGraph adapter — middleware + emitters (optional `langchain` extra)
   reporting/    compliance report generator (optional `reporting` extra)

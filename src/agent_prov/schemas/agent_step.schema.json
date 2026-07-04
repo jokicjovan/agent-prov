@@ -130,7 +130,7 @@
         "source": {
           "type": "string",
           "enum": ["provider", "tool", "network", "middleware", "unknown"],
-          "description": "Component whose invocation raised the error (the failure boundary, not a deep root-cause classification)."
+          "description": "Component whose invocation raised the error (the failure boundary, not a deep root-cause classification). The reference LangChain adapter emits 'provider' (LLM call) and 'tool' (tool call); 'network', 'middleware', and 'unknown' are reserved for other adapters or deployments."
         },
         "retryable": {
           "type": "boolean",

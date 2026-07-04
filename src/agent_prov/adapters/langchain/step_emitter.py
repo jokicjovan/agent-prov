@@ -74,29 +74,19 @@ def emit_agent_step_error(
 # ---------------------------------------------------------- semantic projection
 #
 # Hashing raw messages is not run-stable: LangChain stamps a fresh ``id`` on
-# every generated ``AIMessage`` and a fresh ``tool_call_id`` on every tool call
-# and ``ToolMessage``. Replaying the same pipeline with the same prompt would
-# then yield a different ``input_hash`` / ``output_hash`` on each run, even when
-# nothing semantically changed - defeating the auditor's "did this input produce
-# this output" check.
+# every ``AIMessage`` and a fresh ``tool_call_id`` on every tool call, so an
+# identical replay would digest differently and defeat the auditor's "did this
+# input produce this output" check. The projection keeps only the semantic
+# fields (type, content, tool-call name/args, tool name) and is applied
+# symmetrically on both sides.
 #
-# The projection keeps only the semantic fields (type, content, tool-call
-# name/args, tool name on tool responses) and is applied symmetrically on both
-# sides. For the identifiers that carry *correlation* - a tool call's id and the
-# ``tool_call_id`` on the ``ToolMessage`` that answers it - stripping is not
-# enough: it discards which result answered which call, and a step that fires
-# several tool calls at once (or receives their results out of order) can no
-# longer be told apart from a differently-wired one. Instead of stripping these
-# correlation ids, the projection *rewrites* them to deterministic labels
-# ("0", "1", "2", ...) assigned in order of first appearance within one
-# projection scope (see ``_IdCanonicalizer``). The label is run-stable (it
-# depends only on structure, not on the random runtime id) yet preserves the
-# call-to-result edge inside the digest.
-#
-# The free-standing ``AIMessage.id`` correlates with nothing inside a step and
-# is not reliably present across runs, so it is kept out of the hash entirely;
-# its real runtime value is preserved in the non-hashed ``runtime_metadata``
-# side field instead, alongside the label-to-real-id map for the tool calls.
+# The correlation ids - a tool call's id and the ``tool_call_id`` that answers
+# it - are not stripped but *rewritten* to deterministic per-scope labels ("0",
+# "1", ...; see ``_IdCanonicalizer``), so the call-to-result edge survives into
+# the digest even across parallel or out-of-order calls while staying
+# structure-only and run-stable. The free-standing ``AIMessage.id`` correlates
+# with nothing and is kept out of the hash; its real value (and the label ->
+# real-id map) goes to the non-hashed ``runtime_metadata`` side field.
 
 
 class _IdCanonicalizer:

@@ -339,7 +339,7 @@ The workflow is one multi-node LangGraph — `summarizer → review_summary → 
 
 ## 4.12 Testing strategy
 
-The implementation is covered by 225 tests, organised into a unit suite and one integration test.
+The implementation is covered by 226 tests, organised into a unit suite and one integration test.
 
 The **unit suite** tests each component in isolation: the four JSON Schemas and the bundle hash; the validation surface; the `ProvenanceMiddleware` lifecycle; each of the two emitters; the `PipelineSession`; the `BundleGenerator`; the `HumanReview` context manager across all four action types; and the `ComplianceReport`. The obligations the JSON Schema cannot express — the `timestamp_end >= timestamp_start` ordering on Agent Step and Tool Invocation Records, and the `action_type` ↔ `output_after_hash` conditional rules on the Human Intervention Record — are enforced by a dedicated validation module (`src/agent_prov/validation.py`) and exercised directly through its `validate_record` / `validate_bundle` entry points. Because `BundleGenerator` runs `validate_bundle` at seal time, every bundle the suite produces is validated through that same single surface, so structural and conditional conformance are defined in one place rather than re-implemented per test.
 

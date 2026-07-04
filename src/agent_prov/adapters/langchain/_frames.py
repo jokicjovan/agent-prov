@@ -87,15 +87,11 @@ def _runtime_metadata(
 ) -> dict[str, Any]:
     """Assemble the non-hashed forensic side field shared by both emitters.
 
-    Carries only the runtime identifiers the semantic projection keeps out of
-    the content hashes so a record stays cross-referenceable with provider and
-    framework logs: ``run_id`` (the framework execution id), ``message_id`` (the
-    provider's response id), and ``tool_call_ids`` (the canonical-label -> real
-    tool_call_id map). Each key is included only when it carries a non-empty
-    value: a missing id, or an empty one a provider may emit, would otherwise
-    fail the ``runtime_metadata`` schema (``minLength`` 1). The session factory
-    drops the whole field when it ends up empty, so an all-absent side field
-    never reaches the record.
+    Collects the runtime identifiers the projection keeps out of the content
+    hashes: ``run_id``, ``message_id``, and the ``tool_call_ids`` label -> real
+    map (see the schema ``runtime_metadata`` definition). Each key is included
+    only when non-empty - an empty id would fail the schema's ``minLength`` - and
+    the session factory drops the field entirely when nothing was collected.
     """
     meta: dict[str, Any] = {}
     if run_id:

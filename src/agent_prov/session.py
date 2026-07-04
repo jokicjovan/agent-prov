@@ -403,12 +403,9 @@ def _attach_runtime_metadata(
 ) -> None:
     """Attach the optional ``runtime_metadata`` side field, when non-empty.
 
-    ``runtime_metadata`` is a forensic side channel: it carries the runtime
-    identifiers (framework run id, provider message id, real tool_call_ids)
-    that the adapter kept out of ``input_hash`` / ``output_hash`` so those stay
-    replay-stable. It is not part of the content commitments, but it is covered
-    by the bundle_hash seal. An empty or absent value is dropped so the field is
-    present only when it carries something.
+    The field carries the runtime identifiers the adapter kept out of the
+    content hashes (see the schema ``runtime_metadata`` definition). An empty or
+    absent value is dropped so the field is present only when it carries something.
     """
     if runtime_metadata:
         record["runtime_metadata"] = runtime_metadata
