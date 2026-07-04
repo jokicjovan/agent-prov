@@ -21,9 +21,9 @@ bundle and the adversaries it does and does not defend against (§6.2); the
 limitations carried forward from the implementation and evaluation (§6.3); the
 meaning of the out-of-scope verdicts, which mark a layer boundary rather than a
 hole (§6.4); and the directions that follow — multi-framework adapters,
-canonical identifier rewriting, content-addressed recovery of multi-agent
-topology, cryptographic signing, deployment-profile schemas, and a
-machine-readable declaration of behavioural constraints (§6.5).
+content-addressed recovery of multi-agent topology, cryptographic signing,
+deployment-profile schemas, and a machine-readable declaration of behavioural
+constraints (§6.5).
 The intent throughout is to state the boundaries precisely enough that a reader
 can tell what the protocol guarantees from what a deployment must add.
 
@@ -152,16 +152,23 @@ topology from content and timestamps — without binding the protocol to any one
 engine's execution model — is developed in §6.5.3.
 
 **Semantic projection of identifiers.** `input_hash` and `output_hash` are
-computed over a projection of the LangChain message list that strips runtime
-identifiers — `AIMessage.id`, `tool_call_id` — so that identical content digests
-identically across replays (§4.5.1). This is necessary for the digests to be
-useful as evidence, but it has a cost: the projected hash cannot be
-cross-referenced against the LLM provider's request log via the runtime id, so a
-forensic correlation between a record and the provider's own trace is not
-possible from the bundle alone. Two refinements address this from opposite
-directions — a non-hashed `runtime_metadata` side field that preserves the id
-without polluting the digest, and canonical identifier rewriting that keeps the
-correlation *inside* the hashed structure (§6.5.2).
+computed over a projection of the LangChain message list rather than the raw
+messages, because LangChain stamps a fresh runtime identifier on every generated
+message and tool call and hashing those would re-randomise the digest on every
+replay (§4.5.1). The projection does not simply discard those identifiers: the
+ones that carry *correlation* — a tool call's id and the `tool_call_id` on the
+`ToolMessage` that answers it — are rewritten to deterministic per-scope labels
+(`0, 1, 2, …`), so the tool-call ↔ tool-result edge is preserved *inside* the
+hashed structure and survives parallel or out-of-order tool calls (§4.5.6). The
+real runtime identifiers are not lost either: they are preserved in a non-hashed
+`runtime_metadata` side field, so a record can still be cross-referenced against
+the provider's request log or the framework's execution trace. One narrow
+residual remains: `runtime_metadata` sits outside the content hashes — it is
+covered by the `bundle_hash` seal, so it is tamper-evident, but it is not part of
+the replay-stable content commitment — and the free-standing response id is
+preserved only there rather than folded into the digest, a deliberate choice
+since it correlates with nothing inside a step and is not reliably present across
+runs (§6.5.2).
 
 **Runner-emitted HITL record.** The document-review demonstration expresses its
 human review points as node-level `interrupt()` gates inside a single multi-node
@@ -304,26 +311,35 @@ not, capture is more invasive (code at each call site, as in the framework-free
 demo) even though the sealed bundle is identical. Non-invasiveness, in other
 words, is the property that is framework-specific; the factory seam is not.
 
-### 6.5.2 Canonical identifier rewriting
+### 6.5.2 Extending identifier canonicalisation
 
-The preferred resolution to the semantic-projection trade-off (§6.3) is to stop
-*stripping* runtime identifiers and instead *canonicalise* them. Walking the
-message list and rewriting every `AIMessage.id` and `tool_call_id` to a
-deterministic sequence — `0, 1, 2, …` in order of first appearance, with the
-same source id always mapping to the same number — keeps the digest replay-stable
-exactly as stripping does, but it preserves the tool-call ↔ tool-result
-correlation graph *inside* the hashed structure rather than relying on the
-implicit list order. This is robust against the cases the current approach
-silently mishandles: parallel tool calls within one step, and out-of-order
-responses, where implicit-order linkage breaks. It was not adopted in the PoC
-because the demos use single-tool-per-step flows where implicit order is
-unambiguous, because adopting it would regenerate every committed bundle, and
-because it changes no thesis claim — it is a production-grade refinement of an
-already-principled approach. A complementary, lighter option is a non-hashed
-`runtime_metadata` side field that simply carries the original ids alongside the
-record for forensic cross-referencing without entering the digest. The PoC
-established the principle; canonical id rewriting is the next step (a v0.2
-schema revision).
+The semantic-projection trade-off of §6.3 was resolved during the work of this
+thesis, and the resolution is now part of the reference implementation (§4.5.6)
+rather than a future direction. Instead of stripping runtime identifiers, the
+projection canonicalises the *correlating* ones — each tool call's id and the
+answering `ToolMessage`'s `tool_call_id` — rewriting them to a deterministic
+`0, 1, 2, …` sequence in order of first appearance within a projection scope,
+with the same source id always mapping to the same label. This keeps the digest
+replay-stable exactly as stripping did, but preserves the tool-call ↔
+tool-result correlation graph *inside* the hashed structure rather than relying
+on implicit list order, so it is robust against the cases stripping silently
+mishandled: parallel tool calls within one step, and out-of-order responses. The
+complementary `runtime_metadata` side field (§4.5.6) carries the original ids —
+the framework run id, the provider response id, and the label-to-real-id map for
+the tool calls — alongside the record, unhashed, for forensic cross-referencing.
+This closed a breaking change into the schema, taken as the `0.2.0 → 0.3.0`
+version bump.
+
+Two narrower extensions remain open. First, the free-standing response id
+(`AIMessage.id`) is currently kept out of the digest and preserved only in
+`runtime_metadata`, because it correlates with nothing inside a step and is not
+reliably present across runs; folding a canonicalised form of it into the hash
+would close the last gap between the hashed structure and the raw message set, at
+the cost of that fragility. Second, `runtime_metadata` is covered by the bundle
+seal but is not itself independently attested or timestamped; a deployment that
+needs the forensic side channel to carry the same evidentiary weight as the
+content commitments would pair it with the signing and timestamping layer of
+§6.5.4.
 
 ### 6.5.3 Content-addressed recovery of multi-agent topology
 
@@ -521,7 +537,7 @@ chain records order, not causation; the capture layer is proven for one
 framework; and the obligations that live in application logic, output artifacts,
 and user interfaces are ceded, explicitly, to the layers that own them. None of
 these is a flaw concealed by the evaluation — each is a named boundary with a
-defined next step, from signing and canonical identifier rewriting to
+defined next step, from signing and content-addressed topology recovery to
 deployment-profile schemas and, most openly, a verifiable language for the
 behaviour an agent must never exhibit. The protocol establishes the evidentiary
 substrate for regulated multi-agent provenance, including the human-oversight

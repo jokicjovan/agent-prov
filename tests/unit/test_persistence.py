@@ -291,7 +291,7 @@ VALID_HEADER = json.dumps(
         "log_version": "1",
         "pipeline_id": FIXED_PIPELINE_ID,
         "session_id": FIXED_SESSION_ID,
-        "protocol_version": "0.2.0",
+        "protocol_version": "0.3.0",
     }
 )
 
@@ -354,7 +354,7 @@ def test_19_unsupported_log_version_raises(tmp_path):
                 "log_version": "99",
                 "pipeline_id": FIXED_PIPELINE_ID,
                 "session_id": FIXED_SESSION_ID,
-                "protocol_version": "0.2.0",
+                "protocol_version": "0.3.0",
             }
         ),
     )

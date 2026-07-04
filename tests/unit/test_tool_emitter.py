@@ -103,6 +103,21 @@ def test_emit_error_produces_valid_failure_record():
     validate_record(r)
 
 
+def test_runtime_metadata_carries_run_id():
+    """The tool record preserves the framework run id, unhashed, for forensic correlation."""
+    session = PipelineSession()
+    frame = _make_tool_frame()
+    emit_tool_invocation(frame, FAKE_OUTPUT, session, {})
+    assert session.records[0]["runtime_metadata"] == {"run_id": str(frame.run_id)}
+
+
+def test_error_record_runtime_metadata_carries_run_id():
+    session = PipelineSession()
+    frame = _make_tool_frame()
+    emit_tool_invocation_error(frame, ConnectionError("refused"), session, {})
+    assert session.records[0]["runtime_metadata"] == {"run_id": str(frame.run_id)}
+
+
 def test_emit_wires_parent_record_id_from_session():
     session = PipelineSession()
     session.last_record_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"

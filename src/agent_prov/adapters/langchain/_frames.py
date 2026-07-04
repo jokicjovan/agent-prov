@@ -13,9 +13,11 @@ lets every module in the adapter resolve its imports at load time. A shared
 definition in ``middleware`` would instead force ``middleware`` and the emitters
 into a circular import.
 
-This module also exposes ``_derive_agent_id``, the resolver both emitters use to
-turn a frame's enclosing node into an ``agent_id`` - it lives here because it
-operates purely on the frame types and is shared by the two emitters.
+This module also exposes the helpers both emitters share: ``_derive_agent_id``,
+the resolver that turns a frame's enclosing node into an ``agent_id``, and
+``_runtime_metadata``, the builder for the non-hashed forensic side field. Both
+live here because they operate purely on frame-level primitives and are used by
+``step_emitter`` and ``tool_emitter`` alike, so neither owns them.
 """
 
 from __future__ import annotations
@@ -76,3 +78,30 @@ def _derive_agent_id(
     if frame.parent_run_id is not None:
         return str(frame.parent_run_id)
     return "unknown"
+
+
+def _runtime_metadata(
+    run_id: Any,
+    tool_call_ids: dict[str, str] | None = None,
+    message_id: Any = None,
+) -> dict[str, Any]:
+    """Assemble the non-hashed forensic side field shared by both emitters.
+
+    Carries only the runtime identifiers the semantic projection keeps out of
+    the content hashes so a record stays cross-referenceable with provider and
+    framework logs: ``run_id`` (the framework execution id), ``message_id`` (the
+    provider's response id), and ``tool_call_ids`` (the canonical-label -> real
+    tool_call_id map). Each key is included only when it carries a non-empty
+    value: a missing id, or an empty one a provider may emit, would otherwise
+    fail the ``runtime_metadata`` schema (``minLength`` 1). The session factory
+    drops the whole field when it ends up empty, so an all-absent side field
+    never reaches the record.
+    """
+    meta: dict[str, Any] = {}
+    if run_id:
+        meta["run_id"] = str(run_id)
+    if message_id:
+        meta["message_id"] = str(message_id)
+    if tool_call_ids:
+        meta["tool_call_ids"] = tool_call_ids
+    return meta

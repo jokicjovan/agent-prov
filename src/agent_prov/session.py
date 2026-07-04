@@ -27,7 +27,7 @@ from uuid import uuid4
 from agent_prov._hashing import now_iso8601, hash_content
 
 
-_DEFAULT_PROTOCOL_VERSION = "0.2.0"
+_DEFAULT_PROTOCOL_VERSION = "0.3.0"
 
 # Mirrored from the JSON Schema `$defs/uuid` and `$defs/semver` patterns. Validating
 # user-supplied identifiers at construction time fails loudly here, rather than
@@ -84,6 +84,7 @@ class SessionProtocol(Protocol):
         input: Any,
         output: Any,
         reference_data_id: str | None = None,
+        runtime_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]: ...
 
     def add_agent_step_error(
@@ -99,6 +100,7 @@ class SessionProtocol(Protocol):
         source: str = "provider",
         retryable: bool | None = None,
         reference_data_id: str | None = None,
+        runtime_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]: ...
 
     def add_tool_invocation(
@@ -111,6 +113,7 @@ class SessionProtocol(Protocol):
         input: Any,
         output: Any,
         reference_data_id: str | None = None,
+        runtime_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]: ...
 
     def add_tool_invocation_error(
@@ -126,6 +129,7 @@ class SessionProtocol(Protocol):
         source: str = "tool",
         retryable: bool | None = None,
         reference_data_id: str | None = None,
+        runtime_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]: ...
 
 
@@ -214,6 +218,7 @@ class PipelineSession:
         input: Any,
         output: Any,
         reference_data_id: str | None = None,
+        runtime_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Assemble and append a successful Agent Step Record."""
         record = self._agent_step_base(
@@ -223,6 +228,7 @@ class PipelineSession:
             timestamp_start=timestamp_start,
             input=input,
             reference_data_id=reference_data_id,
+            runtime_metadata=runtime_metadata,
         )
         record["status"] = "success"
         record["output_hash"] = hash_content(output)
@@ -242,6 +248,7 @@ class PipelineSession:
         source: str = "provider",
         retryable: bool | None = None,
         reference_data_id: str | None = None,
+        runtime_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Assemble and append an Agent Step Record for a failed LLM call.
 
@@ -257,6 +264,7 @@ class PipelineSession:
             timestamp_start=timestamp_start,
             input=input,
             reference_data_id=reference_data_id,
+            runtime_metadata=runtime_metadata,
         )
         record["status"] = "error"
         record["error"] = _error_detail(error_type, error_message, source, retryable)
@@ -273,6 +281,7 @@ class PipelineSession:
         input: Any,
         output: Any,
         reference_data_id: str | None = None,
+        runtime_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Assemble and append a successful Tool Invocation Record."""
         record = self._tool_invocation_base(
@@ -282,6 +291,7 @@ class PipelineSession:
             timestamp_start=timestamp_start,
             input=input,
             reference_data_id=reference_data_id,
+            runtime_metadata=runtime_metadata,
         )
         record["status"] = "success"
         record["output_hash"] = hash_content(output)
@@ -301,6 +311,7 @@ class PipelineSession:
         source: str = "tool",
         retryable: bool | None = None,
         reference_data_id: str | None = None,
+        runtime_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Assemble and append a Tool Invocation Record for a failed tool call.
 
@@ -316,6 +327,7 @@ class PipelineSession:
             timestamp_start=timestamp_start,
             input=input,
             reference_data_id=reference_data_id,
+            runtime_metadata=runtime_metadata,
         )
         record["status"] = "error"
         record["error"] = _error_detail(error_type, error_message, source, retryable)
@@ -331,9 +343,10 @@ class PipelineSession:
         timestamp_start: str,
         input: Any,
         reference_data_id: str | None,
+        runtime_metadata: dict[str, Any] | None,
     ) -> dict[str, Any]:
         """Fields shared by the success and error Agent Step Records."""
-        return {
+        record = {
             "record_id": str(uuid4()),
             "record_type": "agent_step",
             "protocol_version": self.protocol_version,
@@ -348,6 +361,8 @@ class PipelineSession:
             "reference_data_id": reference_data_id,
             "parent_record_id": self.last_record_id,
         }
+        _attach_runtime_metadata(record, runtime_metadata)
+        return record
 
     def _tool_invocation_base(
         self,
@@ -358,9 +373,10 @@ class PipelineSession:
         timestamp_start: str,
         input: Any,
         reference_data_id: str | None,
+        runtime_metadata: dict[str, Any] | None,
     ) -> dict[str, Any]:
         """Fields shared by the success and error Tool Invocation Records."""
-        return {
+        record = {
             "record_id": str(uuid4()),
             "record_type": "tool_invocation",
             "protocol_version": self.protocol_version,
@@ -375,9 +391,27 @@ class PipelineSession:
             "reference_data_id": reference_data_id,
             "parent_record_id": self.last_record_id,
         }
+        _attach_runtime_metadata(record, runtime_metadata)
+        return record
 
     def __len__(self) -> int:
         return len(self.records)
+
+
+def _attach_runtime_metadata(
+    record: dict[str, Any], runtime_metadata: dict[str, Any] | None
+) -> None:
+    """Attach the optional ``runtime_metadata`` side field, when non-empty.
+
+    ``runtime_metadata`` is a forensic side channel: it carries the runtime
+    identifiers (framework run id, provider message id, real tool_call_ids)
+    that the adapter kept out of ``input_hash`` / ``output_hash`` so those stay
+    replay-stable. It is not part of the content commitments, but it is covered
+    by the bundle_hash seal. An empty or absent value is dropped so the field is
+    present only when it carries something.
+    """
+    if runtime_metadata:
+        record["runtime_metadata"] = runtime_metadata
 
 
 def _error_detail(

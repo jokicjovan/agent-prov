@@ -19,7 +19,7 @@ only (``json``, ``os``, ``pathlib``), so it lives in the protocol core.
 The log is line-oriented NDJSON. The first line is a header describing the
 session; each subsequent line wraps one record::
 
-    {"event": "session", "log_version": "1", "pipeline_id": "...", "session_id": "...", "protocol_version": "0.2.0"}
+    {"event": "session", "log_version": "1", "pipeline_id": "...", "session_id": "...", "protocol_version": "0.3.0"}
     {"event": "record", "record": { ... }}
     {"event": "record", "record": { ... }}
 

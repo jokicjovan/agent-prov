@@ -22,7 +22,7 @@ Several decisions cut across all four record types. They are stated here once so
 
 **`record_type` as a `const` discriminator.** Every record carries a fixed `record_type` value — `"agent_step"`, `"tool_invocation"`, `"human_intervention"`, or `"pipeline_bundle"`. Validators and downstream tooling dispatch on this field without inspecting other fields. The Pipeline Bundle's `records` array uses `oneOf` against the three record-type schemas; the discriminator makes the union unambiguous.
 
-**`protocol_version` (semver) on every record.** Each record stamps the protocol version it was produced under. Bumping the major version is the path for any breaking field change. Consumers can therefore detect mixed-version bundles and reject them at ingestion. The reference implementation defaults to `"0.2.0"`.
+**`protocol_version` (semver) on every record.** Each record stamps the protocol version it was produced under. Bumping the major version is the path for any breaking field change. Consumers can therefore detect mixed-version bundles and reject them at ingestion. The reference implementation defaults to `"0.3.0"`.
 
 **Lowercase canonical hex for all hex-encoded fields.** UUIDs and SHA-256 digests are emitted as lowercase hex strings, validated by a pattern at the schema level. This avoids the situation in which two equivalent records produce different canonical-JSON serialisations because one used uppercase and the other lowercase hex, which would in turn produce different bundle hashes.
 
@@ -64,6 +64,7 @@ An agent step is delimited by the start and end of a single chat-model call. A L
 | `error` | error object | only when `status` is `"error"` | 12(2)(a) |
 | `reference_data_id` | string or `null` | yes (nullable) | 12(3)(b) |
 | `parent_record_id` | UUID or `null` | yes (nullable) | 12(2) traceability |
+| `runtime_metadata` | object | no (optional) | metadata (forensic) |
 
 `status` is a required, explicit discriminator of the step's outcome, so a record is interpretable without reference to the protocol version that produced it. On `"success"` the `output_hash` field is present and `error` is absent; on `"error"` the step produced no output, so `output_hash` is absent and `error` carries the failure detail. Recording failures — not only successful steps — is what discharges Article 12(2)(a), which calls for logging events relevant to identifying situations in which the system may present a risk, including malfunctions. The presence rules bind two field values and so are enforced at the validation surface rather than in JSON Schema (§3.7).
 
@@ -77,13 +78,15 @@ The `error` object has one required member, `type` (the exception class name, e.
 
 `parent_record_id` is the `record_id` of the immediately preceding record in the bundle, or `null` for the first record. It establishes the structural chain of custody referenced by Article 12(2) traceability. The chain is chronological, not causal; §3.7.3 discusses this in more detail.
 
+`runtime_metadata` is an optional, non-hashed side field. The content hashes are computed over a projection of the messages that rewrites the runtime tool-call identifiers to deterministic labels and omits the free-standing message id, so that identical content digests identically across replays (§4.5.6); the raw identifiers the projection removes are preserved here instead — the framework `run_id`, the provider's response `message_id`, and a map from each canonical tool-call label to the real `tool_call_id` — so a record can still be cross-referenced against the provider's request log or the framework's execution trace. It is excluded from `input_hash` and `output_hash` (keeping those replay-stable) but covered by the bundle's `bundle_hash` seal, so its values are tamper-evident. The object is open — an implementation may add framework-specific identifiers — and is omitted entirely when it would be empty.
+
 ### 3.3.3 Example
 
 ```json
 {
   "record_id": "c841bdac-d615-44bf-8db9-c941c1d58551",
   "record_type": "agent_step",
-  "protocol_version": "0.2.0",
+  "protocol_version": "0.3.0",
   "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
   "session_id": "3174f399-0c98-4779-912d-ada24e61d126",
   "agent_id": "researcher",
@@ -95,7 +98,11 @@ The `error` object has one required member, `type` (the exception class name, e.
   "status": "success",
   "output_hash": "102900748cf7170b814b19c74e79183a190bbcc4311629cc166cf1fd550075fe",
   "reference_data_id": null,
-  "parent_record_id": "d77ab248-29bf-4933-92c4-8b11017a592a"
+  "parent_record_id": "d77ab248-29bf-4933-92c4-8b11017a592a",
+  "runtime_metadata": {
+    "run_id": "019f2a71-3a47-7523-b82d-7e14aee7b14a",
+    "message_id": "lc_run--019f2a71-3a47-7523-b82d-7e14aee7b14a-0"
+  }
 }
 ```
 
@@ -133,6 +140,7 @@ The structural symmetry with the Agent Step Record is intentional. Both records 
 | `error` | error object | only when `status` is `"error"` | 12(2)(a) |
 | `reference_data_id` | string or `null` | yes (nullable) | 12(3)(b) |
 | `parent_record_id` | UUID or `null` | yes (nullable) | 12(2) traceability |
+| `runtime_metadata` | object | no (optional) | metadata (forensic) |
 
 `status`, `output_hash`, and `error` behave exactly as on the Agent Step Record (§3.3.2): `status` is a required explicit outcome discriminator, `output_hash` is present only on success, and the `error` object (required `type`, optional `message_hash`/`source`/`retryable`) is present only on failure. A tool call that raises is recorded with `"status": "error"` and `"source": "tool"`, discharging Article 12(2)(a) for the tool layer.
 
@@ -140,13 +148,15 @@ The structural symmetry with the Agent Step Record is intentional. Both records 
 
 `reference_data_id` for a tool invocation captures the version of any external corpus or API surface the tool consulted: a retrieval corpus, an external knowledge base, a third-party API version pin. `null` when the tool has no such reference data, for example a pure-function calculator.
 
+`runtime_metadata` is the same optional, non-hashed forensic side field defined on the Agent Step Record (§3.3.2). A tool call has no message or tool-call identifiers of its own to project, so the reference implementation records only the framework `run_id` here; the field remains open for deployment-specific identifiers and is omitted when empty.
+
 ### 3.4.3 Example
 
 ```json
 {
   "record_id": "d77ab248-29bf-4933-92c4-8b11017a592a",
   "record_type": "tool_invocation",
-  "protocol_version": "0.2.0",
+  "protocol_version": "0.3.0",
   "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
   "session_id": "3174f399-0c98-4779-912d-ada24e61d126",
   "agent_id": "researcher",
@@ -158,7 +168,10 @@ The structural symmetry with the Agent Step Record is intentional. Both records 
   "status": "success",
   "output_hash": "a6ff9c0630131ec5f0417e6b2dee03e864f2dd81d76d3c4a93a6de6308cdd773",
   "reference_data_id": null,
-  "parent_record_id": null
+  "parent_record_id": null,
+  "runtime_metadata": {
+    "run_id": "019f2a71-3a45-7a71-9b6c-f4b4e7adec5f"
+  }
 }
 ```
 
@@ -233,7 +246,7 @@ Article 14(4)(c) requires that the oversight person be able to correctly interpr
 {
   "record_id": "8b6a4d2c-1e23-4f56-9a7b-3c5d6e7f8910",
   "record_type": "human_intervention",
-  "protocol_version": "0.2.0",
+  "protocol_version": "0.3.0",
   "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
   "session_id": "3174f399-0c98-4779-912d-ada24e61d126",
   "reviewer_id": ["alice.r"],
@@ -298,7 +311,7 @@ Third, the canonical JSON form used by the reference implementation conforms to 
 {
   "bundle_id": "7ff04ca5-4db0-4705-8981-7109e6dda5e8",
   "record_type": "pipeline_bundle",
-  "protocol_version": "0.2.0",
+  "protocol_version": "0.3.0",
   "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
   "session_id": "3174f399-0c98-4779-912d-ada24e61d126",
   "created_at": "2026-05-12T09:51:26.828182Z",
@@ -314,7 +327,7 @@ Third, the canonical JSON form used by the reference implementation conforms to 
 }
 ```
 
-The records are abbreviated here for readability, so `bundle_hash` is shown as a placeholder; it is the SHA-256 of the canonical JSON of the complete bundle with the `bundle_hash` field excluded. A complete, recomputable bundle (four records sealed under protocol 0.2.0) ships in the repository at `demos/langchain/research/mock_bundle.json`.
+The records are abbreviated here for readability, so `bundle_hash` is shown as a placeholder; it is the SHA-256 of the canonical JSON of the complete bundle with the `bundle_hash` field excluded. A complete, recomputable bundle (four records sealed under protocol 0.3.0) ships in the repository at `demos/langchain/research/mock_bundle.json`.
 
 ---
 

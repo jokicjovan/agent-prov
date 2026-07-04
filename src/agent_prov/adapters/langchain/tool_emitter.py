@@ -17,6 +17,7 @@ from agent_prov.adapters.langchain._frames import (
     _NodeFrame,
     _ToolFrame,
     _derive_agent_id,
+    _runtime_metadata,
 )
 from agent_prov.session import SessionProtocol
 
@@ -45,6 +46,7 @@ def emit_tool_invocation(
         input=frame.input_str,
         output=output,
         reference_data_id=frame.metadata.get("reference_data_id"),
+        runtime_metadata=_runtime_metadata(frame.run_id),
     )
 
 
@@ -70,6 +72,7 @@ def emit_tool_invocation_error(
         error_type=type(error).__name__,
         error_message=str(error),
         source="tool",
+        runtime_metadata=_runtime_metadata(frame.run_id),
     )
 
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://jokicjovan.github.io/agent-prov/schemas/v0.2/tool_invocation.schema.json",
+  "$id": "https://jokicjovan.github.io/agent-prov/schemas/v0.3/tool_invocation.schema.json",
   "title": "Tool Invocation Record",
   "description": "Captures a single tool/function call made by an agent within a pipeline. Primary EU AI Act mapping: Art. 12(2)(c), 12(3)(a), 12(3)(b), 12(3)(c).",
   "type": "object",
@@ -93,6 +93,10 @@
         { "type": "null" }
       ],
       "description": "record_id of the immediately preceding record in the pipeline, by chronological emission order (inter-record linkage). The chain is chronological, not causal: this is the record observed to complete just before this tool invocation, not necessarily the Agent Step Record that issued the call. Null only if this is the first record in the pipeline (rare for tool invocations). Schema metadata supporting the ordered record chain referenced by Art. 12(2) traceability."
+    },
+    "runtime_metadata": {
+      "$ref": "#/$defs/runtime_metadata",
+      "description": "Optional non-hashed forensic side channel; see the $defs/runtime_metadata definition. Not part of input_hash / output_hash, so those stay replay-stable, but covered by the Pipeline Bundle bundle_hash seal. No direct Act mapping; supports forensic correlation of a record with provider and framework logs."
     }
   },
   "$defs": {
@@ -134,6 +138,28 @@
         }
       },
       "description": "Structured failure detail attached to a record whose status is 'error'."
+    },
+    "runtime_metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional forensic side channel carrying runtime identifiers not included in input_hash / output_hash. It is deliberately excluded from those content commitments so they stay replay-stable across identical runs, but it is covered by the Pipeline Bundle bundle_hash seal, so its values remain tamper-evident. Its purpose is to let an investigator cross-reference a record with the LLM provider's request log or the agent framework's execution trace. additionalProperties is left open because the identifiers available are adapter- and framework-specific; the properties below are the keys the reference LangChain adapter populates. On a Tool Invocation Record the adapter records run_id (the framework execution id); message_id and tool_call_ids apply to Agent Step Records.",
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the framework execution (the LangChain callback run id) that produced this record. Correlates the record with the agent framework's own execution trace."
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Runtime identifier the provider stamped on a response message. Populated on Agent Step Records; kept out of the content hash by the semantic projection."
+        },
+        "tool_call_ids": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 },
+          "description": "Maps each canonical tool-call label ('0', '1', '2', ...) written into output_hash to the real runtime tool_call_id it replaced. Populated on Agent Step Records."
+        }
+      }
     },
     "iso8601_timestamp": {
       "type": "string",

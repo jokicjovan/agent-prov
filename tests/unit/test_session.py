@@ -77,7 +77,7 @@ def test_04_two_instances_with_same_pipeline_id_get_distinct_session_ids():
 # ---------------------------------------------------------------------------
 
 
-def test_05_default_protocol_version_is_0_1_0():
+def test_05_default_protocol_version_matches_module_constant():
     session = PipelineSession()
     assert session.protocol_version == _DEFAULT_PROTOCOL_VERSION
 
@@ -411,3 +411,26 @@ def test_24_factory_passes_reference_data_id_through():
     )
     assert record["reference_data_id"] == "corpus-v3"
     validate_record(record)
+
+
+def test_25_factory_attaches_runtime_metadata_when_supplied():
+    session = PipelineSession()
+    meta = {"run_id": "run-123", "message_id": "msg-9"}
+    record = session.add_agent_step(
+        **_STEP_KW, input="p", output="a", runtime_metadata=meta
+    )
+    assert record["runtime_metadata"] == meta
+    # runtime_metadata is a side field: it does not perturb the content hash
+    assert record["input_hash"] == hash_content("p")
+    assert record["output_hash"] == hash_content("a")
+    validate_record(record)
+
+
+def test_26_factory_omits_runtime_metadata_when_absent_or_empty():
+    session = PipelineSession()
+    default = session.add_agent_step(**_STEP_KW, input="p", output="a")
+    empty = session.add_tool_invocation(
+        **_TOOL_KW, input="i", output="o", runtime_metadata={}
+    )
+    assert "runtime_metadata" not in default
+    assert "runtime_metadata" not in empty

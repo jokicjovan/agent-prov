@@ -75,6 +75,9 @@ uv run python demos/langchain/research/mock.py
 
 # run a pipeline with human-in-the-loop review
 uv run python demos/langchain/document_review/mock.py
+
+# run a tool-calling agent (model emits parallel tool calls)
+uv run python demos/langchain/tool_calling/mock.py
 ```
 
 Each demo writes a sealed bundle (`*_bundle.json`) next to its script and prints
