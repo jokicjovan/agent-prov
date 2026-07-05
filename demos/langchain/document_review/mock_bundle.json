@@ -1,40 +1,40 @@
 {
-  "bundle_id": "1832dfaf-665c-4f24-8421-873e67b69cc9",
+  "bundle_id": "b190715c-310d-4e57-ac20-81dc5b8fa3dd",
   "record_type": "pipeline_bundle",
-  "protocol_version": "0.3.0",
+  "protocol_version": "0.4.0",
   "pipeline_id": "951e06e5-f3b3-443f-ba1e-45e9416e1be3",
-  "session_id": "ff03eb1d-637f-4889-98c9-326b1b6ad305",
-  "created_at": "2026-07-04T00:05:46.379890Z",
+  "session_id": "5e31a43e-e4f4-4207-8c85-d20e9f2998ee",
+  "created_at": "2026-07-05T01:11:53.477929Z",
   "disclosure_presented": true,
   "outcome": "completed",
   "records": [
     {
-      "record_id": "92345056-e901-4988-8ea4-cd9fee077a49",
+      "record_id": "e79d0f66-c4ba-4cfd-a189-4b5bb1443482",
       "record_type": "agent_step",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "951e06e5-f3b3-443f-ba1e-45e9416e1be3",
-      "session_id": "ff03eb1d-637f-4889-98c9-326b1b6ad305",
+      "session_id": "5e31a43e-e4f4-4207-8c85-d20e9f2998ee",
       "agent_id": "summarizer",
       "model_id": "fake-summarizer",
       "model_version": "fake-summarizer",
-      "timestamp_start": "2026-07-04T00:05:46.371491Z",
-      "timestamp_end": "2026-07-04T00:05:46.372434Z",
+      "timestamp_start": "2026-07-05T01:11:53.470409Z",
+      "timestamp_end": "2026-07-05T01:11:53.471254Z",
       "input_hash": "93b39fe5d9da2f433d98129e4acbd013ca1ccdb0db2b1d7fc797ddcc0c0be18a",
       "reference_data_id": null,
       "parent_record_id": null,
       "runtime_metadata": {
-        "run_id": "019f2a72-1103-7a92-b80d-f736dffcaf57",
-        "message_id": "lc_run--019f2a72-1103-7a92-b80d-f736dffcaf57-0"
+        "run_id": "019f2fd4-f57e-7e00-ac52-692f85b32d2a",
+        "message_id": "lc_run--019f2fd4-f57e-7e00-ac52-692f85b32d2a-0"
       },
       "status": "success",
       "output_hash": "3deddf991496ffc4964ece17e8b0a5b2266aee73aa11b9748060ca8bc83c986c"
     },
     {
-      "record_id": "6b005a1d-e06c-43cd-b4b3-6785626cb73b",
+      "record_id": "f2daaa4d-1217-4268-bc86-1b04c3971f17",
       "record_type": "human_intervention",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "951e06e5-f3b3-443f-ba1e-45e9416e1be3",
-      "session_id": "ff03eb1d-637f-4889-98c9-326b1b6ad305",
+      "session_id": "5e31a43e-e4f4-4207-8c85-d20e9f2998ee",
       "reviewer_id": [
         "reviewer:editor-01"
       ],
@@ -42,37 +42,37 @@
       "action_type": "edited",
       "output_before_hash": "414effefe4286f519903af5c76b78c196ab12d5ca6471400b0388dd20b5ffc7c",
       "output_after_hash": "1debe9d8bd2271de31e9d624baf70f501b4ef7b1bf415ab51c96d1e1c78e7c11",
-      "intervention_timestamp": "2026-07-04T00:05:46.374876Z",
-      "parent_record_id": "92345056-e901-4988-8ea4-cd9fee077a49",
+      "intervention_timestamp": "2026-07-05T01:11:53.473385Z",
+      "parent_record_id": "e79d0f66-c4ba-4cfd-a189-4b5bb1443482",
       "justification_hash": "8e8b08c1dbffc072c15bb4b4ce7b8c94e9c0959fc896ec34c213bcb7c4e7402d"
     },
     {
-      "record_id": "c7677b64-ccb5-4fb7-a84f-680ba7a0ac47",
+      "record_id": "59f2bb88-cb40-4753-b615-00046c9056cb",
       "record_type": "agent_step",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "951e06e5-f3b3-443f-ba1e-45e9416e1be3",
-      "session_id": "ff03eb1d-637f-4889-98c9-326b1b6ad305",
+      "session_id": "5e31a43e-e4f4-4207-8c85-d20e9f2998ee",
       "agent_id": "finalizer",
       "model_id": "fake-finalizer",
       "model_version": "fake-finalizer",
-      "timestamp_start": "2026-07-04T00:05:46.376797Z",
-      "timestamp_end": "2026-07-04T00:05:46.376932Z",
+      "timestamp_start": "2026-07-05T01:11:53.475409Z",
+      "timestamp_end": "2026-07-05T01:11:53.475545Z",
       "input_hash": "4ff663aac4d752ef17359d2cd24c6129372288269270c74f60bf6fe2866514aa",
       "reference_data_id": null,
-      "parent_record_id": "6b005a1d-e06c-43cd-b4b3-6785626cb73b",
+      "parent_record_id": "f2daaa4d-1217-4268-bc86-1b04c3971f17",
       "runtime_metadata": {
-        "run_id": "019f2a72-1108-7df2-a0df-26fb326637d7",
-        "message_id": "lc_run--019f2a72-1108-7df2-a0df-26fb326637d7-0"
+        "run_id": "019f2fd4-f583-7bd2-9af0-7049f140b00b",
+        "message_id": "lc_run--019f2fd4-f583-7bd2-9af0-7049f140b00b-0"
       },
       "status": "success",
       "output_hash": "8cd1c642499cd930a2aed304b26543da21d82e4612ac7cf48ecee1925ad08183"
     },
     {
-      "record_id": "25ddbcbf-6a84-4198-8b87-d1997057eb07",
+      "record_id": "5614d629-8061-43a7-8028-0be7d54ddceb",
       "record_type": "human_intervention",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "951e06e5-f3b3-443f-ba1e-45e9416e1be3",
-      "session_id": "ff03eb1d-637f-4889-98c9-326b1b6ad305",
+      "session_id": "5e31a43e-e4f4-4207-8c85-d20e9f2998ee",
       "reviewer_id": [
         "reviewer:compliance-07"
       ],
@@ -80,10 +80,10 @@
       "action_type": "approved",
       "output_before_hash": "1eab154df5550f8151e77d7d2cf1b550f3894c5e8e074930c334e99686a09cd5",
       "output_after_hash": "1eab154df5550f8151e77d7d2cf1b550f3894c5e8e074930c334e99686a09cd5",
-      "intervention_timestamp": "2026-07-04T00:05:46.378377Z",
-      "parent_record_id": "c7677b64-ccb5-4fb7-a84f-680ba7a0ac47",
+      "intervention_timestamp": "2026-07-05T01:11:53.476602Z",
+      "parent_record_id": "59f2bb88-cb40-4753-b615-00046c9056cb",
       "justification_hash": "79995e711204126f365746e06200e997d394b8dd9ee9d8b79dbb74fd188a00f6"
     }
   ],
-  "bundle_hash": "1242520ea53398a3c7f1b87b27269e389e0207bb42a396a2111989c834bc155d"
+  "bundle_hash": "b9b9acecd5908539df112c936d0a82b635721c5b5718d14b63887ddbfb8abbd1"
 }

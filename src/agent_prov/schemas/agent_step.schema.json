@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://jokicjovan.github.io/agent-prov/schemas/v0.3/agent_step.schema.json",
+  "$id": "https://jokicjovan.github.io/agent-prov/schemas/v0.4/agent_step.schema.json",
   "title": "Agent Step Record",
   "description": "Captures a single LLM agent node execution within a pipeline. Primary EU AI Act mapping: Art. 12(2), 12(3)(a)(b)(c), 14(4)(a).",
   "type": "object",

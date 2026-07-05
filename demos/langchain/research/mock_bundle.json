@@ -1,96 +1,96 @@
 {
-  "bundle_id": "c2795c17-5930-4b1a-81de-e00c2849bfd0",
+  "bundle_id": "a167a9a5-7168-44e0-ad4a-980d48371067",
   "record_type": "pipeline_bundle",
-  "protocol_version": "0.3.0",
+  "protocol_version": "0.4.0",
   "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
-  "session_id": "ec431951-33ab-41e2-a306-694931080271",
-  "created_at": "2026-07-04T00:04:51.405821Z",
+  "session_id": "2f3990ca-564b-4b93-9741-96e42878a848",
+  "created_at": "2026-07-05T01:11:52.313700Z",
   "disclosure_presented": true,
   "outcome": "completed",
   "records": [
     {
-      "record_id": "1abe55f0-bee9-4f76-88ae-57cfa41a8a47",
+      "record_id": "c1986737-8206-4e58-a743-8e8c1bf09192",
       "record_type": "tool_invocation",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
-      "session_id": "ec431951-33ab-41e2-a306-694931080271",
+      "session_id": "2f3990ca-564b-4b93-9741-96e42878a848",
       "agent_id": "researcher",
       "tool_name": "web_search",
       "tool_version": "unversioned",
-      "timestamp_start": "2026-07-04T00:04:51.397764Z",
-      "timestamp_end": "2026-07-04T00:04:51.398524Z",
+      "timestamp_start": "2026-07-05T01:11:52.309678Z",
+      "timestamp_end": "2026-07-05T01:11:52.310191Z",
       "input_hash": "43db217faadadc58f3abec361efa0164ff518e9be78233ba677e8e2e5eed8baa",
       "reference_data_id": null,
       "parent_record_id": null,
       "runtime_metadata": {
-        "run_id": "019f2a71-3a45-7a71-9b6c-f4b4e7adec5f"
+        "run_id": "019f2fd4-f0f5-7510-868d-7b526e0671d1"
       },
       "status": "success",
       "output_hash": "a6ff9c0630131ec5f0417e6b2dee03e864f2dd81d76d3c4a93a6de6308cdd773"
     },
     {
-      "record_id": "f5718e1e-f88b-4a21-a57a-676b4329c46e",
+      "record_id": "eba72c94-c39e-4c44-be45-64f1d96c6be7",
       "record_type": "agent_step",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
-      "session_id": "ec431951-33ab-41e2-a306-694931080271",
+      "session_id": "2f3990ca-564b-4b93-9741-96e42878a848",
       "agent_id": "researcher",
       "model_id": "fake-researcher",
       "model_version": "fake-researcher",
-      "timestamp_start": "2026-07-04T00:04:51.399143Z",
-      "timestamp_end": "2026-07-04T00:04:51.400835Z",
+      "timestamp_start": "2026-07-05T01:11:52.310556Z",
+      "timestamp_end": "2026-07-05T01:11:52.311398Z",
       "input_hash": "49b480e0426c79d178513fded1a2b2c567b450c9fc55b908700e8e815353d75c",
       "reference_data_id": null,
-      "parent_record_id": "1abe55f0-bee9-4f76-88ae-57cfa41a8a47",
+      "parent_record_id": "c1986737-8206-4e58-a743-8e8c1bf09192",
       "runtime_metadata": {
-        "run_id": "019f2a71-3a47-7523-b82d-7e14aee7b14a",
-        "message_id": "lc_run--019f2a71-3a47-7523-b82d-7e14aee7b14a-0"
+        "run_id": "019f2fd4-f0f6-7983-bfa5-0b208b01f8e8",
+        "message_id": "lc_run--019f2fd4-f0f6-7983-bfa5-0b208b01f8e8-0"
       },
       "status": "success",
       "output_hash": "66c6f91aafed23470085c3999ec1bbf044d86416076f7584083882b7b4cf3486"
     },
     {
-      "record_id": "8959668d-70fb-4efa-9015-2911b1825795",
+      "record_id": "7522df69-05b8-4cae-a950-ab636a5b4f00",
       "record_type": "agent_step",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
-      "session_id": "ec431951-33ab-41e2-a306-694931080271",
+      "session_id": "2f3990ca-564b-4b93-9741-96e42878a848",
       "agent_id": "summarizer",
       "model_id": "fake-summarizer",
       "model_version": "fake-summarizer",
-      "timestamp_start": "2026-07-04T00:04:51.404038Z",
-      "timestamp_end": "2026-07-04T00:04:51.404303Z",
+      "timestamp_start": "2026-07-05T01:11:52.312820Z",
+      "timestamp_end": "2026-07-05T01:11:52.312944Z",
       "input_hash": "f70eb5aadad43573d324fecf37939b2b920ab8c2d48a4052165a31166245b154",
       "reference_data_id": null,
-      "parent_record_id": "f5718e1e-f88b-4a21-a57a-676b4329c46e",
+      "parent_record_id": "eba72c94-c39e-4c44-be45-64f1d96c6be7",
       "runtime_metadata": {
-        "run_id": "019f2a71-3a4c-7371-bdb1-ddd317dba1a5",
-        "message_id": "lc_run--019f2a71-3a4c-7371-bdb1-ddd317dba1a5-0"
+        "run_id": "019f2fd4-f0f8-7270-91a7-b478299b734e",
+        "message_id": "lc_run--019f2fd4-f0f8-7270-91a7-b478299b734e-0"
       },
       "status": "success",
       "output_hash": "635bcb5e60518260e2a382b16db42802d15afba82a6f76877945b8798ea217d3"
     },
     {
-      "record_id": "07773bd0-8c68-4e45-81f2-2d0116605f8c",
+      "record_id": "0967a46d-7b39-4423-85c3-bcb8597822c5",
       "record_type": "agent_step",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
-      "session_id": "ec431951-33ab-41e2-a306-694931080271",
+      "session_id": "2f3990ca-564b-4b93-9741-96e42878a848",
       "agent_id": "writer",
       "model_id": "fake-writer",
       "model_version": "fake-writer",
-      "timestamp_start": "2026-07-04T00:04:51.405231Z",
-      "timestamp_end": "2026-07-04T00:04:51.405436Z",
+      "timestamp_start": "2026-07-05T01:11:52.313370Z",
+      "timestamp_end": "2026-07-05T01:11:52.313465Z",
       "input_hash": "ca9f1ef6898ef8e509a100f79e6b9104cd92350c2160cc433f70421ad5330c9a",
       "reference_data_id": null,
-      "parent_record_id": "8959668d-70fb-4efa-9015-2911b1825795",
+      "parent_record_id": "7522df69-05b8-4cae-a950-ab636a5b4f00",
       "runtime_metadata": {
-        "run_id": "019f2a71-3a4d-7643-84cb-ff1a17cd8607",
-        "message_id": "lc_run--019f2a71-3a4d-7643-84cb-ff1a17cd8607-0"
+        "run_id": "019f2fd4-f0f9-78e3-921d-39f792fe4283",
+        "message_id": "lc_run--019f2fd4-f0f9-78e3-921d-39f792fe4283-0"
       },
       "status": "success",
       "output_hash": "10753c1eec4d6b347930c86fc928b83f66b3dda7c4233b6580aeb7a5d483b541"
     }
   ],
-  "bundle_hash": "c12243da0e114fc7f25a3a711007e16013fdd3665db38dc90d237b2c32d7ff36"
+  "bundle_hash": "c425049012dd1e29b698f188a048fff11fb9a15559fc31df8e1b71e052f57b5e"
 }

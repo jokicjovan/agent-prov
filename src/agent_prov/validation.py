@@ -8,8 +8,11 @@ entry point so callers and tests go through a single door:
 * structural validation against the JSON Schema files (``jsonschema``, Draft
   2020-12), and
 * the conditional rules JSON Schema cannot express:
-    - ``action_type`` <-> ``output_after_hash`` on Human Intervention records, and
-    - ``timestamp_end >= timestamp_start`` on Agent Step / Tool Invocation.
+    - ``action_type`` <-> ``output_after_hash`` on Human Intervention records,
+    - ``timestamp_end >= timestamp_start`` on Agent Step / Tool Invocation, and
+    - the bundle-level oversight regime: a bundle declaring
+      ``oversight_regime: "biometric_dual_control"`` (Art. 14(5)) requires every
+      Human Intervention Record to carry at least two reviewer ids.
 
 ``validate_record`` validates a single record; ``validate_bundle`` validates a
 bundle and every record it carries. Both raise :class:`ProtocolValidationError`
@@ -99,6 +102,7 @@ def validate_bundle(bundle: Any) -> None:
             _check_conditionals(rec)
         except ProtocolValidationError as exc:
             raise ProtocolValidationError(f"records[{i}]: {exc}") from exc
+    _check_oversight_regime(bundle)
 
 
 # --------------------------------------------------------------- mechanisms
@@ -156,6 +160,35 @@ def _check_status_consistent(record: dict[str, Any]) -> None:
             )
         if not has_error:
             raise ProtocolValidationError("status 'error': error detail must be present")
+
+
+def _check_oversight_regime(bundle: dict[str, Any]) -> None:
+    """Enforce the bundle-level oversight regime against its Human Intervention Records.
+
+    This is a bundle-level rule (it reads a bundle field and constrains records),
+    so it lives here rather than in the per-record ``_check_conditionals``. When
+    the bundle declares ``oversight_regime: "biometric_dual_control"`` (EU AI Act
+    Art. 14(5)), every Human Intervention Record must carry at least two reviewer
+    ids; the schema's ``uniqueItems`` on ``reviewer_id`` already guarantees they
+    are distinct, so two entries mean two distinct people. An absent regime is
+    treated as ``"standard"`` and imposes no extra constraint.
+
+    The rule enforces the reviewer count on the interventions that occur; it does
+    not require that an intervention occur at all, since a missing record is an
+    omission the record stream cannot detect from within (an external expectation
+    of what the pipeline should have produced is a deployment control).
+    """
+    if bundle.get("oversight_regime") != "biometric_dual_control":
+        return
+    for i, rec in enumerate(bundle.get("records", [])):
+        if not isinstance(rec, dict) or rec.get("record_type") != "human_intervention":
+            continue
+        reviewers = rec.get("reviewer_id") or []
+        if len(reviewers) < 2:
+            raise ProtocolValidationError(
+                f"records[{i}]: oversight_regime 'biometric_dual_control' (Art. 14(5)) "
+                f"requires at least two reviewer_id entries, got {len(reviewers)}"
+            )
 
 
 def _check_hitl_consistent(record: dict[str, Any]) -> None:

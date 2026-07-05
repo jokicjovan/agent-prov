@@ -1,30 +1,30 @@
 {
-  "bundle_id": "40b9f87f-718e-4985-b2c1-a79ccac1bba8",
+  "bundle_id": "e2ae01fa-c16e-46da-ac44-85402d38e520",
   "record_type": "pipeline_bundle",
-  "protocol_version": "0.3.0",
+  "protocol_version": "0.4.0",
   "pipeline_id": "a4c1f6e2-0b93-4d17-8a5e-2f7c9d61b430",
-  "session_id": "ef6c7213-59ff-40ed-bdc2-487ac88976d6",
-  "created_at": "2026-07-04T08:59:25.189204Z",
+  "session_id": "b138246d-6c42-4c59-8ed5-31b2bc242727",
+  "created_at": "2026-07-05T01:11:54.718646Z",
   "disclosure_presented": true,
   "outcome": "completed",
   "records": [
     {
-      "record_id": "51e39656-e8ce-46fe-80b1-79bcd425e28a",
+      "record_id": "67984f26-2e0d-45cd-ae92-0cf87fd462cd",
       "record_type": "agent_step",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "a4c1f6e2-0b93-4d17-8a5e-2f7c9d61b430",
-      "session_id": "ef6c7213-59ff-40ed-bdc2-487ac88976d6",
+      "session_id": "b138246d-6c42-4c59-8ed5-31b2bc242727",
       "agent_id": "agent",
       "model_id": "fake-tool-caller",
       "model_version": "fake-tool-caller",
-      "timestamp_start": "2026-07-04T08:59:25.181660Z",
-      "timestamp_end": "2026-07-04T08:59:25.182616Z",
+      "timestamp_start": "2026-07-05T01:11:54.711606Z",
+      "timestamp_end": "2026-07-05T01:11:54.712751Z",
       "input_hash": "c4eabb955c2994b884c37acdf2d5c92d91bd1f667da7bfa3a5be3798298c3935",
       "reference_data_id": null,
       "parent_record_id": null,
       "runtime_metadata": {
-        "run_id": "019f2c5a-a27d-7b82-9c6e-19adee8c7cf5",
-        "message_id": "lc_run--019f2c5a-a27d-7b82-9c6e-19adee8c7cf5-0",
+        "run_id": "019f2fd4-fa57-7051-a111-3f6fb600b0c3",
+        "message_id": "lc_run--019f2fd4-fa57-7051-a111-3f6fb600b0c3-0",
         "tool_call_ids": {
           "0": "call_search_0001",
           "1": "call_glossary_0002"
@@ -34,66 +34,66 @@
       "output_hash": "b0e3615953708086318cd6c5649d16fb5cedb3dd3f29ce32841e61b385f347a2"
     },
     {
-      "record_id": "a699cefa-584e-4185-909b-1ce9a9f1d7d8",
+      "record_id": "a7045ef0-113c-4954-92cc-5126c86a7640",
       "record_type": "tool_invocation",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "a4c1f6e2-0b93-4d17-8a5e-2f7c9d61b430",
-      "session_id": "ef6c7213-59ff-40ed-bdc2-487ac88976d6",
+      "session_id": "b138246d-6c42-4c59-8ed5-31b2bc242727",
       "agent_id": "tools",
       "tool_name": "web_search",
       "tool_version": "unversioned",
-      "timestamp_start": "2026-07-04T08:59:25.185818Z",
-      "timestamp_end": "2026-07-04T08:59:25.186397Z",
+      "timestamp_start": "2026-07-05T01:11:54.715765Z",
+      "timestamp_end": "2026-07-05T01:11:54.716630Z",
       "input_hash": "de7aae438e56d4dbefbec59f400ab43d7e4697ac970a21d7fd49edf69a2bc570",
       "reference_data_id": null,
-      "parent_record_id": "51e39656-e8ce-46fe-80b1-79bcd425e28a",
+      "parent_record_id": "67984f26-2e0d-45cd-ae92-0cf87fd462cd",
       "runtime_metadata": {
-        "run_id": "019f2c5a-a281-7963-8822-4816b91e90f8"
+        "run_id": "019f2fd4-fa5b-7673-b2cb-fae35b31cbd4"
       },
       "status": "success",
       "output_hash": "2785fcc2252025601026b95f0d671916ffa58184707270dd072b91ea3f72609f"
     },
     {
-      "record_id": "b04ef275-4570-418e-9bdf-2b46967d4f54",
+      "record_id": "702189dd-4031-441e-bccc-65186e79c32b",
       "record_type": "tool_invocation",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "a4c1f6e2-0b93-4d17-8a5e-2f7c9d61b430",
-      "session_id": "ef6c7213-59ff-40ed-bdc2-487ac88976d6",
+      "session_id": "b138246d-6c42-4c59-8ed5-31b2bc242727",
       "agent_id": "tools",
       "tool_name": "glossary",
       "tool_version": "unversioned",
-      "timestamp_start": "2026-07-04T08:59:25.186998Z",
-      "timestamp_end": "2026-07-04T08:59:25.187791Z",
+      "timestamp_start": "2026-07-05T01:11:54.716892Z",
+      "timestamp_end": "2026-07-05T01:11:54.717185Z",
       "input_hash": "5cb68201042b08be3ae3f728874020b61e31627e3c7785151663533ffad5007c",
       "reference_data_id": null,
-      "parent_record_id": "a699cefa-584e-4185-909b-1ce9a9f1d7d8",
+      "parent_record_id": "a7045ef0-113c-4954-92cc-5126c86a7640",
       "runtime_metadata": {
-        "run_id": "019f2c5a-a282-7761-939c-c6210b13feea"
+        "run_id": "019f2fd4-fa5c-7153-a5ba-3ac314d47912"
       },
       "status": "success",
       "output_hash": "08806567c91e70f2aefe6466bb12ab0ab5a3102241d34989e1c55b35688b7d56"
     },
     {
-      "record_id": "a75aaa73-6def-40c3-96dd-b99011e15cfb",
+      "record_id": "576ab3d2-3cad-4e28-a725-240b1202c340",
       "record_type": "agent_step",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "a4c1f6e2-0b93-4d17-8a5e-2f7c9d61b430",
-      "session_id": "ef6c7213-59ff-40ed-bdc2-487ac88976d6",
+      "session_id": "b138246d-6c42-4c59-8ed5-31b2bc242727",
       "agent_id": "agent",
       "model_id": "fake-tool-caller",
       "model_version": "fake-tool-caller",
-      "timestamp_start": "2026-07-04T08:59:25.188640Z",
-      "timestamp_end": "2026-07-04T08:59:25.188814Z",
+      "timestamp_start": "2026-07-05T01:11:54.718072Z",
+      "timestamp_end": "2026-07-05T01:11:54.718271Z",
       "input_hash": "0eff00141580942f0ca89e51691b82ea7d063e6c17f6ab0ecfda9c6fe5f76dfc",
       "reference_data_id": null,
-      "parent_record_id": "b04ef275-4570-418e-9bdf-2b46967d4f54",
+      "parent_record_id": "702189dd-4031-441e-bccc-65186e79c32b",
       "runtime_metadata": {
-        "run_id": "019f2c5a-a284-7a21-804f-fa7fc47bfb6b",
-        "message_id": "lc_run--019f2c5a-a284-7a21-804f-fa7fc47bfb6b-0"
+        "run_id": "019f2fd4-fa5e-7001-a516-cf1d30cc14de",
+        "message_id": "lc_run--019f2fd4-fa5e-7001-a516-cf1d30cc14de-0"
       },
       "status": "success",
       "output_hash": "27ab2e02fa54f9600cd6c7c341cb62cfa37db74cd33f0f7b85d41e572efbd43b"
     }
   ],
-  "bundle_hash": "d1da84d7f61ee1ddbc96211319a8441bfc8921b8af1141a9eeb4fb810bf8304a"
+  "bundle_hash": "a215b287e95f8366ef76650cad04b2a59b5ed2d7b35a4dd0e509fdc662855518"
 }

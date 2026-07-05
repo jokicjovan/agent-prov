@@ -217,7 +217,7 @@ The canonical form conforms to RFC 8785: canonicalisation is delegated to the `r
 
 - `pipeline_id` — supplied by the caller when one logical pipeline definition spans multiple runs (retries, scheduled executions), or a fresh UUID otherwise.
 - `session_id` — always a fresh UUID, identifying this single run.
-- `protocol_version` — the semver string stamped on every record, defaulting to `"0.3.0"`.
+- `protocol_version` — the semver string stamped on every record, defaulting to `"0.4.0"`.
 - `records` — the ordered list of emitted record dictionaries.
 - `last_record_id` — the `record_id` of the most recently appended record.
 
@@ -239,9 +239,11 @@ One deliberate divergence from the rest of the implementation is worth noting. T
 
 ## 4.8 The `BundleGenerator` and the integrity seal
 
-`BundleGenerator` (`src/agent_prov/bundle_generator.py`) runs once, after the pipeline finishes, and turns a session into a sealed Pipeline Bundle. It is constructed with the session, a `disclosure_presented` boolean — the Article 50(1) flag, which the application supplies because only the application knows whether an AI-interaction disclosure was shown to the user — and an optional `outcome`.
+`BundleGenerator` (`src/agent_prov/bundle_generator.py`) runs once, after the pipeline finishes, and turns a session into a sealed Pipeline Bundle. It is constructed with the session, a `disclosure_presented` boolean — the Article 50(1) flag, which the application supplies because only the application knows whether an AI-interaction disclosure was shown to the user — an optional `outcome`, and an optional `oversight_regime`.
 
-`generate()` assembles the bundle dictionary: a fresh `bundle_id`, the `"pipeline_bundle"` discriminator, the protocol version and identifiers copied from the session, a `created_at` timestamp, the `disclosure_presented` flag, the run `outcome`, the ordered `records` list, and a `bundle_hash` field initialised to the empty string. An empty session is rejected with a `ValueError` — the Pipeline Bundle schema requires at least one record, and a run that emitted nothing is an error to surface, not an empty document to seal.
+`generate()` assembles the bundle dictionary: a fresh `bundle_id`, the `"pipeline_bundle"` discriminator, the protocol version and identifiers copied from the session, a `created_at` timestamp, the `disclosure_presented` flag, the run `outcome`, the ordered `records` list, and a `bundle_hash` field initialised to the empty string. When an `oversight_regime` was supplied it is added too; otherwise the optional field is omitted and the run is treated as `standard`. An empty session is rejected with a `ValueError` — the Pipeline Bundle schema requires at least one record, and a run that emitted nothing is an error to surface, not an empty document to seal.
+
+`oversight_regime` is the application's declaration of which human-oversight regime the run falls under (§3.7.4). Supplying `biometric_dual_control` opts the run into the Article 14(5) two-person rule, which the validation surface enforces at seal time: if any Human Intervention Record carries fewer than two reviewers the seal fails with a `ProtocolValidationError`, so a biometric run that logged only a single reviewer cannot be sealed at all. Because the rule is checked only here, after the pipeline has finished, it never interferes with observation; and because the declaration is written into the bundle, it is covered by the seal and any signature rather than living in an out-of-band validator configuration.
 
 The `outcome` (§3.6.2) is derived when not supplied explicitly: `error` if any record carries `status: "error"`, otherwise `completed`. The application can override it — most usefully to `aborted`, which the generator cannot infer because a run stopped before its end looks, from the records alone, like one that simply finished. This is the one piece of run-level state the bundle adds on top of the per-record evidence.
 

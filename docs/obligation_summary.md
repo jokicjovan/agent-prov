@@ -46,12 +46,12 @@
 | Art. 14(4)(c) | Oversight person must be able to correctly interpret the system's output | `output_before_hash` on Human Intervention Record — proves the human saw the actual output before deciding |
 | Art. 14(4)(d) | Oversight person must be able to disregard, override, or reverse the output | `action_type: rejected` or `action_type: edited`; `output_after_hash` proves the override was recorded |
 | Art. 14(4)(e) | Oversight person must be able to intervene or halt via a stop mechanism | `action_type: escalated`; `intervention_timestamp` proves timely intervention before next automated step |
-| Art. 14(5) | For biometric ID systems: no decision taken unless verified by *at least two* natural persons | `reviewer_id` (array, min length 2 for biometric pipelines); dual-sign-off constraint in protocol spec |
+| Art. 14(5) | For biometric ID systems: no decision taken unless verified by *at least two* natural persons | `oversight_regime: biometric_dual_control` on the Pipeline Bundle triggers a seal-time rule requiring `reviewer_id` to hold at least two distinct entries on every Human Intervention Record |
 
 ### Notes
 - Art. 14 is primarily a *design* obligation, not a *logging* obligation. However, provenance records serve as the evidence that the design obligation was met in practice. A HITL record in the bundle is proof that a human decision point existed and was exercised.
 - Art. 14(4)(d) — the right to override — is the **primary novel contribution** of the Human Intervention Record. No existing provenance standard (including PROV-AGENT) models the before/after state of a human override.
-- Art. 14(5)'s two-person verification requirement is scoped to biometric systems, but the `reviewer_id` field design should support multiple reviewers to accommodate it.
+- Art. 14(5)'s two-person verification requirement is scoped to biometric systems. Rather than tighten `reviewer_id` universally, the protocol lets a run declare `oversight_regime: biometric_dual_control` on its bundle and enforces the at-least-two-reviewers rule at seal time only for runs that declare it. The declaration is inside the tamper-evident bundle, so it is attributable; proving a run truly belongs to the biometric population regardless of its declaration is an external-registration concern (future work).
 
 ---
 
@@ -94,6 +94,7 @@
 | `output_after_hash` | — | 14(4)(d) | — |
 | `intervention_timestamp` | — | 14(4)(e) | — |
 | `justification_hash` (optional) | — | 14(4)(c) | — |
+| `oversight_regime` (optional) | — | 14(5) | — |
 | `disclosure_presented` | — | — | 50(1) |
 
 ---

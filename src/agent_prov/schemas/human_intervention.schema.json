@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://jokicjovan.github.io/agent-prov/schemas/v0.3/human_intervention.schema.json",
+  "$id": "https://jokicjovan.github.io/agent-prov/schemas/v0.4/human_intervention.schema.json",
   "title": "Human Intervention Record",
   "description": "Captures a single human oversight decision point in the pipeline. Core novelty of this thesis: no existing provenance standard (including PROV-AGENT) models the before/after state of a human override or links it to regulatory oversight obligations. Primary EU AI Act mapping: Art. 12(3)(d), 14(4)(c), 14(4)(d), 14(4)(e), 14(5), 50(4) exception.",
   "type": "object",

@@ -182,3 +182,49 @@ def test_validate_bundle_rejects_record_conditional_error_with_index():
     bundle = make_bundle([good, bad])
     with pytest.raises(ProtocolValidationError, match=r"records\[1\]"):
         validate_bundle(bundle)
+
+
+# ------------------------------------------------- oversight regime (Art. 14(5))
+
+
+def _bundle_with_regime(regime: Any, hitl: dict) -> dict:
+    """A valid agent_step + HITL bundle, optionally carrying an oversight_regime."""
+    bundle = make_bundle([make_agent_step(), hitl])
+    if regime is not None:
+        bundle["oversight_regime"] = regime
+    return bundle
+
+
+def test_validate_bundle_biometric_regime_requires_two_reviewers():
+    hitl = make_hitl("approved", reviewer_id=["reviewer-1"])
+    bundle = _bundle_with_regime("biometric_dual_control", hitl)
+    with pytest.raises(ProtocolValidationError, match=r"records\[1\].*14\(5\)"):
+        validate_bundle(bundle)
+
+
+def test_validate_bundle_biometric_regime_accepts_two_reviewers():
+    hitl = make_hitl("approved", reviewer_id=["reviewer-1", "reviewer-2"])
+    validate_bundle(_bundle_with_regime("biometric_dual_control", hitl))
+
+
+def test_validate_bundle_standard_regime_allows_single_reviewer():
+    hitl = make_hitl("approved", reviewer_id=["reviewer-1"])
+    validate_bundle(_bundle_with_regime("standard", hitl))
+
+
+def test_validate_bundle_absent_regime_allows_single_reviewer():
+    hitl = make_hitl("approved", reviewer_id=["reviewer-1"])
+    validate_bundle(_bundle_with_regime(None, hitl))
+
+
+def test_validate_bundle_rejects_unknown_regime_value():
+    hitl = make_hitl("approved", reviewer_id=["reviewer-1", "reviewer-2"])
+    with pytest.raises(ProtocolValidationError):
+        validate_bundle(_bundle_with_regime("not_a_regime", hitl))
+
+
+def test_validate_bundle_biometric_regime_without_hitl_passes():
+    # The rule constrains the interventions that occur; it does not require one.
+    bundle = make_bundle([make_agent_step()])
+    bundle["oversight_regime"] = "biometric_dual_control"
+    validate_bundle(bundle)
