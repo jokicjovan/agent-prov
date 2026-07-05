@@ -28,14 +28,22 @@ def _cli(argv: list[str] | None = None) -> int:
         return 1
     result = verify_bundle(bundle)
 
+    # Warnings are non-fatal structural observations (e.g. concurrent records);
+    # they print on both the OK and FAILED paths and never change the exit code.
+    def _print_warnings() -> None:
+        for warning in result.warnings:
+            print(f"  ! {warning}")
+
     if result.ok:
         n = len(bundle.get("records", []))
         print(f"OK: bundle verified ({n} records)")
+        _print_warnings()
         return 0
 
     print(f"FAILED: {len(result.errors)} problem(s) found", file=sys.stderr)
     for err in result.errors:
         print(f"  - {err}", file=sys.stderr)
+    _print_warnings()
     return 1
 
 

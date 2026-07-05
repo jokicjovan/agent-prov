@@ -17,6 +17,10 @@ the tests never depend on demos/ artifacts.
   11  A non-dict input is rejected without raising.
   12  CLI returns 0 and prints OK for a good bundle.
   13  CLI returns 1 and prints failures for a tampered bundle.
+  15  A sequential bundle raises no concurrency warning (ok, warnings empty).
+  16  Overlapping intervals raise a concurrency warning but keep ok True.
+  17  The concurrency warning names every record in the cluster.
+  18  CLI prints the warning and still returns 0 for a concurrent bundle.
 """
 
 from __future__ import annotations
@@ -31,7 +35,14 @@ from agent_prov.verify.__main__ import _cli
 
 
 def _sealed_bundle() -> dict[str, Any]:
-    """A two-record bundle (agent_step -> tool_invocation) sealed for real."""
+    """A two-record bundle (agent_step -> tool_invocation) sealed for real.
+
+    The factory stamps ``timestamp_end`` at emission (~now for both records),
+    which against the fixed past start times would make the two intervals overlap
+    and trip the concurrency observation. Overwrite the ends with fixed sequential
+    values so the base fixture is an unambiguously sequential pipeline; individual
+    tests that need concurrency use :func:`_concurrent_bundle`.
+    """
     session = PipelineSession()
     session.add_agent_step(
         agent_id="researcher",
@@ -49,7 +60,10 @@ def _sealed_bundle() -> dict[str, Any]:
         input={"query": "x"},
         output={"hits": 3},
     )
-    return BundleGenerator(session).generate()
+    bundle = BundleGenerator(session).generate()
+    bundle["records"][0]["timestamp_end"] = "2026-05-11T10:00:01Z"
+    bundle["records"][1]["timestamp_end"] = "2026-05-11T10:00:02Z"
+    return _reseal(bundle)
 
 
 def _reseal(bundle: dict[str, Any]) -> dict[str, Any]:
@@ -58,6 +72,16 @@ def _reseal(bundle: dict[str, Any]) -> dict[str, Any]:
     bundle["bundle_hash"] = ""
     bundle["bundle_hash"] = compute_bundle_hash(bundle)
     return bundle
+
+
+def _concurrent_bundle() -> dict[str, Any]:
+    """A sealed bundle whose two records have overlapping execution intervals."""
+    bundle = _sealed_bundle()
+    bundle["records"][0]["timestamp_start"] = "2026-05-11T10:00:00Z"
+    bundle["records"][0]["timestamp_end"] = "2026-05-11T10:00:05Z"
+    bundle["records"][1]["timestamp_start"] = "2026-05-11T10:00:02Z"
+    bundle["records"][1]["timestamp_end"] = "2026-05-11T10:00:07Z"
+    return _reseal(bundle)
 
 
 def test_01_valid_bundle_verifies():
@@ -182,3 +206,33 @@ def test_14_curated_top_level_api_is_importable():
     # The adapter and reporting surfaces stay behind their extras - not top-level.
     assert not hasattr(agent_prov, "ProvenanceMiddleware")
     assert not hasattr(agent_prov, "ComplianceReport")
+
+
+def test_15_sequential_bundle_has_no_concurrency_warning():
+    result = verify_bundle(_sealed_bundle())
+    assert result.ok
+    assert result.warnings == ()
+
+
+def test_16_overlapping_intervals_warn_but_stay_ok():
+    result = verify_bundle(_concurrent_bundle())
+    # Concurrency is a valid, untampered state: it warns but does not fail.
+    assert result.ok
+    assert result.errors == ()
+    assert any("ran concurrently" in w for w in result.warnings)
+
+
+def test_17_concurrency_warning_names_every_record_in_cluster():
+    result = verify_bundle(_concurrent_bundle())
+    assert len(result.warnings) == 1
+    warning = result.warnings[0]
+    assert "records[0]" in warning and "records[1]" in warning
+
+
+def test_18_cli_prints_warning_and_returns_zero_for_concurrent_bundle(tmp_path, capsys):
+    path = tmp_path / "bundle.json"
+    path.write_text(json.dumps(_concurrent_bundle()), encoding="utf-8")
+    assert _cli([str(path)]) == 0
+    out = capsys.readouterr().out
+    assert "OK: bundle verified" in out
+    assert "ran concurrently" in out

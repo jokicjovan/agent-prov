@@ -100,19 +100,24 @@ installs by default.)
 A sealed bundle is evidence only if a third party can recompute its guarantees
 without trusting the producer. The verifier does exactly that — recompute the
 `bundle_hash`, re-run schema and conditional validation, and check parent-chain
-and identifier integrity — and reports every problem it finds:
+and identifier integrity — and reports every problem it finds. It also surfaces a
+non-fatal observation: records whose execution intervals overlap ran
+concurrently, so the chronological parent chain orders them sequentially only as
+an approximation. This is a `warning`, not a failure — a parallel pipeline is a
+valid, untampered bundle.
 
 ```bash
 uv run python -m agent_prov.verify demos/langchain/research/mock_bundle.json
 ```
 
-It runs on the bare core (no extras) and exits non-zero if any check fails. The
-same checks are available programmatically:
+It runs on the bare core (no extras) and exits non-zero if any check fails
+(warnings do not affect the exit code). The same checks are available
+programmatically:
 
 ```python
 from agent_prov import verify_bundle
 
-result = verify_bundle(bundle)        # VerificationResult(ok=..., errors=(...))
+result = verify_bundle(bundle)        # VerificationResult(ok=..., errors=(...), warnings=(...))
 ```
 
 The core protocol surface — `PipelineSession`, `BundleGenerator`,

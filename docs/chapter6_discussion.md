@@ -84,7 +84,13 @@ timestamping remains future work.
 record to its immediate predecessor in emission order, not to the record that
 *caused* it. A verifier can reconstruct the sequence of observed events but
 cannot, from the chain alone, prove that a given tool call was issued *by* a
-given agent step. Separately, the seal proves nothing about records that were
+given agent step. What the verifier now *does* guard against is the chain's most
+misleading failure — silently presenting a parallel region as a straight line:
+it derives concurrency from the execution intervals every record already carries
+and warns wherever two records overlap in time, so the chronological ordering is
+flagged as an approximation rather than trusted as sequence (§6.3). This is
+detection, not reconstruction; recovering the actual data-flow graph remains the
+content-addressed direction of §6.5.3. Separately, the seal proves nothing about records that were
 never emitted: an instrumented pipeline that is selectively un-instrumented for
 one sensitive node produces a bundle that is internally consistent and complete
 *as far as it goes*, with no intrinsic evidence that a step is missing. Detecting
@@ -145,11 +151,19 @@ what makes them tractable.
 `parent_record_id` records order rather than causation. For the linear demo
 pipelines the distinction is invisible — emission order *is* the causal order —
 but a pipeline with parallel branches or out-of-order tool responses would
-produce a chain that under-describes its true structure. The defined resolution
-is an optional `caused_by_record_id` field (§3.7.3), deferred because the demos
-do not exercise the case it solves; a fuller treatment that recovers the causal
-topology from content and timestamps — without binding the protocol to any one
-engine's execution model — is developed in §6.5.3.
+produce a chain that under-describes its true structure. This limitation is now
+*partially* mitigated: the independent verifier derives concurrency from the
+`timestamp_start`/`timestamp_end` interval on every record — grouping any set of
+overlapping intervals into a concurrent cluster and emitting a non-fatal warning
+— so the false sequential edge is *detected and reported* rather than silently
+asserted. Crucially this stays framework-neutral, reading only observables the
+records already carry rather than any engine's execution model, and it is a
+warning rather than an error because a parallel pipeline is a valid, untampered
+bundle the chronological cursor merely under-describes. What remains is
+*reconstruction* rather than detection: the defined resolutions are an optional
+`caused_by_record_id` field (§3.7.3), deferred because the demos do not exercise
+the case it solves, and a fuller treatment that recovers the causal topology from
+content and timestamps — developed in §6.5.3.
 
 **Semantic projection of identifiers.** `input_hash` and `output_hash` are
 computed over a projection of the LangChain message list rather than the raw
@@ -365,7 +379,13 @@ suffice. First, the `timestamp_start`/`timestamp_end` pair on every record makes
 concurrency directly detectable: two records whose intervals overlap demonstrably
 ran in parallel, which is enough to *refuse* the false sequential edge the
 chronological cursor would otherwise assert — truthful under-description in place
-of a confident error. Second, and more powerfully, the content commitments
+of a confident error. This first observable is no longer prospective: the
+independent verifier (§4.8.1) implements exactly this check, grouping
+overlapping-interval records into concurrent clusters and reporting each as a
+non-fatal warning, so the false sequential edge is already detected and surfaced
+to an auditor. What follows in this section is therefore the *reconstruction*
+half — turning that detection into an actual data-flow graph — which remains
+future work. Second, and more powerfully, the content commitments
 `input_hash` and `output_hash` make data-flow edges recoverable by content
 addressing: if the content one record produced is the content another consumed, a
 real dependency edge between them exists, derivable from content identity alone
