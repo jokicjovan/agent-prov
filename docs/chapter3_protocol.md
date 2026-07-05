@@ -22,7 +22,7 @@ Several decisions cut across all four record types. They are stated here once so
 
 **`record_type` as a `const` discriminator.** Every record carries a fixed `record_type` value — `"agent_step"`, `"tool_invocation"`, `"human_intervention"`, or `"pipeline_bundle"`. Validators and downstream tooling dispatch on this field without inspecting other fields. The Pipeline Bundle's `records` array uses `oneOf` against the three record-type schemas; the discriminator makes the union unambiguous.
 
-**`protocol_version` (semver) on every record.** Each record stamps the protocol version it was produced under. Bumping the major version is the path for any breaking field change. Consumers can therefore detect mixed-version bundles and reject them at ingestion. The reference implementation defaults to `"0.3.0"`.
+**`protocol_version` (semver) on every record.** Each record stamps the protocol version it was produced under. Bumping the major version is the path for any breaking field change. Consumers can therefore detect mixed-version bundles and reject them at ingestion. The reference implementation defaults to `"0.4.0"`.
 
 **Lowercase canonical hex for all hex-encoded fields.** UUIDs and SHA-256 digests are emitted as lowercase hex strings, validated by a pattern at the schema level. This avoids the situation in which two equivalent records produce different canonical-JSON serialisations because one used uppercase and the other lowercase hex, which would in turn produce different bundle hashes.
 
@@ -86,7 +86,7 @@ The `error` object has one required member, `type` (the exception class name, e.
 {
   "record_id": "c841bdac-d615-44bf-8db9-c941c1d58551",
   "record_type": "agent_step",
-  "protocol_version": "0.3.0",
+  "protocol_version": "0.4.0",
   "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
   "session_id": "3174f399-0c98-4779-912d-ada24e61d126",
   "agent_id": "researcher",
@@ -156,7 +156,7 @@ The structural symmetry with the Agent Step Record is intentional. Both records 
 {
   "record_id": "d77ab248-29bf-4933-92c4-8b11017a592a",
   "record_type": "tool_invocation",
-  "protocol_version": "0.3.0",
+  "protocol_version": "0.4.0",
   "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
   "session_id": "3174f399-0c98-4779-912d-ada24e61d126",
   "agent_id": "researcher",
@@ -246,7 +246,7 @@ Article 14(4)(c) requires that the oversight person be able to correctly interpr
 {
   "record_id": "8b6a4d2c-1e23-4f56-9a7b-3c5d6e7f8910",
   "record_type": "human_intervention",
-  "protocol_version": "0.3.0",
+  "protocol_version": "0.4.0",
   "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
   "session_id": "3174f399-0c98-4779-912d-ada24e61d126",
   "reviewer_id": ["alice.r"],
@@ -284,6 +284,7 @@ The bundle is not a record in the same sense as the three preceding types. It do
 | `created_at` | ISO 8601 / RFC 3339 | yes | 12(2) traceability |
 | `disclosure_presented` | boolean | yes | 50(1) |
 | `outcome` | enum: `completed`, `aborted`, `error` | yes | 12(2)(a) |
+| `oversight_regime` | enum: `standard`, `biometric_dual_control` | no | 14(5) |
 | `records` | ordered array, min 1, `oneOf` the three record schemas | yes | 12(2) traceability |
 | `bundle_hash` | SHA-256 hex | yes | 12(1) |
 
@@ -292,6 +293,8 @@ The bundle is not a record in the same sense as the three preceding types. It do
 `records` is ordered, not a set. The order is chronological by the producing event's effective timestamp and is significant: it is the chain of custody the bundle's integrity seal protects. The minimum size is one — a pipeline run that emits no records is treated as an error by the BundleGenerator (`ValueError`) rather than producing an empty bundle.
 
 `disclosure_presented` lives on the bundle, not on each record. The disclosure under Article 50(1) is presented to a user at most once per interaction with the system; expressing it per record would either force duplication or invite inconsistent values. Carrying it on the bundle binds it to the session.
+
+`oversight_regime` is optional and, like the disclosure flag, is a run-level property rather than a per-record one — Article 14(5)'s two-person rule attaches to the *system*, so declaring it once on the bundle rather than repeating it on every Human Intervention Record matches the granularity of the obligation. An absent value is treated as `standard` (single-reviewer intervention permitted); `biometric_dual_control` declares the run subject to Article 14(5), and the validation layer then requires every Human Intervention Record in the bundle to carry at least two distinct reviewers (§3.7.4). The full field-level treatment, including what the declaration does and does not prove, is in §3.7.4.
 
 ### 3.6.3 `bundle_hash` and the integrity seal
 
@@ -311,7 +314,7 @@ Third, the canonical JSON form used by the reference implementation conforms to 
 {
   "bundle_id": "7ff04ca5-4db0-4705-8981-7109e6dda5e8",
   "record_type": "pipeline_bundle",
-  "protocol_version": "0.3.0",
+  "protocol_version": "0.4.0",
   "pipeline_id": "8d3fecf8-42d6-4f45-824f-7dde23407026",
   "session_id": "3174f399-0c98-4779-912d-ada24e61d126",
   "created_at": "2026-05-12T09:51:26.828182Z",
@@ -327,7 +330,7 @@ Third, the canonical JSON form used by the reference implementation conforms to 
 }
 ```
 
-The records are abbreviated here for readability, so `bundle_hash` is shown as a placeholder; it is the SHA-256 of the canonical JSON of the complete bundle with the `bundle_hash` field excluded. A complete, recomputable bundle (four records sealed under protocol 0.3.0) ships in the repository at `demos/langchain/research/mock_bundle.json`.
+The records are abbreviated here for readability, so `bundle_hash` is shown as a placeholder; it is the SHA-256 of the canonical JSON of the complete bundle with the `bundle_hash` field excluded. A complete, recomputable bundle (four records sealed under protocol 0.4.0) ships in the repository at `demos/langchain/research/mock_bundle.json`.
 
 ---
 
@@ -353,9 +356,13 @@ The chain is *chronological*, not *causal*. If an agent step issues a tool call 
 
 A causal "issued-by" link could be added in a later major version of the protocol as a separate optional field (`caused_by_record_id`), without disturbing the existing chronological chain. The present protocol prefers the simpler structure and treats causal recovery as an analysis-layer concern.
 
-### 3.7.4 The two-person rule profile
+### 3.7.4 The two-person rule and `oversight_regime`
 
-Article 14(5) requires that for biometric identification systems no decision be taken unless verified by at least two natural persons. The Human Intervention Record's `reviewer_id` accepts `minItems: 1` at the base schema; biometric deployments tighten this constraint to `minItems: 2` at the application layer. The protocol expresses this as a *profile* rather than a fork of the schema: a deployment running biometric pipelines runs the base schema plus a profile validator that imposes the additional constraint. This keeps the base record-level vocabulary uniform across deployments and isolates the biometric-specific rule to where it applies.
+Article 14(5) requires that for biometric identification systems no decision be taken unless verified by at least two natural persons. The Human Intervention Record's `reviewer_id` accepts `minItems: 1` at the base schema, because a single reviewer is legitimate for the great majority of pipelines; tightening the count universally would force a second reviewer on deployments the Article does not govern. The two-person rule therefore has to be *conditional*, and the condition — whether this run belongs to the biometric population — has to be declared somewhere the constraint can read it.
+
+The protocol declares it in the record stream itself: the Pipeline Bundle carries an optional `oversight_regime` field, and a bundle set to `biometric_dual_control` is validated at seal time against the rule that every Human Intervention Record must carry at least two reviewers. Because `reviewer_id` already has `uniqueItems`, two entries mean two distinct people. The check is a value comparison against a bundle-level field, so — like the other rules of §3.7.5 — it lives in the single validation surface rather than in the JSON Schema, and it fires in `BundleGenerator` at seal time, never during pipeline observation.
+
+Declaring the regime *in the bundle* rather than by an external choice of validator is deliberate: the declaration is then covered by `bundle_hash` and any signature over it, so it is tamper-evident and attributable, and an auditor holding only the bundle can see both which regime was claimed and whether the reviewer count honoured it. What the field does **not** do is prove the run genuinely belongs to the biometric population: a producer can under-declare (`standard`, or omit the field) exactly as it could fabricate any other self-asserted field, which is the same emission-time trust boundary discussed in §6.2.3. So the mechanism is best read as *conditional enforcement*: given an honest — or, under a signature, attributable — declaration, the two-person invariant cannot be violated within the record. Binding the regime to an external, non-repudiable source of truth about what kind of system this is (a registered system definition) is a governance concern outside the record stream, noted as future work in §6.5.5.
 
 ### 3.7.5 Conditional rules outside the schema layer
 
@@ -364,6 +371,7 @@ Two classes of constraint are stated in the schemas' descriptions but cannot liv
 - `timestamp_end >= timestamp_start` on Agent Step and Tool Invocation Records.
 - The `status` / `output_hash` / `error` presence rule on Agent Step and Tool Invocation Records: `status: "success"` requires `output_hash` present and `error` absent; `status: "error"` requires `output_hash` absent and `error` present.
 - The `action_type` / `output_after_hash` conditional rules on the Human Intervention Record, summarised in §3.5.3.
+- The bundle-level two-person rule: when the Pipeline Bundle declares `oversight_regime: "biometric_dual_control"`, every Human Intervention Record it carries must have at least two `reviewer_id` entries (§3.7.4). This compares a bundle-level value against a per-record array length, which no JSON Schema draft can express.
 
 Rather than leave these to each deployment to re-implement, the protocol's reference implementation enforces them in a single validation surface that composes both mechanisms: structural validation against the JSON Schema, followed by these conditional checks. A record or bundle is valid only if it passes both, and there is one entry point (`validate_record` / `validate_bundle`) for callers and conformance tests alike, so structural and conditional validity are never checked in two different places (§3.9; the implementation is described in Chapter 4). The schema descriptions still document the conditional rules in full, so an independent verifier can reproduce the same checks. Note that the *null*/non-null half of the `action_type` rules (`rejected`/`escalated` → `null`, `edited` → non-null) is in fact expressible with JSON Schema `if`/`then`/`else`; it is kept in the unified validator with the value-comparison rules so that all conditional logic resides in one place rather than split across the schema and the validator.
 
@@ -394,6 +402,7 @@ The table below consolidates the per-record mappings into a single reference. It
 | `parent_record_id` | all records | 12(2) traceability | — | — |
 | `disclosure_presented` | pipeline_bundle | — | — | 50(1) |
 | `outcome` | pipeline_bundle | 12(2)(a) | — | — |
+| `oversight_regime` (optional) | pipeline_bundle | — | 14(5) | — |
 | `bundle_hash` | pipeline_bundle | 12(1) | — | — |
 
 Two reading aids. First, fields whose only mapping is `metadata` (such as `record_id`, `record_type`, `protocol_version`, `created_at`, `bundle_id`) are omitted from this table; they discharge no Act obligation directly but are required for the protocol to function as evidence. Second, the cross-record fields — `pipeline_id`, `session_id`, `agent_id`, `parent_record_id` — appear once in the table even though they are present on multiple record types, to keep the structure readable.

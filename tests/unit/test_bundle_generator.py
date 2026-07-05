@@ -1,6 +1,6 @@
 """Tests for BundleGenerator - session serialization, hash sealing, file output.
 
-Fifteen test cases covering:
+Nineteen test cases covering:
   1    generate() output validates against pipeline_bundle.schema.json.
   2    bundle_id is a fresh lowercase-hex UUID.
   3    record_type discriminator is "pipeline_bundle".
@@ -16,6 +16,10 @@ Fifteen test cases covering:
   13   to_file writes a readable JSON file whose content matches generate().
   14   to_file returns the same bundle dict that was written.
   15   Bundle with mixed record types (agent_step + tool_invocation) validates.
+  16   oversight_regime is omitted from the bundle when not declared.
+  17   biometric_dual_control regime with two reviewers seals and validates.
+  18   biometric_dual_control regime with one reviewer is rejected at seal time.
+  19   An invalid oversight_regime value raises ValueError at construction.
 """
 
 from __future__ import annotations
@@ -30,6 +34,7 @@ import pytest
 from _helpers import PIPELINE_BUNDLE_SCHEMA, validator
 from agent_prov.bundle_generator import BundleGenerator, compute_bundle_hash
 from agent_prov.session import PipelineSession
+from agent_prov.validation import ProtocolValidationError
 
 
 _BUNDLE_VALIDATOR = validator(PIPELINE_BUNDLE_SCHEMA)
@@ -209,3 +214,52 @@ def test_15_mixed_record_types_validate():
     session.add_record(_tool_invocation(UUID_2, session))
     bundle = BundleGenerator(session).generate()
     assert _BUNDLE_VALIDATOR.is_valid(bundle), list(_BUNDLE_VALIDATOR.iter_errors(bundle))
+
+
+# ---------------------------------------------------------------------------
+# Tests 16-19 - oversight_regime (EU AI Act Art. 14(5))
+# ---------------------------------------------------------------------------
+
+
+def _hitl(record_id: str, session: PipelineSession, reviewers: list[str]) -> dict[str, Any]:
+    return {
+        "record_id": record_id,
+        "record_type": "human_intervention",
+        "protocol_version": session.protocol_version,
+        "pipeline_id": session.pipeline_id,
+        "session_id": session.session_id,
+        "reviewer_id": reviewers,
+        "reviewer_role": "editor",
+        "action_type": "approved",
+        "output_before_hash": HASH_A,
+        "output_after_hash": HASH_A,
+        "intervention_timestamp": "2026-05-11T10:00:03Z",
+        "parent_record_id": UUID_1,
+    }
+
+
+def test_16_oversight_regime_is_omitted_by_default():
+    bundle = BundleGenerator(_session_with_one_step()).generate()
+    assert "oversight_regime" not in bundle
+
+
+def test_17_biometric_regime_with_two_reviewers_seals():
+    session = PipelineSession()
+    session.add_record(_agent_step(UUID_1, session))
+    session.add_record(_hitl(UUID_2, session, ["reviewer-1", "reviewer-2"]))
+    bundle = BundleGenerator(session, oversight_regime="biometric_dual_control").generate()
+    assert bundle["oversight_regime"] == "biometric_dual_control"
+    assert _BUNDLE_VALIDATOR.is_valid(bundle), list(_BUNDLE_VALIDATOR.iter_errors(bundle))
+
+
+def test_18_biometric_regime_with_one_reviewer_rejected_at_seal():
+    session = PipelineSession()
+    session.add_record(_agent_step(UUID_1, session))
+    session.add_record(_hitl(UUID_2, session, ["only-one"]))
+    with pytest.raises(ProtocolValidationError, match=r"14\(5\)"):
+        BundleGenerator(session, oversight_regime="biometric_dual_control").generate()
+
+
+def test_19_invalid_oversight_regime_raises_value_error():
+    with pytest.raises(ValueError, match="oversight_regime"):
+        BundleGenerator(_session_with_one_step(), oversight_regime="bogus")

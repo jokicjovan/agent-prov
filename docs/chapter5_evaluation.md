@@ -62,8 +62,8 @@ Twenty-one clauses were audited. The distribution of verdicts:
 
 | Verdict | Count | Share |
 |---------|-------|-------|
-| covered | 13 | 62% |
-| partial | 4 | 19% |
+| covered | 14 | 67% |
+| partial | 3 | 14% |
 | out_of_scope | 4 | 19% |
 | not_covered | **0** | **0%** |
 | **Total** | **21** | |
@@ -73,9 +73,9 @@ Broken down by article:
 | Article | Clauses | covered | partial | out_of_scope | not_covered |
 |---------|--------:|--------:|--------:|-------------:|------------:|
 | Art. 12 — record-keeping | 8 | 6 | 2 | 0 | 0 |
-| Art. 14 — human oversight | 8 | 5 | 2 | 1 | 0 |
+| Art. 14 — human oversight | 8 | 6 | 1 | 1 | 0 |
 | Art. 50 — transparency | 5 | 2 | 0 | 3 | 0 |
-| **Total** | **21** | **13** | **4** | **4** | **0** |
+| **Total** | **21** | **14** | **3** | **4** | **0** |
 
 The headline result is the zero in the `not_covered` column: there is no clause
 within scope that the protocol fails to address. Every obligation is either
@@ -106,17 +106,18 @@ The full clause-level audit:
 | 14(4)(c) | Correctly interpret the output | covered | `output_before_hash`, `justification_hash` |
 | 14(4)(d) | Disregard, override, or reverse the output | covered | `action_type`, `output_after_hash` |
 | 14(4)(e) | Intervene or halt via a stop mechanism | covered | `action_type`, `intervention_timestamp` |
-| 14(5) | Biometric: ≥2 persons verify | partial | `reviewer_id` |
+| 14(5) | Biometric: ≥2 persons verify | covered | `oversight_regime`, `reviewer_id` |
 | 50(1) | Inform users they interact with an AI system | covered | `disclosure_presented` |
 | 50(2) | Mark AI-generated content machine-readable | out_of_scope | — |
 | 50(3) | Inform persons exposed to emotion/biometric systems | out_of_scope | — |
 | 50(4) | Disclose deepfake content | out_of_scope | — |
 | 50(4) exc. | Editorial-responsibility exemption for AI text | covered | `action_type`, `reviewer_role` |
 
-The thirteen *covered* clauses span the protocol's two target articles: the
+The fourteen *covered* clauses span the protocol's two target articles: the
 logging-capability and traceability obligations of Article 12 and the
-human-oversight obligations of Article 14, plus the Article 50(1) disclosure flag
-and the Article 50(4) editorial-review exception. The last is worth singling out,
+human-oversight obligations of Article 14 — including the Article 14(5) two-person
+rule for biometric systems, discussed below — plus the Article 50(1) disclosure
+flag and the Article 50(4) editorial-review exception. The last is worth singling out,
 because it is discharged by the thesis's novel record type rather than a
 conventional log field: an AI-generated text is exempt from the deepfake
 disclosure duty when it has been reviewed under editorial responsibility, and the
@@ -132,9 +133,25 @@ agent's output and when*, which no prior provenance schema records. Without that
 record type these five Article 14 rows would be uncovered; with it, they are the
 protocol's strongest evidence.
 
+Article 14(5) — the two-person rule for biometric identification systems — is the
+one covered clause that is enforced *conditionally* rather than unconditionally,
+and it is worth stating why it counts as covered. A single reviewer is legitimate
+for the majority of pipelines, so `reviewer_id` keeps a universal `minItems: 1`;
+the two-person constraint is instead triggered by the run declaring
+`oversight_regime: "biometric_dual_control"` on its bundle, whereupon the
+validation surface refuses to seal any bundle whose Human Intervention Records
+carry fewer than two distinct reviewers. This is the same class of mechanism that
+already makes 12(3)(a) covered — a value-comparison rule enforced at seal time
+rather than in the schema — so by the audit's own standard it is coverage, not
+accommodation. Its one residual, that a producer could under-declare the regime,
+is the emission-time trust boundary shared by every self-asserted field (a
+producer can equally misstate `reviewer_id` itself); it is mitigated by the
+declaration being sealed and signable, and closed only by binding the regime to an
+external system registration, which §6.5.5 records as future work.
+
 ### 5.2.3 The partial and out-of-scope verdicts
 
-The four *partial* verdicts each mark a clean boundary between what the protocol
+The three *partial* verdicts each mark a clean boundary between what the protocol
 can guarantee and what only a deployment can:
 
 - **Art. 12(2)(a)** (identify situations that may result in risk) — per-step
@@ -154,10 +171,11 @@ can guarantee and what only a deployment can:
   `model_version` give the reviewer the identifiers needed to look up capability
   documentation, but the human-readable capability summary is an oversight-UI
   obligation, not a logged field.
-- **Art. 14(5)** (two-person rule for biometric ID) — `reviewer_id` is an array
-  with `uniqueItems`, so it *accommodates* two reviewers, but the schema enforces
-  `minItems: 1` universally; the `≥2` constraint for biometric pipelines would
-  require a deployment-profile schema variant.
+
+(Article 14(5), the biometric two-person rule, was a *partial* verdict in earlier
+drafts of this audit; it became *covered* once the protocol added the
+`oversight_regime` declaration and its seal-time enforcement, and it is discussed
+under the covered verdicts in §5.2.2.)
 
 The four *out-of-scope* verdicts are consistent: they cover automation-bias
 awareness (14(4)(b)) and the artifact-level disclosure and watermarking duties of
@@ -344,8 +362,8 @@ framing. The differentiation, established analytically in the gap analysis
 | Human intervention record | ❌ | ✅ — the core contribution |
 | Before/after override state | ❌ | ✅ `output_before_hash` / `output_after_hash` |
 | HITL action type | ❌ | ✅ approved / rejected / edited / escalated |
-| Reviewer identity | ❌ | ✅ `reviewer_id` array (supports Art. 14(5)) |
-| EU AI Act clause mapping | ❌ | ✅ Arts. 12, 14, 50 — 13/21 clauses covered, 0 uncovered |
+| Reviewer identity | ❌ | ✅ `reviewer_id` array + `oversight_regime` enforces Art. 14(5) |
+| EU AI Act clause mapping | ❌ | ✅ Arts. 12, 14, 50 — 14/21 clauses covered, 0 uncovered |
 | Privacy-preserving content hashing | ❌ (raw text default) | ✅ SHA-256, content stored out of band |
 | Pipeline integrity seal | ❌ | ✅ `bundle_hash` (RFC 8785 canonical JSON) |
 | Multi-framework support | ✅ (LangChain, CrewAI, OpenAI) | LangGraph adapter + a framework-free adapter; packaged AutoGen/CrewAI future work |

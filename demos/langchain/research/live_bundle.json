@@ -1,96 +1,96 @@
 {
-  "bundle_id": "658944d5-7cd6-42e2-8e8c-c072a18ddf13",
+  "bundle_id": "badb42b0-7d17-4abb-9766-a583ec6e319e",
   "record_type": "pipeline_bundle",
-  "protocol_version": "0.3.0",
+  "protocol_version": "0.4.0",
   "pipeline_id": "b1f4a2d0-7c8e-4a1f-9b3d-6e5a8c2f4d11",
-  "session_id": "b15c5e38-362d-4159-91aa-9522fc7fbf7b",
-  "created_at": "2026-07-04T00:06:45.916664Z",
+  "session_id": "5f8d309d-634f-4e3e-9506-ad56d3fe7bbf",
+  "created_at": "2026-07-05T01:12:23.907061Z",
   "disclosure_presented": true,
   "outcome": "completed",
   "records": [
     {
-      "record_id": "8782d648-7827-4339-9c65-6f4e6d20e536",
+      "record_id": "fdd97b34-ecef-4e17-9521-f68e88fe8b1c",
       "record_type": "tool_invocation",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "b1f4a2d0-7c8e-4a1f-9b3d-6e5a8c2f4d11",
-      "session_id": "b15c5e38-362d-4159-91aa-9522fc7fbf7b",
+      "session_id": "5f8d309d-634f-4e3e-9506-ad56d3fe7bbf",
       "agent_id": "researcher",
       "tool_name": "web_search",
       "tool_version": "unversioned",
-      "timestamp_start": "2026-07-04T00:06:25.832922Z",
-      "timestamp_end": "2026-07-04T00:06:25.834359Z",
+      "timestamp_start": "2026-07-05T01:12:15.770981Z",
+      "timestamp_end": "2026-07-05T01:12:15.771432Z",
       "input_hash": "43db217faadadc58f3abec361efa0164ff518e9be78233ba677e8e2e5eed8baa",
       "reference_data_id": null,
       "parent_record_id": null,
       "runtime_metadata": {
-        "run_id": "019f2a72-ab28-7ab2-88fc-7ac4c06a89ce"
+        "run_id": "019f2fd5-4c9a-7802-88e5-941937c5eadf"
       },
       "status": "success",
       "output_hash": "a6ff9c0630131ec5f0417e6b2dee03e864f2dd81d76d3c4a93a6de6308cdd773"
     },
     {
-      "record_id": "920cf66f-4c14-47cf-9930-52a60adaf803",
+      "record_id": "d2faefa5-4880-42ad-bb9a-2996cecb02ce",
       "record_type": "agent_step",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "b1f4a2d0-7c8e-4a1f-9b3d-6e5a8c2f4d11",
-      "session_id": "b15c5e38-362d-4159-91aa-9522fc7fbf7b",
+      "session_id": "5f8d309d-634f-4e3e-9506-ad56d3fe7bbf",
       "agent_id": "researcher",
       "model_id": "gpt-4o-mini",
       "model_version": "gpt-4o-mini",
-      "timestamp_start": "2026-07-04T00:06:37.805836Z",
-      "timestamp_end": "2026-07-04T00:06:41.379227Z",
+      "timestamp_start": "2026-07-05T01:12:16.428191Z",
+      "timestamp_end": "2026-07-05T01:12:20.013969Z",
       "input_hash": "6486564648484243e14e63cc5d94751a7b1c9abb4f65397b53b4541d620c9386",
       "reference_data_id": null,
-      "parent_record_id": "8782d648-7827-4339-9c65-6f4e6d20e536",
+      "parent_record_id": "fdd97b34-ecef-4e17-9521-f68e88fe8b1c",
       "runtime_metadata": {
-        "run_id": "019f2a72-d9ed-7831-92e1-e80d9d7d857f",
-        "message_id": "lc_run--019f2a72-d9ed-7831-92e1-e80d9d7d857f-0"
+        "run_id": "019f2fd5-4f2c-7220-9845-e3faa74f44d9",
+        "message_id": "lc_run--019f2fd5-4f2c-7220-9845-e3faa74f44d9-0"
       },
       "status": "success",
       "output_hash": "7a2888a5c09d0bb349932f33b15b3732a5c85b033f8d398a5f2709bd518b5042"
     },
     {
-      "record_id": "48748d64-dfe0-495d-9a70-3f750a97e532",
+      "record_id": "3eb71767-ae1b-4872-8e27-49bdefeaebe8",
       "record_type": "agent_step",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "b1f4a2d0-7c8e-4a1f-9b3d-6e5a8c2f4d11",
-      "session_id": "b15c5e38-362d-4159-91aa-9522fc7fbf7b",
+      "session_id": "5f8d309d-634f-4e3e-9506-ad56d3fe7bbf",
       "agent_id": "summarizer",
       "model_id": "gpt-4o-mini",
       "model_version": "gpt-4o-mini",
-      "timestamp_start": "2026-07-04T00:06:41.397043Z",
-      "timestamp_end": "2026-07-04T00:06:43.259023Z",
+      "timestamp_start": "2026-07-05T01:12:20.018500Z",
+      "timestamp_end": "2026-07-05T01:12:21.645637Z",
       "input_hash": "76415e04e3be3affa6139c2cdb3cecd0b25b8874ee70886d737c7c8dd370cf3d",
       "reference_data_id": null,
-      "parent_record_id": "920cf66f-4c14-47cf-9930-52a60adaf803",
+      "parent_record_id": "d2faefa5-4880-42ad-bb9a-2996cecb02ce",
       "runtime_metadata": {
-        "run_id": "019f2a72-e7f5-7a80-b235-97a299ff472a",
-        "message_id": "lc_run--019f2a72-e7f5-7a80-b235-97a299ff472a-0"
+        "run_id": "019f2fd5-5d32-7d22-b1c3-ca44c70ed971",
+        "message_id": "lc_run--019f2fd5-5d32-7d22-b1c3-ca44c70ed971-0"
       },
       "status": "success",
       "output_hash": "1abd0f21f8b22bd1ccf74c878ec66b8ce48fba5875f1a2de2cd5514113f8209a"
     },
     {
-      "record_id": "e8ae8cf5-08b6-462c-91fd-8c2d564c0cdd",
+      "record_id": "c44c7404-1030-460f-b498-434ad3fbc059",
       "record_type": "agent_step",
-      "protocol_version": "0.3.0",
+      "protocol_version": "0.4.0",
       "pipeline_id": "b1f4a2d0-7c8e-4a1f-9b3d-6e5a8c2f4d11",
-      "session_id": "b15c5e38-362d-4159-91aa-9522fc7fbf7b",
+      "session_id": "5f8d309d-634f-4e3e-9506-ad56d3fe7bbf",
       "agent_id": "writer",
       "model_id": "gpt-4o-mini",
       "model_version": "gpt-4o-mini",
-      "timestamp_start": "2026-07-04T00:06:43.266370Z",
-      "timestamp_end": "2026-07-04T00:06:45.915184Z",
+      "timestamp_start": "2026-07-05T01:12:21.648548Z",
+      "timestamp_end": "2026-07-05T01:12:23.906123Z",
       "input_hash": "9cc285c5fd1e4d5a434d4e8670d1d43ca308c49d56fcc76af5cb601f4409d4ac",
       "reference_data_id": null,
-      "parent_record_id": "48748d64-dfe0-495d-9a70-3f750a97e532",
+      "parent_record_id": "3eb71767-ae1b-4872-8e27-49bdefeaebe8",
       "runtime_metadata": {
-        "run_id": "019f2a72-ef42-7583-8f6e-a20e01e1bff9",
-        "message_id": "lc_run--019f2a72-ef42-7583-8f6e-a20e01e1bff9-0"
+        "run_id": "019f2fd5-6390-7430-aaee-184c71fadc48",
+        "message_id": "lc_run--019f2fd5-6390-7430-aaee-184c71fadc48-0"
       },
       "status": "success",
-      "output_hash": "ebd4ecec9e1026f4de92a2454908b3b0b174cab92d51ceb3c2b495554c4cb787"
+      "output_hash": "f3ba376f6b7a3c105a9286dbba2d8ed79cb7e7f2d3142255a9f3d0651aaefeeb"
     }
   ],
-  "bundle_hash": "c7e6f1547412b97d775ca44f998295c95422f59cff0c3387734ca3e0c02bf5ed"
+  "bundle_hash": "cad70751739ab89f85893d33cce3bbe896baeee7a4a2b238bba9dafd9626f0d3"
 }

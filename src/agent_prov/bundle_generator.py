@@ -23,6 +23,7 @@ def compute_bundle_hash(bundle: dict) -> str:
 
 
 _VALID_OUTCOMES = frozenset({"completed", "aborted", "error"})
+_VALID_REGIMES = frozenset({"standard", "biometric_dual_control"})
 
 
 class BundleGenerator:
@@ -37,6 +38,12 @@ class BundleGenerator:
             any record has status 'error', otherwise 'completed'. Pass it
             explicitly to record an 'aborted' run (the generator cannot infer
             that the run was stopped early).
+        oversight_regime: Human-oversight regime the run declares itself under
+            ('standard' | 'biometric_dual_control'). When omitted the field is
+            left off the bundle (treated as 'standard'). Pass
+            'biometric_dual_control' to declare the run subject to EU AI Act
+            Art. 14(5), under which seal-time validation requires every Human
+            Intervention Record to carry at least two distinct reviewers.
     """
 
     def __init__(
@@ -45,14 +52,21 @@ class BundleGenerator:
         *,
         disclosure_presented: bool = False,
         outcome: str | None = None,
+        oversight_regime: str | None = None,
     ) -> None:
         if outcome is not None and outcome not in _VALID_OUTCOMES:
             raise ValueError(
                 f"outcome must be one of {sorted(_VALID_OUTCOMES)}; got {outcome!r}"
             )
+        if oversight_regime is not None and oversight_regime not in _VALID_REGIMES:
+            raise ValueError(
+                f"oversight_regime must be one of {sorted(_VALID_REGIMES)}; "
+                f"got {oversight_regime!r}"
+            )
         self._session = session
         self._disclosure_presented = disclosure_presented
         self._outcome = outcome
+        self._oversight_regime = oversight_regime
 
     def _resolve_outcome(self) -> str:
         if self._outcome is not None:
@@ -89,6 +103,10 @@ class BundleGenerator:
             "records": list(self._session.records),
             "bundle_hash": "",
         }
+        # Optional field: only present when a regime was explicitly declared, so
+        # an undeclared bundle omits it and is treated as 'standard'.
+        if self._oversight_regime is not None:
+            bundle["oversight_regime"] = self._oversight_regime
         bundle["bundle_hash"] = compute_bundle_hash(bundle)
         validate_bundle(bundle)
         return bundle

@@ -1,0 +1,53 @@
+{
+  "bundle_id": "e889c38c-4a72-47fe-8e3a-9bf9fde255d0",
+  "record_type": "pipeline_bundle",
+  "protocol_version": "0.4.0",
+  "pipeline_id": "c7a1f4e2-8b93-4d6a-b5e0-1f2a3c4d5e6f",
+  "session_id": "922f0285-bea6-4546-bdf6-47f9c7340d3a",
+  "created_at": "2026-07-05T01:19:21.968758Z",
+  "disclosure_presented": true,
+  "outcome": "completed",
+  "records": [
+    {
+      "record_id": "c2b5deb6-9d5c-47cc-86e3-a0518c84641f",
+      "record_type": "agent_step",
+      "protocol_version": "0.4.0",
+      "pipeline_id": "c7a1f4e2-8b93-4d6a-b5e0-1f2a3c4d5e6f",
+      "session_id": "922f0285-bea6-4546-bdf6-47f9c7340d3a",
+      "agent_id": "matcher",
+      "model_id": "fake-matcher",
+      "model_version": "fake-matcher",
+      "timestamp_start": "2026-07-05T01:19:21.963753Z",
+      "timestamp_end": "2026-07-05T01:19:21.964782Z",
+      "input_hash": "728ddb527d5f2f337fc31cc58d8921882b3906f65aef0083e44e2c85ce6b62b4",
+      "reference_data_id": null,
+      "parent_record_id": null,
+      "runtime_metadata": {
+        "run_id": "019f2fdb-cd6b-7f73-a644-65ddf41e2b76",
+        "message_id": "lc_run--019f2fdb-cd6b-7f73-a644-65ddf41e2b76-0"
+      },
+      "status": "success",
+      "output_hash": "a4137c6ae16bad17bde2079937e6f7e74314dcede816a88b7682d5350a8e2995"
+    },
+    {
+      "record_id": "0c4b4b0f-0f09-4595-9ed9-b4fefcc5756a",
+      "record_type": "human_intervention",
+      "protocol_version": "0.4.0",
+      "pipeline_id": "c7a1f4e2-8b93-4d6a-b5e0-1f2a3c4d5e6f",
+      "session_id": "922f0285-bea6-4546-bdf6-47f9c7340d3a",
+      "reviewer_id": [
+        "examiner:forensic-11",
+        "examiner:forensic-23"
+      ],
+      "reviewer_role": "forensic_examiner",
+      "action_type": "approved",
+      "output_before_hash": "895482a9ad304e431f53e8c3b55be830266530f6e78dfaf310f29f62eb2435b4",
+      "output_after_hash": "895482a9ad304e431f53e8c3b55be830266530f6e78dfaf310f29f62eb2435b4",
+      "intervention_timestamp": "2026-07-05T01:19:21.967040Z",
+      "parent_record_id": "c2b5deb6-9d5c-47cc-86e3-a0518c84641f",
+      "justification_hash": "45c71830509562fd77c6717df19118d39095767a0c15c8b70b78145faf7b2c85"
+    }
+  ],
+  "bundle_hash": "923e6fb6b8b75b29a1d127b0fb337d2ca83eac1302f4271efe8d0756ad034ee3",
+  "oversight_regime": "biometric_dual_control"
+}

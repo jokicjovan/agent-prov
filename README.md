@@ -78,6 +78,9 @@ uv run python demos/langchain/document_review/mock.py
 
 # run a tool-calling agent (model emits parallel tool calls)
 uv run python demos/langchain/tool_calling/mock.py
+
+# run a biometric pipeline whose match needs two-person verification (Art. 14(5))
+uv run python demos/langchain/biometric_review/mock.py
 ```
 
 Each demo writes a sealed bundle (`*_bundle.json`) next to its script and prints

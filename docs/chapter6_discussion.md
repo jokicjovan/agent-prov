@@ -193,13 +193,21 @@ the gate node itself. The record produced is identical either way; folding the
 emission into the resume path, so the gate node and its record are one unit, is
 the refinement noted in §6.5.6.
 
-**Article 14(5) is accommodated, not enforced.** The two-person rule for
-biometric identification systems is *accommodated* by `reviewer_id` being an
-array with `uniqueItems`, but the schema enforces `minItems: 1` universally, so
-it cannot mechanically require the second reviewer that 14(5) demands (§5.2.3).
-Enforcing it requires a deployment-profile schema variant that tightens the
-constraint for the biometric population without forcing it on every pipeline
-(§6.5.5).
+**Article 14(5) is conditionally enforced, not unconditionally guaranteed.** The
+two-person rule for biometric identification systems is now *enforced* rather than
+merely accommodated: a bundle declaring `oversight_regime: "biometric_dual_control"`
+cannot be sealed unless every Human Intervention Record carries at least two
+distinct reviewers (§3.7.4, §5.2.2). What remains is that the trigger is a
+*self-declared* field: `reviewer_id` still keeps a universal `minItems: 1`, because
+the second reviewer is required only for the biometric population, and it is the
+run's own declaration that opts it into the stricter rule. A producer under a 14(5)
+obligation could therefore under-declare the regime and escape the check — but this
+is the general emission-time trust boundary of §6.2.3, not specific to this field
+(the same producer could fabricate a second `reviewer_id`), and it is mitigated by
+the declaration being sealed and signable and so attributable after the fact. The
+part that is genuinely out of the record stream's reach — proving a run *belongs*
+to the biometric population regardless of what it declares — needs an external,
+registered notion of system type, discussed as future work in §6.5.5.
 
 **The durability log is operational, not evidential.** The optional event log
 (§4.7.1) closes the window in which an unsealed run lives only in process memory,
@@ -452,20 +460,33 @@ key (trust on first use), which proves a bundle was signed by *some* key but not
 (Sigstore/Rekor-style) to anchor key identity. The signing layer deliberately
 stops at the cryptographic primitive and names key management as the next step.
 
-### 6.5.5 Deployment-profile schema variants
+### 6.5.5 Sub-population obligations and external regime attestation
 
-Article 14(5)'s two-person rule (§6.3) is one instance of a general need:
-obligations that apply to a *sub-population* of pipelines rather than all of
-them. The base schema enforces what every pipeline must satisfy (`minItems: 1`
-on `reviewer_id`); a *deployment profile* would be a schema that extends the base
-with the tighter constraints a specific regulatory population requires
-(`minItems: 2` for biometric identification systems), without imposing them on
-pipelines outside that population. This keeps the core protocol minimal while
-letting a deployment opt into a stricter, mechanically-enforced variant matched
-to its risk class — the same pattern by which profiles specialise a base
-standard elsewhere. The validation surface (§4.12) already centralises
-constraint checking, so a profile is a parameterisation of an existing seam
-rather than a new mechanism.
+Article 14(5)'s two-person rule is the first instance of a general need:
+obligations that apply to a *sub-population* of pipelines rather than all of them.
+It is now met in-protocol (§3.7.4): the base schema keeps what every pipeline must
+satisfy (`minItems: 1` on `reviewer_id`), and a run opts into the stricter rule by
+declaring `oversight_regime: "biometric_dual_control"` on its bundle, which the
+existing validation surface enforces at seal time. Because the trigger is a
+declared field checked in the surface that already centralises constraint checking
+(§3.7.5), adding further population-specific rules is a parameterisation of that
+seam rather than a new mechanism — new regimes, or the alternative of a *deployment
+profile* (a schema variant that structurally tightens the base for one population),
+both extend the same point. That generalisation is the lighter half of the
+remaining work.
+
+The harder half is the residual identified in §6.3: the regime is *self-declared*,
+so the enforcement holds only for a run that honestly opts in. Closing it means
+binding the declaration to something the producer does not unilaterally control —
+an external, registered notion of what kind of system this is, against which the
+declared `oversight_regime` can be cross-checked. This is the same shape as the
+completeness problem of §6.2.2 (detecting an omitted record also needs an external
+expectation of what the pipeline should have produced) and reduces, like the
+signing and timestamping directions of §6.5.4, to attestation and registration
+infrastructure that sits outside the record stream. The protocol's part — carrying
+the declaration inside the tamper-evident, signable bundle so a mis-declaration is
+recorded and attributable — is built; the external source of truth that would make
+under-declaration detectable rather than merely attributable is the future work.
 
 ### 6.5.6 Graph-interrupt human-intervention capture
 

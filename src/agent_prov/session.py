@@ -27,7 +27,7 @@ from uuid import uuid4
 from agent_prov._hashing import now_iso8601, hash_content
 
 
-_DEFAULT_PROTOCOL_VERSION = "0.3.0"
+_DEFAULT_PROTOCOL_VERSION = "0.4.0"
 
 # Mirrored from the JSON Schema `$defs/uuid` and `$defs/semver` patterns. Validating
 # user-supplied identifiers at construction time fails loudly here, rather than
