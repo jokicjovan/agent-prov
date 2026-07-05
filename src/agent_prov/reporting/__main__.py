@@ -21,8 +21,20 @@ def _cli(argv: list[str] | None = None) -> int:
     parser.add_argument("output", type=pathlib.Path, help="path to write PDF")
     args = parser.parse_args(argv)
 
-    bundle = json.loads(args.bundle.read_text(encoding="utf-8"))
-    report = ComplianceReport(bundle)
+    try:
+        bundle = json.loads(args.bundle.read_text(encoding="utf-8"))
+    except OSError as exc:
+        print(f"FAILED: cannot read {args.bundle}: {exc}", file=sys.stderr)
+        return 1
+    except json.JSONDecodeError as exc:
+        print(f"FAILED: {args.bundle} is not valid JSON: {exc}", file=sys.stderr)
+        return 1
+
+    try:
+        report = ComplianceReport(bundle)
+    except (TypeError, ValueError) as exc:
+        print(f"FAILED: {args.bundle} is not a usable bundle: {exc}", file=sys.stderr)
+        return 1
     out_path = report.to_pdf(args.output)
     print(f"wrote {out_path}")
     return 0

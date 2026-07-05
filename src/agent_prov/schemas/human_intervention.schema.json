@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jokicjovan.github.io/agent-prov/schemas/v0.3/human_intervention.schema.json",
+  "title": "Human Intervention Record",
+  "description": "Captures a single human oversight decision point in the pipeline. Core novelty of this thesis: no existing provenance standard (including PROV-AGENT) models the before/after state of a human override or links it to regulatory oversight obligations. Primary EU AI Act mapping: Art. 12(3)(d), 14(4)(c), 14(4)(d), 14(4)(e), 14(5), 50(4) exception.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record_id",
+    "record_type",
+    "protocol_version",
+    "pipeline_id",
+    "session_id",
+    "reviewer_id",
+    "reviewer_role",
+    "action_type",
+    "output_before_hash",
+    "output_after_hash",
+    "intervention_timestamp",
+    "parent_record_id"
+  ],
+  "properties": {
+    "record_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "Unique identifier for this record. Schema metadata; no direct Act mapping."
+    },
+    "record_type": {
+      "const": "human_intervention",
+      "description": "Discriminator identifying this record as a Human Intervention Record."
+    },
+    "protocol_version": {
+      "$ref": "#/$defs/semver",
+      "description": "Provenance protocol version (semver). Schema metadata."
+    },
+    "pipeline_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "Identifier of the pipeline this record belongs to. EU AI Act Art. 12(2)(c) - supports operational monitoring (Art. 26(5)) by linking records to a pipeline run."
+    },
+    "session_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "Identifier of the execution session within the pipeline. EU AI Act Art. 12(2)(c) - supports operational monitoring."
+    },
+    "reviewer_id": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "Identifiers of the natural persons who carried out the oversight decision. EU AI Act Art. 12(3)(d) - identify natural persons who verified results. Art. 14(5) - for biometric identification systems, no decision may be taken unless verified by at least two natural persons; biometric pipelines must therefore enforce minItems: 2 at the application/profile layer (the base schema accepts minItems: 1 to remain usable for non-biometric high-risk systems, mirroring the universal-floor approach taken for the Art. 12(3) biometric minimums)."
+    },
+    "reviewer_role": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Role of the reviewer(s) within the deploying organisation (e.g. 'editor', 'compliance_officer', 'domain_expert', 'operator'). Free-form to accommodate deployment-specific role taxonomies. EU AI Act Art. 50(4) exception requires that AI-generated text was reviewed with editorial responsibility - a reviewer_role of 'editor' (or equivalent) is the field that anchors this exemption claim."
+    },
+    "action_type": {
+      "type": "string",
+      "enum": ["approved", "rejected", "edited", "escalated"],
+      "description": "The decision the reviewer committed at this oversight point. EU AI Act Art. 14(4)(d) - disregard/override/reverse output is captured by 'rejected'/'edited'. Art. 14(4)(e) - intervention/halt via stop mechanism is captured by 'escalated'. Art. 50(4) exception is anchored by 'approved' combined with reviewer_role='editor'. Conditional semantics on output_after_hash (see that field) are bound to this enum and enforced by the protocol validation layer at bundle seal time."
+    },
+    "output_before_hash": {
+      "$ref": "#/$defs/sha256_hex",
+      "description": "SHA-256 hash of canonical agent output as it was presented to the reviewer (before any human modification). EU AI Act Art. 14(4)(c) - proves the human saw the actual output before deciding, supporting correct interpretation of the system's output."
+    },
+    "output_after_hash": {
+      "oneOf": [
+        { "$ref": "#/$defs/sha256_hex" },
+        { "type": "null" }
+      ],
+      "description": "SHA-256 hash of canonical output committed downstream after the reviewer's decision. EU AI Act Art. 14(4)(d) - proves any override was recorded. Conventions bound to action_type (enforced by the protocol validation layer at bundle seal time, not in JSON Schema): 'approved' -> equal to output_before_hash (no change committed); 'edited' -> differs from output_before_hash (override applied); 'rejected' -> null (downstream output discarded); 'escalated' -> null (no decision committed at this point; awaiting higher authority)."
+    },
+    "intervention_timestamp": {
+      "$ref": "#/$defs/iso8601_timestamp",
+      "description": "ISO 8601 / RFC 3339 timestamp marking the moment the reviewer committed their decision. EU AI Act Art. 14(4)(e) - proves timely intervention before the next automated step (the chronological ordering against the next record in the bundle is the evidence of timeliness). The human action is treated as instantaneous from the protocol's perspective; reviewer deliberation time is out of scope for this schema."
+    },
+    "justification_hash": {
+      "$ref": "#/$defs/sha256_hex",
+      "description": "Optional SHA-256 hash of canonical reviewer rationale text. Hashing rather than storing raw content mirrors the input_hash/output_hash privacy stance and preserves GDPR data minimisation - the original rationale remains in application storage. Useful evidence under EU AI Act Art. 14(4)(c) for interpretability of the oversight decision; not strictly required by Art. 14, hence optional."
+    },
+    "parent_record_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "record_id of the record whose output was reviewed at this oversight point. Required and non-null: a Human Intervention Record always reviews an upstream record (an Agent Step Record or Tool Invocation Record), so it cannot be the first record in the bundle. By convention this is also the immediately preceding record in the structural chain. Schema metadata supporting the ordered record chain referenced by Art. 12(2) traceability."
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "RFC 4122 UUID string in lowercase hex (canonical form for the protocol)."
+    },
+    "sha256_hex": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 digest as 64 lowercase hex characters."
+    },
+    "iso8601_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 / RFC 3339 timestamp with timezone."
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Semantic version per semver.org."
+    }
+  }
+}

@@ -5,10 +5,10 @@ steps, tool calls, and **human oversight intervention events** — designed to
 produce verifiable evidence for EU AI Act Articles 12 (record-keeping), 14 (human
 oversight), and 50 (transparency).
 
-> **Status: research proof-of-concept, work in progress.** This repository
-> accompanies an MSc thesis. The protocol schemas and the LangGraph reference
-> implementation are functional and tested, but the project is still under active
-> development and APIs may change before a `1.0` release.
+> **Status: research proof-of-concept (v1.0.0).** This repository accompanies an
+> MSc thesis. The protocol schemas and the LangGraph reference implementation are
+> functional and tested and the core API is stable as of `1.0.0`; the
+> accompanying thesis is still in progress.
 
 ---
 
@@ -71,10 +71,13 @@ dependency management.
 uv sync
 
 # run a fully-automated pipeline (researcher -> summarizer -> writer)
-uv run python demos/research/mock.py
+uv run python demos/langchain/research/mock.py
 
 # run a pipeline with human-in-the-loop review
-uv run python demos/document_review/mock.py
+uv run python demos/langchain/document_review/mock.py
+
+# run a tool-calling agent (model emits parallel tool calls)
+uv run python demos/langchain/tool_calling/mock.py
 ```
 
 Each demo writes a sealed bundle (`*_bundle.json`) next to its script and prints
@@ -85,21 +88,105 @@ calls; the `live.py` variants run the same graphs against a real model (set
 ### Generate a compliance report
 
 ```bash
-uv run python -m agent_prov.reporting demos/research/mock_bundle.json report.pdf
+uv run python -m agent_prov.reporting demos/langchain/research/mock_bundle.json report.pdf
 ```
 
 This renders a PDF that maps each record to the EU AI Act clauses its fields
 substantiate. (PDF rendering needs the `reporting` extra, which `uv sync`
 installs by default.)
 
+### Independently verify a bundle
+
+A sealed bundle is evidence only if a third party can recompute its guarantees
+without trusting the producer. The verifier does exactly that — recompute the
+`bundle_hash`, re-run schema and conditional validation, and check parent-chain
+and identifier integrity — and reports every problem it finds. It also surfaces a
+non-fatal observation: records whose execution intervals overlap ran
+concurrently, so the chronological parent chain orders them sequentially only as
+an approximation. This is a `warning`, not a failure — a parallel pipeline is a
+valid, untampered bundle.
+
+```bash
+uv run python -m agent_prov.verify demos/langchain/research/mock_bundle.json
+```
+
+It runs on the bare core (no extras) and exits non-zero if any check fails
+(warnings do not affect the exit code). The same checks are available
+programmatically:
+
+```python
+from agent_prov import verify_bundle
+
+result = verify_bundle(bundle)        # VerificationResult(ok=..., errors=(...), warnings=(...))
+```
+
+The core protocol surface — `PipelineSession`, `BundleGenerator`,
+`verify_bundle`, `validate_bundle`, `now_iso8601` — is re-exported from the
+top-level `agent_prov` package and pulls in no optional extra. (The
+`ProvenanceMiddleware` adapter and the `ComplianceReport` renderer stay behind
+their `langchain` / `reporting` extras and are imported from their own modules.)
+
+### Survive a crash before sealing
+
+Records live in memory until the bundle is sealed, so a crash mid-run would lose
+the evidence — including the failed run an auditor most wants. Attach an
+append-only NDJSON event log and every record is streamed to disk (flushed and
+`fsync`'d) as it is added:
+
+```python
+from agent_prov import PipelineSession, EventLog
+
+with EventLog("run.ndjson") as log:
+    session = PipelineSession(event_log=log)
+    ...  # run the pipeline; records are now durable as they are emitted
+```
+
+After a crash, recover the log into a session and seal it as usual — from the
+CLI, or programmatically with `recover_session`:
+
+```bash
+uv run python -m agent_prov.persistence run.ndjson recovered_bundle.json --outcome aborted
+```
+
+A half-written final line (a crash mid-write) is tolerated; the recovered bundle
+is re-validated and its `bundle_hash` recomputed at seal time. This is core
+functionality — no extra required.
+
+### Sign a bundle for attributable evidence
+
+The `bundle_hash` makes a bundle tamper-*evident* — but anyone can recompute it,
+so a modified bundle can simply be re-sealed. A detached Ed25519 signature closes
+that gap: it can only be produced by the private-key holder, giving an auditor
+non-repudiation and forgery resistance over the seal. The signature covers a
+bound payload (`{payload_type, algorithm, signed_hash}`, canonicalized via the
+same RFC 8785 path), following in-toto / SLSA / DSSE practice, so it cannot be
+lifted to another context. Signing lives behind the `signing` extra; the protocol
+core stays crypto-free.
+
+```bash
+# generate an Ed25519 keypair
+uv run python -m agent_prov.signing keygen --out-private priv.pem --out-public pub.pem
+
+# sign a sealed bundle -> detached bundle.json.sig envelope
+uv run python -m agent_prov.signing sign demos/langchain/research/mock_bundle.json --key priv.pem
+
+# verify the bundle against its signature (bind authorship with a trusted key)
+uv run python -m agent_prov.signing verify demos/langchain/research/mock_bundle.json --key pub.pem
+```
+
+The same operations are available programmatically from `agent_prov.signing`
+(`generate_keypair`, `sign_bundle`, `verify_signature`).
+
 ### Instrumenting your own pipeline
 
-The middleware is passive — it attaches through LangChain's standard `callbacks`
-mechanism and never appears inside your graph:
+The LangChain adapter ships under the `langchain` extra (`pip install
+agent-prov[langchain]`; already provided by `uv sync`). The middleware is
+passive — it attaches through LangChain's standard `callbacks` mechanism and
+never appears inside your graph:
 
 ```python
 from agent_prov.session import PipelineSession
-from agent_prov.core import ProvenanceMiddleware
+from agent_prov.adapters.langchain import ProvenanceMiddleware
 from agent_prov.bundle_generator import BundleGenerator
 
 session = PipelineSession()
@@ -113,15 +200,44 @@ BundleGenerator(session, disclosure_presented=True).to_file("bundle.json")
 For human oversight, wrap the decision point in a `HumanReview` block, which emits
 a Human Intervention Record with the before/after evidence.
 
+### Instrumenting a framework we don't adapt
+
+The LangChain adapter is one consumer of a framework-neutral seam: the record
+factory on `PipelineSession` (`add_agent_step` / `add_tool_invocation` and their
+`_error` variants). An agent with no orchestration framework — a plain loop
+against a provider SDK — is instrumented by calling the factory directly, with no
+adapter machinery:
+
+```python
+from agent_prov.session import PipelineSession, now_iso8601
+
+session = PipelineSession()
+
+ts = now_iso8601()
+resp = client.chat.completions.create(model="gpt-4o", messages=messages, tools=tools)
+session.add_agent_step(
+    agent_id="planner", model_id="gpt-4o", model_version="gpt-4o-2024-11-20",
+    timestamp_start=ts, input=messages, output=resp.choices[0].message,
+)
+```
+
+This runs on the bare `agent-prov` core (no `langchain` extra). See
+`demos/openai_loop/mock.py` for a complete, runnable example.
+
 ---
 
 ## Repository layout
 
 ```
-schemas/        JSON Schema for the four record types
-src/agent_prov/ reference implementation (middleware, emitters, session, HITL, sealing)
+src/agent_prov/ framework-neutral protocol core (session + record factory, schemas, validation, sealing, HITL)
+  schemas/      JSON Schema for the four record types (shipped with the package)
+  verify/       independent bundle verifier + `python -m agent_prov.verify` CLI
+  persistence/  crash-safe append-only event log + recovery CLI (`python -m agent_prov.persistence`)
+  signing/      detached Ed25519 bundle signing + CLI (optional `signing` extra)
+  adapters/
+    langchain/  LangChain/LangGraph adapter — middleware + emitters (optional `langchain` extra)
   reporting/    compliance report generator (optional `reporting` extra)
-demos/          two example pipelines, each with a deterministic and a live variant
+demos/          example pipelines: two LangGraph (mock + live), one framework-free loop
 evaluation/     completeness audit, overhead benchmark, developer-effort measurement
 docs/           protocol design, EU AI Act obligation mapping, gap analysis, design & evaluation write-up
 tests/          unit + integration test suite
@@ -135,12 +251,29 @@ tests/          unit + integration test suite
 uv run pytest
 ```
 
+The suite also checks that the schema files are well-formed and that the
+example documents validate (`tests/unit/test_schemas.py`). To lint the schemas
+or validate a document by hand, use the `check-jsonschema` CLI (a dev
+dependency):
+
+```bash
+# lint the schema files themselves (well-formed draft 2020-12)
+uv run check-jsonschema --check-metaschema src/agent_prov/schemas/*.schema.json
+
+# validate a document against a schema
+uv run check-jsonschema --schemafile src/agent_prov/schemas/agent_step.schema.json tests/schema_examples/agent_step.valid.json
+```
+
 ---
 
 ## Scope and limitations
 
-- **LangGraph only.** The record schemas are framework-agnostic, but the reference
-  implementation targets LangGraph. Adapters for other frameworks are future work.
+- **One packaged adapter.** The protocol core is framework-neutral and the record
+  factory is the integration seam; LangGraph is the one adapter shipped as a
+  library subpackage. A framework-free agent loop (`demos/openai_loop/`) is
+  instrumented inline against the same seam, demonstrating that the factory
+  generalizes, but packaged adapters for other frameworks (AutoGen, CrewAI) are
+  future work.
 - **Research artifact.** This is a research proof-of-concept, not a production
   library. It demonstrates the protocol; it has not been hardened for production
   deployment.

@@ -1,0 +1,99 @@
+{
+  "bundle_id": "40b9f87f-718e-4985-b2c1-a79ccac1bba8",
+  "record_type": "pipeline_bundle",
+  "protocol_version": "0.3.0",
+  "pipeline_id": "a4c1f6e2-0b93-4d17-8a5e-2f7c9d61b430",
+  "session_id": "ef6c7213-59ff-40ed-bdc2-487ac88976d6",
+  "created_at": "2026-07-04T08:59:25.189204Z",
+  "disclosure_presented": true,
+  "outcome": "completed",
+  "records": [
+    {
+      "record_id": "51e39656-e8ce-46fe-80b1-79bcd425e28a",
+      "record_type": "agent_step",
+      "protocol_version": "0.3.0",
+      "pipeline_id": "a4c1f6e2-0b93-4d17-8a5e-2f7c9d61b430",
+      "session_id": "ef6c7213-59ff-40ed-bdc2-487ac88976d6",
+      "agent_id": "agent",
+      "model_id": "fake-tool-caller",
+      "model_version": "fake-tool-caller",
+      "timestamp_start": "2026-07-04T08:59:25.181660Z",
+      "timestamp_end": "2026-07-04T08:59:25.182616Z",
+      "input_hash": "c4eabb955c2994b884c37acdf2d5c92d91bd1f667da7bfa3a5be3798298c3935",
+      "reference_data_id": null,
+      "parent_record_id": null,
+      "runtime_metadata": {
+        "run_id": "019f2c5a-a27d-7b82-9c6e-19adee8c7cf5",
+        "message_id": "lc_run--019f2c5a-a27d-7b82-9c6e-19adee8c7cf5-0",
+        "tool_call_ids": {
+          "0": "call_search_0001",
+          "1": "call_glossary_0002"
+        }
+      },
+      "status": "success",
+      "output_hash": "b0e3615953708086318cd6c5649d16fb5cedb3dd3f29ce32841e61b385f347a2"
+    },
+    {
+      "record_id": "a699cefa-584e-4185-909b-1ce9a9f1d7d8",
+      "record_type": "tool_invocation",
+      "protocol_version": "0.3.0",
+      "pipeline_id": "a4c1f6e2-0b93-4d17-8a5e-2f7c9d61b430",
+      "session_id": "ef6c7213-59ff-40ed-bdc2-487ac88976d6",
+      "agent_id": "tools",
+      "tool_name": "web_search",
+      "tool_version": "unversioned",
+      "timestamp_start": "2026-07-04T08:59:25.185818Z",
+      "timestamp_end": "2026-07-04T08:59:25.186397Z",
+      "input_hash": "de7aae438e56d4dbefbec59f400ab43d7e4697ac970a21d7fd49edf69a2bc570",
+      "reference_data_id": null,
+      "parent_record_id": "51e39656-e8ce-46fe-80b1-79bcd425e28a",
+      "runtime_metadata": {
+        "run_id": "019f2c5a-a281-7963-8822-4816b91e90f8"
+      },
+      "status": "success",
+      "output_hash": "2785fcc2252025601026b95f0d671916ffa58184707270dd072b91ea3f72609f"
+    },
+    {
+      "record_id": "b04ef275-4570-418e-9bdf-2b46967d4f54",
+      "record_type": "tool_invocation",
+      "protocol_version": "0.3.0",
+      "pipeline_id": "a4c1f6e2-0b93-4d17-8a5e-2f7c9d61b430",
+      "session_id": "ef6c7213-59ff-40ed-bdc2-487ac88976d6",
+      "agent_id": "tools",
+      "tool_name": "glossary",
+      "tool_version": "unversioned",
+      "timestamp_start": "2026-07-04T08:59:25.186998Z",
+      "timestamp_end": "2026-07-04T08:59:25.187791Z",
+      "input_hash": "5cb68201042b08be3ae3f728874020b61e31627e3c7785151663533ffad5007c",
+      "reference_data_id": null,
+      "parent_record_id": "a699cefa-584e-4185-909b-1ce9a9f1d7d8",
+      "runtime_metadata": {
+        "run_id": "019f2c5a-a282-7761-939c-c6210b13feea"
+      },
+      "status": "success",
+      "output_hash": "08806567c91e70f2aefe6466bb12ab0ab5a3102241d34989e1c55b35688b7d56"
+    },
+    {
+      "record_id": "a75aaa73-6def-40c3-96dd-b99011e15cfb",
+      "record_type": "agent_step",
+      "protocol_version": "0.3.0",
+      "pipeline_id": "a4c1f6e2-0b93-4d17-8a5e-2f7c9d61b430",
+      "session_id": "ef6c7213-59ff-40ed-bdc2-487ac88976d6",
+      "agent_id": "agent",
+      "model_id": "fake-tool-caller",
+      "model_version": "fake-tool-caller",
+      "timestamp_start": "2026-07-04T08:59:25.188640Z",
+      "timestamp_end": "2026-07-04T08:59:25.188814Z",
+      "input_hash": "0eff00141580942f0ca89e51691b82ea7d063e6c17f6ab0ecfda9c6fe5f76dfc",
+      "reference_data_id": null,
+      "parent_record_id": "b04ef275-4570-418e-9bdf-2b46967d4f54",
+      "runtime_metadata": {
+        "run_id": "019f2c5a-a284-7a21-804f-fa7fc47bfb6b",
+        "message_id": "lc_run--019f2c5a-a284-7a21-804f-fa7fc47bfb6b-0"
+      },
+      "status": "success",
+      "output_hash": "27ab2e02fa54f9600cd6c7c341cb62cfa37db74cd33f0f7b85d41e572efbd43b"
+    }
+  ],
+  "bundle_hash": "d1da84d7f61ee1ddbc96211319a8441bfc8921b8af1141a9eeb4fb810bf8304a"
+}

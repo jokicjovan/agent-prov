@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jokicjovan.github.io/agent-prov/schemas/v0.3/agent_step.schema.json",
+  "title": "Agent Step Record",
+  "description": "Captures a single LLM agent node execution within a pipeline. Primary EU AI Act mapping: Art. 12(2), 12(3)(a)(b)(c), 14(4)(a).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record_id",
+    "record_type",
+    "protocol_version",
+    "pipeline_id",
+    "session_id",
+    "agent_id",
+    "model_id",
+    "model_version",
+    "timestamp_start",
+    "timestamp_end",
+    "input_hash",
+    "status",
+    "reference_data_id",
+    "parent_record_id"
+  ],
+  "properties": {
+    "record_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "Unique identifier for this record. Schema metadata; no direct Act mapping."
+    },
+    "record_type": {
+      "const": "agent_step",
+      "description": "Discriminator identifying this record as an Agent Step Record."
+    },
+    "protocol_version": {
+      "$ref": "#/$defs/semver",
+      "description": "Provenance protocol version (semver). Schema metadata."
+    },
+    "pipeline_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "Identifier of the pipeline this record belongs to. EU AI Act Art. 12(2)(c) - supports operational monitoring (Art. 26(5)) by linking records to a pipeline run."
+    },
+    "session_id": {
+      "$ref": "#/$defs/uuid",
+      "description": "Identifier of the execution session within the pipeline. EU AI Act Art. 12(2)(c) - supports operational monitoring."
+    },
+    "agent_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier of the agent node that produced this record. EU AI Act Art. 12(2)(c) - supports operational monitoring by identifying the agent."
+    },
+    "model_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the LLM model used (e.g. 'claude-opus-4-7'). EU AI Act Art. 12(2)(b) - enables post-market monitoring (Art. 72) and drift detection. Art. 14(4)(a) - enables oversight-time review of capabilities/limitations."
+    },
+    "model_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Specific version/snapshot of the model (e.g. '20260101', '1.2.3'). EU AI Act Art. 12(2)(b) - version granularity needed for drift detection. Art. 14(4)(a) - enables oversight-time review."
+    },
+    "timestamp_start": {
+      "$ref": "#/$defs/iso8601_timestamp",
+      "description": "ISO 8601 / RFC 3339 timestamp marking the start of this agent step. EU AI Act Art. 12(3)(a) - record start time of each use (biometric minimum, applied universally per thesis policy)."
+    },
+    "timestamp_end": {
+      "$ref": "#/$defs/iso8601_timestamp",
+      "description": "ISO 8601 / RFC 3339 timestamp marking the end of this agent step. EU AI Act Art. 12(3)(a) - record end time of each use. Constraint timestamp_end >= timestamp_start is not expressible in JSON Schema 2020-12; enforced by the protocol validation layer at bundle seal time."
+    },
+    "input_hash": {
+      "$ref": "#/$defs/sha256_hex",
+      "description": "SHA-256 hash of canonical input (prompt) given to the model. EU AI Act Art. 12(3)(c) - record input data that produced a result. Hashing rather than storing raw content satisfies GDPR data minimisation."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["success", "error"],
+      "description": "Outcome of the agent step. 'success' when the model returned a completion; 'error' when the call failed (timeout, provider error, exception). Required and explicit so a record is interpretable without knowing the protocol version. EU AI Act Art. 12(2)(a): recording events relevant to identifying situations in which the system may present a risk includes capturing malfunctions and failed steps, not only successful ones. On 'success' the output_hash field is present and the error field is absent; on 'error' output_hash is absent and error is present (value-comparison rule enforced at the validation layer, not in JSON Schema)."
+    },
+    "output_hash": {
+      "$ref": "#/$defs/sha256_hex",
+      "description": "SHA-256 hash of canonical model output. Present only when status is 'success' (a failed step has no output); absent otherwise. EU AI Act Art. 12(2)(c): supports operational monitoring by enabling integrity verification of agent output."
+    },
+    "error": {
+      "$ref": "#/$defs/error_detail",
+      "description": "Structured failure detail. Present only when status is 'error'. EU AI Act Art. 12(2)(a): describes the malfunction that occurred."
+    },
+    "reference_data_id": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "description": "Identifier of any reference dataset/database consulted for this step (e.g. RAG corpus version). EU AI Act Art. 12(3)(b) - record the reference database consulted (biometric minimum, applied universally where relevant). Null when no external reference data is consulted."
+    },
+    "parent_record_id": {
+      "oneOf": [
+        { "$ref": "#/$defs/uuid" },
+        { "type": "null" }
+      ],
+      "description": "record_id of the immediately preceding record in the pipeline (inter-record linkage). Null for the first record. Schema metadata supporting the ordered record chain referenced by Art. 12(2) traceability."
+    },
+    "runtime_metadata": {
+      "$ref": "#/$defs/runtime_metadata",
+      "description": "Optional non-hashed forensic side channel; see the $defs/runtime_metadata definition. Not part of input_hash / output_hash, so those stay replay-stable, but covered by the Pipeline Bundle bundle_hash seal. No direct Act mapping; supports forensic correlation of a record with provider and framework logs."
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "RFC 4122 UUID string in lowercase hex (canonical form for the protocol)."
+    },
+    "sha256_hex": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 digest as 64 lowercase hex characters."
+    },
+    "error_detail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Class name of the error (e.g. 'TimeoutError', 'RateLimitError'). A low-PII identifier suitable for an audit trail."
+        },
+        "message_hash": {
+          "oneOf": [
+            { "$ref": "#/$defs/sha256_hex" },
+            { "type": "null" }
+          ],
+          "description": "SHA-256 hash of the canonical error message. Mirrors the input_hash/output_hash privacy stance (GDPR data minimisation); null when no message detail is available."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["provider", "tool", "network", "middleware", "unknown"],
+          "description": "Component whose invocation raised the error (the failure boundary, not a deep root-cause classification). The reference LangChain adapter emits 'provider' (LLM call) and 'tool' (tool call); 'network', 'middleware', and 'unknown' are reserved for other adapters or deployments."
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "Whether the failure is considered transient and safe to retry, when the deployment can determine this."
+        }
+      },
+      "description": "Structured failure detail attached to a record whose status is 'error'."
+    },
+    "runtime_metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional forensic side channel carrying the runtime identifiers that the semantic projection removes from input_hash / output_hash. It is deliberately excluded from those content commitments so they stay replay-stable across identical runs, but it is covered by the Pipeline Bundle bundle_hash seal, so its values remain tamper-evident. Its purpose is to let an investigator cross-reference a record with the LLM provider's request log or the agent framework's execution trace. additionalProperties is left open because the identifiers available are adapter- and framework-specific; the properties below are the keys the reference LangChain adapter populates.",
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the framework execution (the LangChain callback run id) that produced this record. Correlates the record with the agent framework's own execution trace."
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Runtime identifier the provider stamped on the response message (e.g. an AIMessage id). Correlates the record with the provider's request log. Present when the response carried an id; the semantic projection keeps this identifier out of output_hash."
+        },
+        "tool_call_ids": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 },
+          "description": "Maps each canonical tool-call label ('0', '1', '2', ...) that the projection writes into output_hash to the real runtime tool_call_id it replaced. Lets a forensic investigator resolve a hashed canonical label back to the provider-assigned tool_call_id."
+        }
+      }
+    },
+    "iso8601_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 / RFC 3339 timestamp with timezone."
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "Semantic version per semver.org."
+    }
+  }
+}

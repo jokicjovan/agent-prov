@@ -1,4 +1,4 @@
-"""Tests for the single validation surface (middleware.validation).
+"""Tests for the single validation surface (agent_prov.validation).
 
 Covers validate_record (structural + conditional, per record type) and
 validate_bundle (bundle structure + per-record conditionals), plus the
@@ -42,6 +42,7 @@ def make_agent_step(**overrides: Any) -> dict:
         "timestamp_end": TS_END,
         "input_hash": HASH_A,
         "output_hash": HASH_B,
+        "status": "success",
         "reference_data_id": None,
         "parent_record_id": None,
     }
@@ -78,6 +79,7 @@ def make_bundle(records: list[dict]) -> dict:
         "session_id": UUID_SESSION,
         "created_at": TS_END,
         "disclosure_presented": True,
+        "outcome": "completed",
         "records": records,
         "bundle_hash": "",
     }
@@ -106,6 +108,47 @@ def test_validate_record_rejects_conditional_error():
         validate_record(make_agent_step(timestamp_end="2026-05-09T09:00:00Z"))
     with pytest.raises(ProtocolValidationError):
         validate_record(make_hitl("rejected", output_after_hash=HASH_B))
+
+
+def make_agent_step_error(**overrides: Any) -> dict:
+    """An errored agent step: status 'error', no output_hash, structured error."""
+    record = make_agent_step()
+    record.pop("output_hash", None)
+    record["status"] = "error"
+    record["error"] = {"type": "TimeoutError", "message_hash": HASH_A, "source": "provider"}
+    record.update(overrides)
+    return record
+
+
+def test_validate_record_accepts_error_status_with_error_object():
+    validate_record(make_agent_step_error())
+
+
+def test_validate_record_rejects_error_status_with_output_hash_present():
+    bad = make_agent_step_error()
+    bad["output_hash"] = HASH_B
+    with pytest.raises(ProtocolValidationError):
+        validate_record(bad)
+
+
+def test_validate_record_rejects_error_status_without_error_object():
+    bad = make_agent_step_error()
+    del bad["error"]
+    with pytest.raises(ProtocolValidationError):
+        validate_record(bad)
+
+
+def test_validate_record_rejects_success_status_with_error_object():
+    bad = make_agent_step(error={"type": "TimeoutError"})
+    with pytest.raises(ProtocolValidationError):
+        validate_record(bad)
+
+
+def test_validate_record_rejects_success_status_without_output_hash():
+    bad = make_agent_step()
+    del bad["output_hash"]
+    with pytest.raises(ProtocolValidationError):
+        validate_record(bad)
 
 
 def test_validate_record_rejects_unknown_record_type():

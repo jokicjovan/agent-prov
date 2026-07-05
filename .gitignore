@@ -315,6 +315,3 @@ CLAUDE.md
 # Cursor
 .cursor/
 .cursorrules
-
-# Node tooling (ajv-cli for schema validation)
-node_modules/

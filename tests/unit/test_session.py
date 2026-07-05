@@ -1,6 +1,7 @@
-"""Tests for PipelineSession — ID generation, record accumulation, parent-chain wiring.
+"""Tests for PipelineSession - ID generation, record accumulation, parent-chain
+wiring, and the framework-neutral record factory.
 
-Sixteen test cases covering:
+Test cases covering:
   1-2  UUID generation for pipeline_id and session_id.
   3    Custom pipeline_id is used verbatim; session_id is still fresh.
   4    Two instances share pipeline_id but get distinct session_ids.
@@ -10,11 +11,13 @@ Sixteen test cases covering:
   10   Records accumulate in insertion order.
   11   last_record_id always tracks the most recently added record.
   12   __len__ mirrors len(session.records).
-  13   SessionProtocol interface — required attributes are all present.
+  13   SessionProtocol interface - required attributes are all present.
   14   Integration: ProvenanceMiddleware + PipelineSession round-trip emits
        a valid, parent-chained record sequence.
   15   Construction rejects a pipeline_id that is not a lowercase UUID.
   16   Construction rejects a protocol_version that is not valid semver.
+  17-24 Record factory: add_agent_step / add_tool_invocation (and _error
+       variants) assemble, hash, bind status, parent-chain, and validate.
 """
 
 from __future__ import annotations
@@ -25,8 +28,10 @@ from uuid import uuid4
 
 import pytest
 
-from agent_prov.core import ProvenanceMiddleware
+from agent_prov._hashing import hash_content
+from agent_prov.adapters.langchain import ProvenanceMiddleware
 from agent_prov.session import PipelineSession, _DEFAULT_PROTOCOL_VERSION
+from agent_prov.validation import validate_record
 
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
@@ -35,7 +40,7 @@ FIXED_PIPELINE_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
 
 # ---------------------------------------------------------------------------
-# Tests 1-2 — UUID generation
+# Tests 1-2 - UUID generation
 # ---------------------------------------------------------------------------
 
 
@@ -50,7 +55,7 @@ def test_02_default_session_id_is_a_valid_lowercase_uuid():
 
 
 # ---------------------------------------------------------------------------
-# Tests 3-4 — custom pipeline_id / session uniqueness
+# Tests 3-4 - custom pipeline_id / session uniqueness
 # ---------------------------------------------------------------------------
 
 
@@ -68,11 +73,11 @@ def test_04_two_instances_with_same_pipeline_id_get_distinct_session_ids():
 
 
 # ---------------------------------------------------------------------------
-# Tests 5-6 — protocol version
+# Tests 5-6 - protocol version
 # ---------------------------------------------------------------------------
 
 
-def test_05_default_protocol_version_is_0_1_0():
+def test_05_default_protocol_version_matches_module_constant():
     session = PipelineSession()
     assert session.protocol_version == _DEFAULT_PROTOCOL_VERSION
 
@@ -83,7 +88,7 @@ def test_06_custom_protocol_version_is_respected():
 
 
 # ---------------------------------------------------------------------------
-# Test 7 — initial state
+# Test 7 - initial state
 # ---------------------------------------------------------------------------
 
 
@@ -94,7 +99,7 @@ def test_07_last_record_id_is_none_before_any_record_is_added():
 
 
 # ---------------------------------------------------------------------------
-# Tests 8-9 — add_record basic behaviour
+# Tests 8-9 - add_record basic behaviour
 # ---------------------------------------------------------------------------
 
 
@@ -118,7 +123,7 @@ def test_09_add_record_updates_last_record_id_to_the_new_record_id():
 
 
 # ---------------------------------------------------------------------------
-# Test 10 — insertion order
+# Test 10 - insertion order
 # ---------------------------------------------------------------------------
 
 
@@ -135,7 +140,7 @@ def test_10_records_accumulate_in_insertion_order():
 
 
 # ---------------------------------------------------------------------------
-# Test 11 — last_record_id always points to most recent
+# Test 11 - last_record_id always points to most recent
 # ---------------------------------------------------------------------------
 
 
@@ -148,7 +153,7 @@ def test_11_last_record_id_always_tracks_the_most_recent_record():
 
 
 # ---------------------------------------------------------------------------
-# Test 12 — __len__
+# Test 12 - __len__
 # ---------------------------------------------------------------------------
 
 
@@ -162,12 +167,12 @@ def test_12_len_mirrors_records_list_length():
 
 
 # ---------------------------------------------------------------------------
-# Test 13 — SessionProtocol interface
+# Test 13 - SessionProtocol interface
 # ---------------------------------------------------------------------------
 
 
 def test_13_session_satisfies_session_protocol_interface():
-    from agent_prov._frames import SessionProtocol
+    from agent_prov.session import SessionProtocol
 
     session = PipelineSession()
     # Structural conformance to the interface the middleware depends on.
@@ -180,7 +185,7 @@ def test_13_session_satisfies_session_protocol_interface():
 
 
 # ---------------------------------------------------------------------------
-# Test 14 — integration with ProvenanceMiddleware
+# Test 14 - integration with ProvenanceMiddleware
 # ---------------------------------------------------------------------------
 
 
@@ -222,7 +227,7 @@ def test_14_integration_middleware_emits_records_into_session_with_parent_chaini
     assert SHA256_RE.match(first_record["output_hash"])
     assert first_record["parent_record_id"] is None  # first record has no parent
 
-    # Second LLM call — parent_record_id must point to the first record
+    # Second LLM call - parent_record_id must point to the first record
     run_b = uuid4()
     mw.on_chat_model_start(
         serialized={"name": "ChatOpenAI", "kwargs": {"model": "gpt-4o"}},
@@ -245,15 +250,15 @@ def test_14_integration_middleware_emits_records_into_session_with_parent_chaini
 
 
 # ---------------------------------------------------------------------------
-# Tests 15-16 — input validation at construction
+# Tests 15-16 - input validation at construction
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
     "bad_pipeline_id",
     [
-        "research-pipeline-v1",                          # arbitrary slug — the documented footgun
-        "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",          # uppercase UUID — protocol mandates lowercase
+        "research-pipeline-v1",                          # arbitrary slug - the documented footgun
+        "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",          # uppercase UUID - protocol mandates lowercase
         "aaaaaaaa-aaaa-aaaa-aaaa",                       # truncated
         "",                                              # empty
     ],
@@ -277,3 +282,155 @@ def test_15_construction_rejects_non_uuid_pipeline_id(bad_pipeline_id: str):
 def test_16_construction_rejects_non_semver_protocol_version(bad_version: str):
     with pytest.raises(ValueError, match="protocol_version"):
         PipelineSession(protocol_version=bad_version)
+
+
+# ---------------------------------------------------------------------------
+# Tests 17-24 - framework-neutral record factory (add_agent_step /
+# add_tool_invocation and their _error variants). These exercise the assembly,
+# hashing, status binding, and parent-chaining that adapters delegate to.
+# ---------------------------------------------------------------------------
+
+
+_STEP_KW = dict(
+    agent_id="researcher",
+    model_id="gpt-4o",
+    model_version="gpt-4o-2024-11-20",
+    timestamp_start="2026-01-01T00:00:00.000000Z",
+)
+_TOOL_KW = dict(
+    agent_id="researcher",
+    tool_name="web_search",
+    tool_version="1.0.0",
+    timestamp_start="2026-01-01T00:00:00.000000Z",
+)
+
+
+def test_17_add_agent_step_assembles_appends_and_validates():
+    session = PipelineSession()
+    record = session.add_agent_step(**_STEP_KW, input="prompt", output="answer")
+
+    assert session.records == [record]              # appended
+    assert session.last_record_id == record["record_id"]
+    assert record["record_type"] == "agent_step"
+    assert record["protocol_version"] == session.protocol_version
+    assert record["pipeline_id"] == session.pipeline_id
+    assert record["session_id"] == session.session_id
+    assert record["agent_id"] == "researcher"
+    assert record["model_id"] == "gpt-4o"
+    assert record["status"] == "success"
+    assert SHA256_RE.match(record["input_hash"])
+    assert SHA256_RE.match(record["output_hash"])
+    assert "error" not in record
+    assert record["timestamp_end"] >= record["timestamp_start"]
+    assert record["reference_data_id"] is None
+    validate_record(record)
+
+
+def test_18_add_agent_step_hashes_match_hash_content():
+    session = PipelineSession()
+    record = session.add_agent_step(**_STEP_KW, input="prompt", output="answer")
+    assert record["input_hash"] == hash_content("prompt")
+    assert record["output_hash"] == hash_content("answer")
+
+
+def test_19_add_agent_step_error_binds_status_and_error_object():
+    session = PipelineSession()
+    record = session.add_agent_step_error(
+        **_STEP_KW, input="prompt", error_type="TimeoutError",
+        error_message="provider timed out",
+    )
+    assert record["status"] == "error"
+    assert "output_hash" not in record
+    assert record["error"] == {
+        "type": "TimeoutError",
+        "source": "provider",
+        "message_hash": hash_content("provider timed out"),
+    }
+    validate_record(record)
+
+
+def test_20_add_agent_step_error_includes_retryable_only_when_set():
+    session = PipelineSession()
+    with_flag = session.add_agent_step_error(
+        **_STEP_KW, input="p", error_type="E", error_message="m", retryable=True
+    )
+    assert with_flag["error"]["retryable"] is True
+
+    without_flag = session.add_agent_step_error(
+        **_STEP_KW, input="p", error_type="E", error_message="m"
+    )
+    assert "retryable" not in without_flag["error"]
+
+
+def test_21_add_tool_invocation_assembles_appends_and_validates():
+    session = PipelineSession()
+    record = session.add_tool_invocation(
+        **_TOOL_KW, input='{"q": "x"}', output="results"
+    )
+    assert session.records == [record]
+    assert record["record_type"] == "tool_invocation"
+    assert record["tool_name"] == "web_search"
+    assert record["tool_version"] == "1.0.0"
+    assert record["status"] == "success"
+    assert record["input_hash"] == hash_content('{"q": "x"}')
+    assert record["output_hash"] == hash_content("results")
+    validate_record(record)
+
+
+def test_22_add_tool_invocation_error_sources_from_tool_boundary():
+    session = PipelineSession()
+    record = session.add_tool_invocation_error(
+        **_TOOL_KW, input='{"q": "x"}', error_type="ConnectionError",
+        error_message="refused",
+    )
+    assert record["status"] == "error"
+    assert "output_hash" not in record
+    assert record["error"]["source"] == "tool"
+    assert record["error"]["type"] == "ConnectionError"
+    validate_record(record)
+
+
+def test_23_factory_chains_parent_record_id_across_record_types():
+    session = PipelineSession()
+    step = session.add_agent_step(**_STEP_KW, input="p", output="a")
+    assert step["parent_record_id"] is None
+
+    tool = session.add_tool_invocation(**_TOOL_KW, input="i", output="o")
+    assert tool["parent_record_id"] == step["record_id"]
+
+    failed = session.add_agent_step_error(
+        **_STEP_KW, input="p", error_type="E", error_message="m"
+    )
+    assert failed["parent_record_id"] == tool["record_id"]
+
+
+def test_24_factory_passes_reference_data_id_through():
+    session = PipelineSession()
+    record = session.add_agent_step(
+        **_STEP_KW, input="p", output="a", reference_data_id="corpus-v3"
+    )
+    assert record["reference_data_id"] == "corpus-v3"
+    validate_record(record)
+
+
+def test_25_factory_attaches_runtime_metadata_when_supplied():
+    session = PipelineSession()
+    meta = {"run_id": "run-123", "message_id": "msg-9"}
+    record = session.add_agent_step(
+        **_STEP_KW, input="p", output="a", runtime_metadata=meta
+    )
+    assert record["runtime_metadata"] == meta
+    # runtime_metadata is a side field: it does not perturb the content hash
+    assert record["input_hash"] == hash_content("p")
+    assert record["output_hash"] == hash_content("a")
+    validate_record(record)
+
+
+def test_26_factory_omits_runtime_metadata_when_absent_or_empty():
+    session = PipelineSession()
+    default = session.add_agent_step(**_STEP_KW, input="p", output="a")
+    empty = session.add_tool_invocation(
+        **_TOOL_KW, input="i", output="o", runtime_metadata={}
+    )
+    assert "runtime_metadata" not in default
+    assert "runtime_metadata" not in empty

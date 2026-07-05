@@ -21,8 +21,9 @@ bundle and the adversaries it does and does not defend against (§6.2); the
 limitations carried forward from the implementation and evaluation (§6.3); the
 meaning of the out-of-scope verdicts, which mark a layer boundary rather than a
 hole (§6.4); and the directions that follow — multi-framework adapters,
-canonical identifier rewriting, cryptographic signing, deployment-profile
-schemas, and a machine-readable declaration of behavioural constraints (§6.5).
+content-addressed recovery of multi-agent topology, cryptographic signing,
+deployment-profile schemas, and a machine-readable declaration of behavioural
+constraints (§6.5).
 The intent throughout is to state the boundaries precisely enough that a reader
 can tell what the protocol guarantees from what a deployment must add.
 
@@ -67,20 +68,29 @@ signature: anyone who can alter a bundle can recompute a fresh, internally
 consistent `bundle_hash` over the altered contents. The seal therefore protects
 a bundle in transit to an auditor who already holds the expected digest through
 a trusted channel, and it protects against silent corruption — but it does not
-on its own bind the bundle to the party that produced it, and it does not stop a
+*on its own* bind the bundle to the party that produced it, and it does not stop a
 malicious producer from generating a wholly fabricated-but-consistent bundle
 after the fact. Closing this gap requires a digital signature over `bundle_hash`
-by a key the deployer controls, and ideally a trusted timestamp; both are noted
-in §6.5.4. The current protocol provides the canonical form that such a
-signature would sign, which is the prerequisite, but it does not specify the
-signature itself.
+by a key the deployer controls, and ideally a trusted timestamp. The
+implementation now ships the first of these as an optional detached signature
+layer (`agent_prov.signing`, §6.5.4): a deployment that opts in binds the seal to
+a signing key, so the unkeyed-recompute attack above no longer produces a valid
+bundle. The bare protocol core remains unsigned by design — signing is an opt-in
+layer over the canonical seal, not a property of every bundle — and trusted
+timestamping remains future work.
 
 **The chain proves order, not causation, and not completeness.** As recorded in
 §4.13 and §3.7.3, `parent_record_id` is a chronological cursor — it links each
 record to its immediate predecessor in emission order, not to the record that
 *caused* it. A verifier can reconstruct the sequence of observed events but
 cannot, from the chain alone, prove that a given tool call was issued *by* a
-given agent step. Separately, the seal proves nothing about records that were
+given agent step. What the verifier now *does* guard against is the chain's most
+misleading failure — silently presenting a parallel region as a straight line:
+it derives concurrency from the execution intervals every record already carries
+and warns wherever two records overlap in time, so the chronological ordering is
+flagged as an approximation rather than trusted as sequence (§6.3). This is
+detection, not reconstruction; recovering the actual data-flow graph remains the
+content-addressed direction of §6.5.3. Separately, the seal proves nothing about records that were
 never emitted: an instrumented pipeline that is selectively un-instrumented for
 one sensitive node produces a bundle that is internally consistent and complete
 *as far as it goes*, with no intrinsic evidence that a step is missing. Detecting
@@ -121,45 +131,67 @@ its boundaries. The threats to the *evaluation numbers* specifically are in §5.
 and are not repeated; this section concerns limitations of the protocol and
 implementation themselves.
 
-**Single framework.** The reference implementation instruments LangGraph only
-(§4.2). The record *schemas* are framework-agnostic — they describe agent steps,
-tool calls, and human decisions in terms no LangGraph concept leaks into — but
-the *capture* layer is bound to LangChain's callback system. Nothing in the
-evaluation demonstrates that the same passive-capture property holds in a
-framework whose execution model exposes different extension points. Adapters for
-other frameworks (§6.5.1) are the direct response, and the clean separation
-between the framework-specific middleware and the framework-agnostic session and
-bundle layers (§4.3) is what is intended to make them tractable.
+**Single packaged framework adapter.** The reference implementation ships one
+packaged adapter, for LangGraph (§4.2). The record *schemas* are
+framework-agnostic — they describe agent steps, tool calls, and human decisions
+in terms no LangGraph concept leaks into — and the capture *seam* is the
+framework-neutral record factory (§4.5), not the callback system: the
+framework-free adapter of §4.5.5 records a complete bundle with no LangChain
+present, so the seam itself is demonstrably not bound to one framework. What
+remains LangGraph-specific is the *passive* capture property — recording without
+touching the pipeline's own code. Nothing in the evaluation demonstrates that
+this passive property holds in a framework whose execution model exposes
+different (or no) extension points; the framework-free demo in fact instruments
+more invasively, by inline calls. Packaged adapters for other frameworks (§6.5.1)
+are the direct response, and the clean separation between the framework-specific
+adapter and the framework-agnostic factory, session, and bundle layers (§4.3) is
+what makes them tractable.
 
 **Chronological parent chain.** As discussed in §4.13 and §6.2.2,
 `parent_record_id` records order rather than causation. For the linear demo
 pipelines the distinction is invisible — emission order *is* the causal order —
 but a pipeline with parallel branches or out-of-order tool responses would
-produce a chain that under-describes its true structure. The defined resolution
-is an optional `caused_by_record_id` field (§3.7.3), deferred because the demos
-do not exercise the case it solves.
+produce a chain that under-describes its true structure. This limitation is now
+*partially* mitigated: the independent verifier derives concurrency from the
+`timestamp_start`/`timestamp_end` interval on every record — grouping any set of
+overlapping intervals into a concurrent cluster and emitting a non-fatal warning
+— so the false sequential edge is *detected and reported* rather than silently
+asserted. Crucially this stays framework-neutral, reading only observables the
+records already carry rather than any engine's execution model, and it is a
+warning rather than an error because a parallel pipeline is a valid, untampered
+bundle the chronological cursor merely under-describes. What remains is
+*reconstruction* rather than detection: the defined resolutions are an optional
+`caused_by_record_id` field (§3.7.3), deferred because the demos do not exercise
+the case it solves, and a fuller treatment that recovers the causal topology from
+content and timestamps — developed in §6.5.3.
 
 **Semantic projection of identifiers.** `input_hash` and `output_hash` are
-computed over a projection of the LangChain message list that strips runtime
-identifiers — `AIMessage.id`, `tool_call_id` — so that identical content digests
-identically across replays (§4.5.1). This is necessary for the digests to be
-useful as evidence, but it has a cost: the projected hash cannot be
-cross-referenced against the LLM provider's request log via the runtime id, so a
-forensic correlation between a record and the provider's own trace is not
-possible from the bundle alone. Two refinements address this from opposite
-directions — a non-hashed `runtime_metadata` side field that preserves the id
-without polluting the digest, and canonical identifier rewriting that keeps the
-correlation *inside* the hashed structure (§6.5.2).
+computed over a projection of the LangChain message list rather than the raw
+messages, because LangChain stamps a fresh runtime identifier on every generated
+message and tool call and hashing those would re-randomise the digest on every
+replay (§4.5.1). The projection does not simply discard those identifiers: the
+ones that carry *correlation* — a tool call's id and the `tool_call_id` on the
+`ToolMessage` that answers it — are rewritten to deterministic per-scope labels
+(`0, 1, 2, …`), so the tool-call ↔ tool-result edge is preserved *inside* the
+hashed structure and survives parallel or out-of-order tool calls (§4.5.6). The
+real runtime identifiers are not lost either: they are preserved in a non-hashed
+`runtime_metadata` side field, so a record can still be cross-referenced against
+the provider's request log or the framework's execution trace. One narrow
+residual remains: `runtime_metadata` sits outside the content hashes — it is
+covered by the `bundle_hash` seal, so it is tamper-evident, but it is not part of
+the replay-stable content commitment — and the free-standing response id is
+preserved only there rather than folded into the digest, a deliberate choice
+since it correlates with nothing inside a step and is not reliably present across
+runs (§6.5.2).
 
-**Two-graph HITL composition.** The document-review demonstration sequences its
-two automated nodes as two separate single-node graphs with the `HumanReview`
-block in plain Python between them, rather than as one graph with a node-level
-interrupt at the review point (§4.11.2). This was chosen to keep the human
-decision a visible, testable step in the runner script, but it means the demo's
-runner — not the graph — sequences the steps. A graph-interrupt-based capture
-variant (§6.5.6) would let the human decision point live inside the graph
-definition, which is the more idiomatic LangGraph expression and the more
-faithful model of a real interrupt-and-resume oversight flow.
+**Runner-emitted HITL record.** The document-review demonstration expresses its
+human review points as node-level `interrupt()` gates inside a single multi-node
+graph (§4.11.2), which is the idiomatic LangGraph form. One seam remains:
+because the human decision occurs out of process while the graph is paused, the
+`HumanReview` record is emitted by the runner on resume rather than from inside
+the gate node itself. The record produced is identical either way; folding the
+emission into the resume path, so the gate node and its record are one unit, is
+the refinement noted in §6.5.6.
 
 **Article 14(5) is accommodated, not enforced.** The two-person rule for
 biometric identification systems is *accommodated* by `reviewer_id` being an
@@ -169,12 +201,31 @@ Enforcing it requires a deployment-profile schema variant that tightens the
 constraint for the biometric population without forcing it on every pipeline
 (§6.5.5).
 
+**The durability log is operational, not evidential.** The optional event log
+(§4.7.1) closes the window in which an unsealed run lives only in process memory,
+but it is deliberately a recovery aid rather than a second evidentiary artefact:
+it is plain JSON, carries no integrity hash of its own, and is trusted only to
+the extent the host's filesystem is. Its guarantee is "a record `add_record`
+accepted is on disk", not "this log was not tampered with" — the tamper-evidence
+and tamper-proof properties belong to the sealed bundle and its signature
+(§6.2), which a recovered run is put through unchanged. Three operational
+boundaries remain a deployment's responsibility: the log grows unbounded within a
+run (no segment rotation or compaction), a single session writes a single log
+from scratch (resuming an existing log across a process restart is not modelled),
+and the log is not itself signed. None of these affect the evidentiary force of
+the bundle a recovered session produces; they are the difference between a
+proof-of-concept durability layer and a production log subsystem.
+
 ## 6.4 The boundaries the out-of-scope obligations mark
 
-Five clauses were marked *out of scope* in the completeness audit (§5.2.3): risk
-classification (12(2)(a)), automation-bias awareness (14(4)(b)), and the
-artifact-level disclosure and watermarking duties of Article 50(2)–(4). It would
-have been easy to add a token field for each and claim a higher coverage number.
+Four clauses were marked *out of scope* in the completeness audit (§5.2.3):
+automation-bias awareness (14(4)(b)) and the artifact-level disclosure and
+watermarking duties of Article 50(2)–(4). A fifth, risk classification (12(2)(a)),
+was reclassified from out-of-scope to *partial* once the protocol began recording
+the malfunction substrate (per-step `status`/`error` and the bundle-level
+`outcome`); the residue that remains application-logic — deciding which recorded
+events constitute reportable risk — is discussed in §6.4.1. It would
+have been easy to add a token field for each remaining gap and claim a higher coverage number.
 The audit deliberately does not, because each of these obligations lives at a
 layer the record stream does not own, and a field that *records a claim* without
 *carrying the evidence* is worse than an honest gap — it invites an auditor to
@@ -184,17 +235,24 @@ look for the rest of its compliance story.
 
 ### 6.4.1 Application-logic obligations
 
-Risk classification (12(2)(a) — identifying situations that may result in risk)
-and automation-bias awareness (14(4)(b)) are properties of the *application's
-design and the operator's training*, not of any pipeline event. Whether a given
-situation constitutes an in-scope risk is a judgement encoded in the
-application's control flow and risk register; whether an overseer is aware of
-automation bias is a property of how the oversight interface is designed and how
-the overseer was trained. Neither is observable from a record stream, and a
-provenance field asserting "this risk was considered" or "the reviewer was aware
-of automation bias" would be an unfalsifiable label. These belong to the
-application's risk-management documentation under Article 9 — a different
-obligation than the Article 12 record-keeping duty this protocol targets.
+Article 12(2)(a) splits cleanly along this boundary. The protocol now records the
+*events* relevant to risk — a step or tool that malfunctioned (`status: "error"`
+with a structured `error`) and a run that ended in `error` or was `aborted`
+(`outcome`) — which is why the audit moves it to *partial*. What stays out of
+scope is the *classification* step: whether a given recorded event "may result in
+risk" within the meaning of Article 79(1) is a judgement encoded in the
+application's control flow and risk register, not a property of the event itself.
+A provenance field asserting "this event was assessed as risk" would be an
+unfalsifiable label; the protocol instead surfaces the malfunction faithfully and
+leaves the assessment to the application's risk-management documentation under
+Article 9 — a different obligation than the Article 12 record-keeping duty this
+protocol targets.
+
+Automation-bias awareness (14(4)(b)) remains fully out of scope: whether an
+overseer is aware of automation bias is a property of how the oversight interface
+is designed and how the overseer was trained, not observable from any record
+stream, and a field asserting "the reviewer was aware of automation bias" would
+be the kind of unfalsifiable label the audit avoids.
 
 ### 6.4.2 Artifact- and interface-level obligations
 
@@ -228,9 +286,9 @@ different requirement. The operational pattern the protocol assumes is
 selective: the tamper-evident bundle goes to the auditor as the chain of events,
 the content lives in a store keyed by hash, and on challenge the deployment
 reveals the specific content whose digest the auditor recomputes. The PoC does
-not *demonstrate* a selective-disclosure deployment — both demos hold content
+not *demonstrate* a selective-disclosure deployment — the demos hold content
 only transiently in the running process — so this remains a specified boundary
-rather than an exercised one, and §6.5.7 notes the content-store integration
+rather than an exercised one, and §6.5.8 notes the content-store integration
 that would close it.
 
 ## 6.5 Future work
@@ -241,57 +299,160 @@ open-ended research direction.
 
 ### 6.5.1 Adapters for further agent frameworks
 
-The most direct extension is capture adapters for AutoGen and CrewAI, the two
-frameworks PROV-AGENT supports that this PoC does not (§5.5). Because the
-session, bundle, sealing, and reporting layers are framework-agnostic and depend
-on the capture layer only through the `add_record` surface (the `SessionProtocol`
-seam, §4.4.3), a new adapter is in principle a new middleware that maps each
-framework's lifecycle events to `emit_agent_step` and `emit_tool_invocation`
-calls — the rest of the stack is reused unchanged. The open question each adapter
-answers is whether the target framework exposes a *passive* extension point
-comparable to LangChain's callbacks, or whether instrumentation there is
-necessarily more invasive; the answer determines whether the non-invasiveness
-result of §5.4 generalises or is specific to LangGraph.
+The most direct extension is *packaged* capture adapters for AutoGen and CrewAI,
+the two frameworks PROV-AGENT supports that this PoC does not (§5.5). The
+groundwork is in place and already partially demonstrated. The session, bundle,
+sealing, and reporting layers are framework-agnostic and reach the capture layer
+only through the record factory on `PipelineSession` — `add_agent_step` /
+`add_tool_invocation` and their `_error` variants, the `SessionProtocol` seam of
+§4.4.3. A new adapter extracts its framework's primitives and calls that factory;
+record shape, canonical hashing, and the parent chain are reused unchanged.
 
-### 6.5.2 Canonical identifier rewriting
+Crucially, an adapter need not be a callback middleware. The LangChain adapter is
+one because LangChain exposes a passive callback system worth exploiting; where a
+framework offers no such hook, instrumentation is inline factory calls at each
+model and tool call site. This is not hypothetical: the framework-free demo of
+§4.5.5 (`demos/openai_loop/`) is exactly such an adapter, and it seals a valid,
+recomputable bundle on the bare core with no framework present. What a packaged
+AutoGen or CrewAI adapter adds over that demo is reusable machinery for *its*
+framework, not a new path through the protocol.
 
-The preferred resolution to the semantic-projection trade-off (§6.3) is to stop
-*stripping* runtime identifiers and instead *canonicalise* them. Walking the
-message list and rewriting every `AIMessage.id` and `tool_call_id` to a
-deterministic sequence — `0, 1, 2, …` in order of first appearance, with the
-same source id always mapping to the same number — keeps the digest replay-stable
-exactly as stripping does, but it preserves the tool-call ↔ tool-result
-correlation graph *inside* the hashed structure rather than relying on the
-implicit list order. This is robust against the cases the current approach
-silently mishandles: parallel tool calls within one step, and out-of-order
-responses, where implicit-order linkage breaks. It was not adopted in the PoC
-because the demos use single-tool-per-step flows where implicit order is
-unambiguous, because adopting it would regenerate every committed bundle, and
-because it changes no thesis claim — it is a production-grade refinement of an
-already-principled approach. A complementary, lighter option is a non-hashed
-`runtime_metadata` side field that simply carries the original ids alongside the
-record for forensic cross-referencing without entering the digest. The PoC
-established the principle; canonical id rewriting is the next step (a v0.2
-schema revision).
+The open question each adapter answers is therefore not whether the seam
+generalises — the framework-free demo shows it does — but whether the target
+framework exposes a *passive* extension point comparable to LangChain's callbacks.
+Where it does, the non-invasiveness result of §5.4 carries over; where it does
+not, capture is more invasive (code at each call site, as in the framework-free
+demo) even though the sealed bundle is identical. Non-invasiveness, in other
+words, is the property that is framework-specific; the factory seam is not.
 
-### 6.5.3 Cryptographic signing and trusted timestamping
+### 6.5.2 Extending identifier canonicalisation
 
-The authenticity gap identified in §6.2.2 is closed by signing. A digital
-signature over `bundle_hash` by a key the deployer controls binds the bundle to
-its producer and converts tamper-*evidence* into non-repudiable attestation: an
-auditor verifies not only that the bundle is internally consistent but that it
-was sealed by the claimed party and not fabricated by a third one. Pairing the
-signature with a timestamp from a trusted timestamping authority (RFC 3161)
-additionally binds the seal to a point in time, which matters for an oversight
-record whose evidentiary value depends on *when* the human decision was attested.
-The protocol already produces the canonical, stable byte form that such a
-signature must sign — this is why RFC 8785 canonicalisation was chosen over an
-ad-hoc serialisation — so the extension is additive: a signature envelope around
-the existing seal, not a change to the records. The harder, deployment-specific
-question is key management and the chain of trust for the signing key, which is
-why the PoC stops at the integrity layer.
+The semantic-projection trade-off of §6.3 was resolved during the work of this
+thesis, and the resolution is now part of the reference implementation (§4.5.6)
+rather than a future direction. Instead of stripping runtime identifiers, the
+projection canonicalises the *correlating* ones — each tool call's id and the
+answering `ToolMessage`'s `tool_call_id` — rewriting them to a deterministic
+`0, 1, 2, …` sequence in order of first appearance within a projection scope,
+with the same source id always mapping to the same label. This keeps the digest
+replay-stable exactly as stripping did, but preserves the tool-call ↔
+tool-result correlation graph *inside* the hashed structure rather than relying
+on implicit list order, so it is robust against the cases stripping silently
+mishandled: parallel tool calls within one step, and out-of-order responses. The
+complementary `runtime_metadata` side field (§4.5.6) carries the original ids —
+the framework run id, the provider response id, and the label-to-real-id map for
+the tool calls — alongside the record, unhashed, for forensic cross-referencing.
+This closed a breaking change into the schema, taken as the `0.2.0 → 0.3.0`
+version bump.
 
-### 6.5.4 Deployment-profile schema variants
+Two narrower extensions remain open. First, the free-standing response id
+(`AIMessage.id`) is currently kept out of the digest and preserved only in
+`runtime_metadata`, because it correlates with nothing inside a step and is not
+reliably present across runs; folding a canonicalised form of it into the hash
+would close the last gap between the hashed structure and the raw message set, at
+the cost of that fragility. Second, `runtime_metadata` is covered by the bundle
+seal but is not itself independently attested or timestamped; a deployment that
+needs the forensic side channel to carry the same evidentiary weight as the
+content commitments would pair it with the signing and timestamping layer of
+§6.5.4.
+
+### 6.5.3 Content-addressed recovery of multi-agent topology
+
+The chronological parent chain (§6.3) under-describes any pipeline whose agents
+do not execute in a single line, and the obvious remedy — reading the true
+data-flow graph from the orchestrator — would re-couple the capture layer to one
+engine's execution model, surrendering the framework-neutral property §6.5.1
+works to preserve. LangGraph exposes that structure directly: its superstep
+boundaries and per-node channel writes, surfaced through the `updates` and
+`debug` stream modes, name exactly which node produced each piece of state and
+which downstream node consumed it, and an adapter built on them would
+reconstruct the exact directed acyclic graph of agent dependencies. But it would
+do so in terms of *supersteps* and *channels* — concepts that exist only inside
+LangGraph's Pregel execution model. AutoGen and CrewAI have neither, so a
+topology mechanism defined against those primitives would not transfer, and the
+protocol's claim to describe pipelines in framework-agnostic terms would hold for
+the records but not for the graph that links them.
+
+The reframe that resolves the tension is to derive the topology from observables
+the protocol *already records* and that every framework necessarily exposes,
+rather than from any engine's private notion of a graph. Two such observables
+suffice. First, the `timestamp_start`/`timestamp_end` pair on every record makes
+concurrency directly detectable: two records whose intervals overlap demonstrably
+ran in parallel, which is enough to *refuse* the false sequential edge the
+chronological cursor would otherwise assert — truthful under-description in place
+of a confident error. This first observable is no longer prospective: the
+independent verifier (§4.8.1) implements exactly this check, grouping
+overlapping-interval records into concurrent clusters and reporting each as a
+non-fatal warning, so the false sequential edge is already detected and surfaced
+to an auditor. What follows in this section is therefore the *reconstruction*
+half — turning that detection into an actual data-flow graph — which remains
+future work. Second, and more powerfully, the content commitments
+`input_hash` and `output_hash` make data-flow edges recoverable by content
+addressing: if the content one record produced is the content another consumed, a
+real dependency edge between them exists, derivable from content identity alone
+with no reference to how the orchestrator routed it. This is the principle by
+which content-addressed build systems and version-control graphs reconstruct
+dependency structure without any scheduler naming the edges, and it reuses the
+hashing machinery the protocol already depends on (§4.5). Engine-native
+introspection then changes role: instead of the *source* of the graph,
+LangGraph's channel writes become an optional *accelerator* that auto-populates
+the same produced/consumed artifact relation for the one framework that exposes
+it cheaply, while content matching remains the portable fallback for every
+framework that does not. The topology is defined by content, not by the engine;
+the adapter's only task is to populate the artifact relation by whatever means it
+has — content matching (universal), engine introspection (exact, framework-
+specific), or a thin application-level annotation in the spirit of the
+`HumanReview` block (§4.11), where the integrator names a consumed artifact in a
+line or two when automated matching cannot.
+
+The honest obstacle is that the present digests are computed over the whole
+projected message list for a step (§4.5.1), so an upstream `output_hash` will
+rarely equal a downstream `input_hash` verbatim once the producing content has
+been reformatted into a new prompt. Realising content-addressed topology
+therefore requires moving from whole-message digests to artifact-level ones —
+hashing the discrete pieces of content that flow between steps so a produced
+artifact can be matched *within* a later consumed set despite the surrounding
+prompt differing — together with light normalisation to survive templating, and
+the annotation escape hatch above for the cases where an agent transforms content
+beyond recognition rather than passing it through. The result is a directed
+acyclic provenance graph recovered from content and time rather than from a
+scheduler, which subsumes the optional `caused_by_record_id` field of §3.7.3 —
+the matched producer becomes the causal parent — and generalises beyond LangGraph
+to any pipeline that moves content between steps. It is noted here, rather than
+built, because it reaches past the linear demonstrations the evaluation exercises
+and is a research direction in its own right: framework-agnostic, content-
+addressed multi-agent provenance.
+
+### 6.5.4 Cryptographic signing and trusted timestamping
+
+The authenticity gap identified in §6.2.2 is closed by signing, and the
+implementation now provides it as an optional layer. A digital signature over
+`bundle_hash` by a key the deployer controls binds the bundle to its producer and
+converts tamper-*evidence* into non-repudiable attestation: an auditor verifies
+not only that the bundle is internally consistent but that it was sealed by the
+claimed party and not fabricated by a third one. The `agent_prov.signing` package
+(behind the `agent-prov[signing]` extra, so the protocol core stays crypto-free)
+implements this as a *detached* envelope rather than a field inside the bundle,
+keeping the record set byte-stable and independently hashable. Following
+established provenance-signing practice (in-toto / SLSA / DSSE / Sigstore), it
+uses an asymmetric scheme (Ed25519) so a verifier needs only the public key, and
+it signs a *bound* payload — `{payload_type, algorithm, signed_hash}`
+canonicalised through the same RFC 8785 path used for the seal — rather than the
+bare digest, so a signature cannot be lifted and replayed in another context.
+This is also why RFC 8785 canonicalisation was chosen over an ad-hoc
+serialisation: the signature is additive, an envelope around the existing seal,
+not a change to the records.
+
+Two things remain genuinely future work. First, *trusted timestamping*: pairing
+the signature with a timestamp from a timestamping authority (RFC 3161) binds the
+seal to a point in time, which matters for an oversight record whose evidentiary
+value depends on *when* the human decision was attested. Second, the
+*chain of trust* for the signing key: the PoC envelope self-describes its public
+key (trust on first use), which proves a bundle was signed by *some* key but not
+*whose* — production use needs a certificate chain or a transparency log
+(Sigstore/Rekor-style) to anchor key identity. The signing layer deliberately
+stops at the cryptographic primitive and names key management as the next step.
+
+### 6.5.5 Deployment-profile schema variants
 
 Article 14(5)'s two-person rule (§6.3) is one instance of a general need:
 obligations that apply to a *sub-population* of pipelines rather than all of
@@ -306,20 +467,47 @@ standard elsewhere. The validation surface (§4.12) already centralises
 constraint checking, so a profile is a parameterisation of an existing seam
 rather than a new mechanism.
 
-### 6.5.5 Graph-interrupt human-intervention capture
+### 6.5.6 Graph-interrupt human-intervention capture
 
-The two-graph composition workaround (§6.3, §4.11.2) points at a cleaner capture
-model: a LangGraph node-level interrupt at the review point, where the human
-decision lives inside the graph definition and the `HumanReview` record is
-emitted as the graph resumes. This would make the human decision point a
-first-class part of the pipeline structure rather than a step the runner script
-sequences externally, and it would model a real interrupt-and-resume oversight
-flow faithfully. It is a refinement of the capture mechanism, not of the record:
-the Human Intervention Record it produces is identical, which is why the PoC's
-simpler composition is sufficient to validate the protocol while leaving the
-idiomatic integration as future work.
+The document-review demonstration already expresses its human review points as
+node-level `interrupt()` gates inside a single multi-node graph (§4.11.2): the
+graph pauses at each gate and resumes around the `HumanReview` block, so the
+human decision point lives in the graph definition rather than being sequenced
+externally by the runner. What remains is the last seam: because the human
+decision occurs out of process while the graph is paused, the Human Intervention
+Record is still emitted by the runner on resume rather than from inside the gate
+node. Folding the emission into the resume path — so the gate node and its record
+are one unit — would make the human decision a fully first-class part of the
+pipeline structure and model the interrupt-and-resume oversight flow end to end.
+The record it produces is identical either way, which is why emitting it from the
+runner is sufficient to validate the protocol.
 
-### 6.5.6 Content-store integration and selective disclosure
+### 6.5.7 Recording oversight failures
+
+The Agent Step and Tool Invocation Records now record their failures: a call that
+raises is captured with `status: "error"` and a structured `error` object, so a
+malfunction in the automated layer is auditable (§3.3.2, Article 12(2)(a)). The
+Human Intervention Record has no equivalent. By construction it is emitted only
+when a reviewer commits a decision, and `action_type` is its outcome axis (§3.5.3);
+a *technical* failure of oversight — a reviewer who times out, is unavailable, or a
+review system that crashes before any decision is reached — currently raises in the
+host application and produces no record, leaving the failed oversight invisible in
+the bundle.
+
+This is the oversight-layer analogue of the gap the per-step `status` field closed,
+and "oversight was required but did not engage" is a first-class Article 14 signal.
+The reason it was not simply folded into the Human Intervention Record is that a
+failed review shares almost none of that record's shape — there is no committed
+`action_type`, no `output_after_hash`, and often no reviewer at all — so attaching a
+`status` field would make most of the core-novelty record conditionally absent and
+blur the before/after decision evidence that is its contribution. The cleaner
+direction is a distinct *oversight-failure* event (capturing the assigned reviewer
+or reviewer pool, the output awaiting review, the failure mode, and a timestamp),
+chained to the upstream record exactly as a Human Intervention Record is, so that a
+bundle can show "oversight was due here and did not happen" without overloading the
+record that models oversight that did.
+
+### 6.5.8 Content-store integration and selective disclosure
 
 The content-storage boundary (§6.4.3) is specified but not demonstrated. A
 natural next step is a reference content-store adapter — a hash-keyed store with
@@ -331,7 +519,7 @@ content-addressable property from a specified capability into a demonstrated one
 and would let the threat-model claims of §6.2 be evaluated against an actual
 retention-and-disclosure deployment rather than argued analytically.
 
-### 6.5.7 Behavioural constraint declaration
+### 6.5.9 Behavioural constraint declaration
 
 The most open-ended direction, and one deliberately kept out of this thesis's
 scope, is a formal, machine-readable declaration of what an agent is *not*
@@ -369,7 +557,7 @@ chain records order, not causation; the capture layer is proven for one
 framework; and the obligations that live in application logic, output artifacts,
 and user interfaces are ceded, explicitly, to the layers that own them. None of
 these is a flaw concealed by the evaluation — each is a named boundary with a
-defined next step, from signing and canonical identifier rewriting to
+defined next step, from signing and content-addressed topology recovery to
 deployment-profile schemas and, most openly, a verifiable language for the
 behaviour an agent must never exhibit. The protocol establishes the evidentiary
 substrate for regulated multi-agent provenance, including the human-oversight

@@ -5,9 +5,9 @@ Lives at ``tests/_helpers.py`` so test files under ``tests/unit/`` and
 ``tests/`` is on the pytest pythonpath (see ``pyproject.toml``).
 
 The loaded schemas and cross-$ref registry are sourced from
-``middleware.validation`` so there is a single place that loads and wires the
-protocol schemas. The conditional rules (action_type ↔ output_after_hash,
-timestamp ordering) also live there — tests call ``validate_record`` /
+``agent_prov.validation`` so there is a single place that loads and wires the
+protocol schemas. The conditional rules (action_type <-> output_after_hash,
+timestamp ordering) also live there - tests call ``validate_record`` /
 ``validate_bundle`` rather than re-implementing them here. What remains below is
 test ergonomics for *schema-only* structural checks, which the negative-path
 tests use to show that a record is structurally valid yet rejected by a
@@ -32,5 +32,5 @@ def validator(schema: dict) -> Draft202012Validator:
 
 
 def is_valid(schema: dict, instance: object) -> bool:
-    """Schema-only (structural) validity — does not run the conditional rules."""
+    """Schema-only (structural) validity - does not run the conditional rules."""
     return validator(schema).is_valid(instance)

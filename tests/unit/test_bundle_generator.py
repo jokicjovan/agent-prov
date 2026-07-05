@@ -1,4 +1,4 @@
-"""Tests for BundleGenerator — session serialization, hash sealing, file output.
+"""Tests for BundleGenerator - session serialization, hash sealing, file output.
 
 Fifteen test cases covering:
   1    generate() output validates against pipeline_bundle.schema.json.
@@ -61,6 +61,7 @@ def _agent_step(record_id: str, session: PipelineSession, **kw: Any) -> dict[str
         "timestamp_end": "2026-05-11T10:00:01Z",
         "input_hash": HASH_A,
         "output_hash": HASH_B,
+        "status": "success",
         "reference_data_id": None,
         "parent_record_id": None,
         **kw,
@@ -81,6 +82,7 @@ def _tool_invocation(record_id: str, session: PipelineSession, **kw: Any) -> dic
         "timestamp_end": "2026-05-11T10:00:02Z",
         "input_hash": HASH_A,
         "output_hash": HASH_B,
+        "status": "success",
         "reference_data_id": None,
         "parent_record_id": UUID_1,
         **kw,
@@ -94,7 +96,7 @@ def _session_with_one_step() -> PipelineSession:
 
 
 # ---------------------------------------------------------------------------
-# Tests 1-11 — generate()
+# Tests 1-11 - generate()
 # ---------------------------------------------------------------------------
 
 
@@ -166,7 +168,7 @@ def test_11_two_generate_calls_produce_distinct_bundle_ids():
 
 
 # ---------------------------------------------------------------------------
-# Test 12 — empty session guard
+# Test 12 - empty session guard
 # ---------------------------------------------------------------------------
 
 
@@ -176,7 +178,7 @@ def test_12_empty_session_raises_value_error():
 
 
 # ---------------------------------------------------------------------------
-# Tests 13-14 — to_file()
+# Tests 13-14 - to_file()
 # ---------------------------------------------------------------------------
 
 
@@ -197,7 +199,7 @@ def test_14_to_file_returns_the_same_bundle_written_to_disk(tmp_path: pathlib.Pa
 
 
 # ---------------------------------------------------------------------------
-# Test 15 — mixed record types
+# Test 15 - mixed record types
 # ---------------------------------------------------------------------------
 
 

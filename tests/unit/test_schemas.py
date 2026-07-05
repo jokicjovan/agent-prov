@@ -1,6 +1,6 @@
 """Schema validation and bundle-hash unit tests.
 
-Twelve test cases covering:
+Test cases covering:
   1-4  Happy-path validation for each of the four record schemas.
   5    Missing required field rejected (schema-level).
   6    additionalProperties: false rejects an unknown field (schema-level).
@@ -11,14 +11,20 @@ Twelve test cases covering:
   11   timestamp_end >= timestamp_start enforced (validate_record).
   12   canonical_json_sha256 + compute_bundle_hash properties:
         determinism, key-order independence, content sensitivity, bundle_hash exclusion.
+  13   Schemas load as package resources (wheel-install code path).
+  14   Each schema file is itself a well-formed draft 2020-12 schema.
+  15   Example documents validate (or are rejected) as expected.
 """
 
 from __future__ import annotations
 
 import copy
+import json
+import pathlib
 from typing import Any
 
 import pytest
+from jsonschema import Draft202012Validator
 
 from _helpers import (
     AGENT_STEP_SCHEMA,
@@ -65,6 +71,7 @@ def make_agent_step(**overrides: Any) -> dict:
         "timestamp_end": TS_END,
         "input_hash": HASH_A,
         "output_hash": HASH_B,
+        "status": "success",
         "reference_data_id": None,
         "parent_record_id": None,
     }
@@ -86,6 +93,7 @@ def make_tool_invocation(**overrides: Any) -> dict:
         "timestamp_end": TS_END,
         "input_hash": HASH_A,
         "output_hash": HASH_B,
+        "status": "success",
         "reference_data_id": None,
         "parent_record_id": UUID_AGENT_STEP,
     }
@@ -129,6 +137,7 @@ def make_bundle(records: list[dict] | None = None, **overrides: Any) -> dict:
         "session_id": UUID_SESSION,
         "created_at": TS_END,
         "disclosure_presented": True,
+        "outcome": "completed",
         "records": records,
         "bundle_hash": HASH_C,
     }
@@ -138,7 +147,7 @@ def make_bundle(records: list[dict] | None = None, **overrides: Any) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Tests 1-4 — happy-path schema validation for each record type
+# Tests 1-4 - happy-path schema validation for each record type
 # ---------------------------------------------------------------------------
 
 
@@ -169,7 +178,7 @@ def test_04_pipeline_bundle_happy_path_validates():
 
 
 # ---------------------------------------------------------------------------
-# Tests 5-8 — schema-level negative cases
+# Tests 5-8 - schema-level negative cases
 # ---------------------------------------------------------------------------
 
 
@@ -190,7 +199,7 @@ def test_07_invalid_sha256_hex_pattern_is_rejected():
     assert not _is_valid(AGENT_STEP_SCHEMA, record)
     record_uppercase = make_agent_step(input_hash="A" * 64)
     assert not _is_valid(AGENT_STEP_SCHEMA, record_uppercase), (
-        "uppercase hex must be rejected — protocol uses lowercase canonical form"
+        "uppercase hex must be rejected - protocol uses lowercase canonical form"
     )
 
 
@@ -200,7 +209,7 @@ def test_08_wrong_record_type_discriminator_is_rejected():
 
 
 # ---------------------------------------------------------------------------
-# Tests 9-11 — conditional rules: structurally valid, but rejected by the
+# Tests 9-11 - conditional rules: structurally valid, but rejected by the
 # single validation surface (validate_record), which JSON Schema cannot express
 # ---------------------------------------------------------------------------
 
@@ -232,7 +241,7 @@ def test_11_timestamp_end_before_timestamp_start_is_rejected():
 
 
 # ---------------------------------------------------------------------------
-# Test 12 — canonical_json_sha256 + compute_bundle_hash properties
+# Test 12 - canonical_json_sha256 + compute_bundle_hash properties
 # ---------------------------------------------------------------------------
 
 
@@ -241,7 +250,7 @@ def test_12_canonical_hash_properties():
     obj_a_reordered = {"c": [3, 2, 1], "a": 1, "b": 2}
     obj_b = {"b": 2, "a": 1, "c": [3, 2, 0]}
 
-    # determinism: same input twice → same hash
+    # determinism: same input twice -> same hash
     assert canonical_json_sha256(obj_a) == canonical_json_sha256(obj_a)
 
     # key-order independence: insertion order must not affect the hash
@@ -265,3 +274,71 @@ def test_12_canonical_hash_properties():
     tampered = copy.deepcopy(bundle)
     tampered["records"][0]["output_hash"] = HASH_C
     assert compute_bundle_hash(tampered) != bundle["bundle_hash"]
+
+
+# ---------------------------------------------------------------------------
+# Test 13 - schemas ship as package resources (wheel-install code path)
+# ---------------------------------------------------------------------------
+
+
+def test_13_schemas_load_as_package_resources():
+    """Schemas must resolve via importlib.resources, not a repo-relative path.
+
+    This is the path an installed wheel uses; a filesystem load relative to the
+    source tree would raise FileNotFoundError once packaged. Reading each schema
+    through ``importlib.resources`` here guards against that regression.
+    """
+    from importlib import resources
+
+    schema_files = {
+        "agent_step.schema.json",
+        "tool_invocation.schema.json",
+        "human_intervention.schema.json",
+        "pipeline_bundle.schema.json",
+    }
+    root = resources.files("agent_prov.schemas")
+    for name in schema_files:
+        loaded = json.loads(root.joinpath(name).read_text(encoding="utf-8"))
+        assert loaded["$id"].endswith(name), name
+
+
+# ---------------------------------------------------------------------------
+# Tests 14-15 - the schema files are conformant, and example documents
+# validate as expected. Replaces the external (ajv/Node) schema-linting step
+# with the same engine the protocol already uses, keeping validation in one
+# Python toolchain (no cross-implementation independence is claimed).
+# ---------------------------------------------------------------------------
+
+SCHEMA_EXAMPLES = pathlib.Path(__file__).resolve().parent.parent / "schema_examples"
+
+
+def _load_example(name: str) -> dict:
+    return json.loads((SCHEMA_EXAMPLES / name).read_text(encoding="utf-8"))
+
+
+def test_14_all_schemas_are_valid_draft_2020_12():
+    """Each schema file is itself a well-formed draft 2020-12 schema.
+
+    ``check_schema`` validates a schema against the draft 2020-12 meta-schema --
+    the lint that catches a malformed schema (bad keyword, wrong type) before it
+    ever reaches a record. This is the check the external ajv tooling performed.
+    """
+    for schema in (
+        AGENT_STEP_SCHEMA,
+        TOOL_INVOCATION_SCHEMA,
+        HUMAN_INTERVENTION_SCHEMA,
+        PIPELINE_BUNDLE_SCHEMA,
+    ):
+        Draft202012Validator.check_schema(schema)
+
+
+def test_15_example_documents_validate_as_expected():
+    valid = _load_example("agent_step.valid.json")
+    assert _is_valid(AGENT_STEP_SCHEMA, valid)
+    validate_record(valid)  # full surface: structural + conditional rules
+
+    for bad in (
+        "agent_step.invalid_bad_hash.json",
+        "agent_step.invalid_missing_required.json",
+    ):
+        assert not _is_valid(AGENT_STEP_SCHEMA, _load_example(bad)), bad

@@ -63,8 +63,8 @@ Twenty-one clauses were audited. The distribution of verdicts:
 | Verdict | Count | Share |
 |---------|-------|-------|
 | covered | 13 | 62% |
-| partial | 3 | 14% |
-| out_of_scope | 5 | 24% |
+| partial | 4 | 19% |
+| out_of_scope | 4 | 19% |
 | not_covered | **0** | **0%** |
 | **Total** | **21** | |
 
@@ -72,10 +72,10 @@ Broken down by article:
 
 | Article | Clauses | covered | partial | out_of_scope | not_covered |
 |---------|--------:|--------:|--------:|-------------:|------------:|
-| Art. 12 — record-keeping | 8 | 6 | 1 | 1 | 0 |
+| Art. 12 — record-keeping | 8 | 6 | 2 | 0 | 0 |
 | Art. 14 — human oversight | 8 | 5 | 2 | 1 | 0 |
 | Art. 50 — transparency | 5 | 2 | 0 | 3 | 0 |
-| **Total** | **21** | **13** | **3** | **5** | **0** |
+| **Total** | **21** | **13** | **4** | **4** | **0** |
 
 The headline result is the zero in the `not_covered` column: there is no clause
 within scope that the protocol fails to address. Every obligation is either
@@ -92,7 +92,7 @@ The full clause-level audit:
 | Clause | Requirement (abbreviated) | Verdict | Discharging field(s) |
 |--------|---------------------------|---------|----------------------|
 | 12(1) | System allows automatic log generation | covered | `bundle_hash` |
-| 12(2)(a) | Identify situations that may result in risk | out_of_scope | — |
+| 12(2)(a) | Identify situations that may result in risk | partial | `status`, `error`, `outcome` |
 | 12(2)(b) | Facilitate post-market monitoring (drift) | covered | `model_id`, `model_version` |
 | 12(2)(c) | Support operational monitoring (linkable records) | covered | `pipeline_id`, `session_id` |
 | 12(3)(a) | Record start and end time of each use | covered | `timestamp_start`, `timestamp_end` |
@@ -126,22 +126,30 @@ approved` combined with a `reviewer_role`.
 More broadly, the Article 14 oversight cluster is the coverage most directly
 attributable to the Human Intervention Record. The before/after override evidence
 (`output_before_hash`, `output_after_hash`), the action type, and the intervention
-timestamp together substantiate the "disregard, override, reverse, and halt"
-requirements of 14(4)(c)–(e) — obligations that turn on *what a human did to an
+timestamp together substantiate the "interpret, disregard, override, reverse, and
+halt" requirements of 14(4)(c)–(e) — obligations that turn on *what a human did to an
 agent's output and when*, which no prior provenance schema records. Without that
 record type these five Article 14 rows would be uncovered; with it, they are the
 protocol's strongest evidence.
 
 ### 5.2.3 The partial and out-of-scope verdicts
 
-The three *partial* verdicts each mark a clean boundary between what a schema can
-guarantee and what only a deployment can:
+The four *partial* verdicts each mark a clean boundary between what the protocol
+can guarantee and what only a deployment can:
 
+- **Art. 12(2)(a)** (identify situations that may result in risk) — per-step
+  `status`/`error` and the bundle-level `outcome` record malfunctions, failed
+  steps, and aborted runs, which are the events most relevant to risk situations.
+  What remains application-layer is the *classification* judgement: deciding which
+  recorded events constitute reportable risk under Article 79(1). The protocol
+  surfaces the events; it does not tag them as risk.
 - **Art. 12(3)(b)** (reference database consulted) — `reference_data_id` exists on
-  both automated record types, but the schema cannot enforce that it is populated
-  when external data was in fact used, because whether a call consulted a corpus
-  is out-of-band knowledge. Coverage is structural; substantive coverage depends
-  on the deployer instrumenting the field.
+  both automated record types and the middleware populates it from run metadata
+  (the same path as `tool_version`), so a deployer can supply the consulted-corpus
+  identifier. What the schema cannot enforce is that it is *actually* populated
+  when external data was used, because whether a call consulted a corpus is
+  out-of-band knowledge. Coverage is structural; substantive coverage depends on
+  the deployer instrumenting the field.
 - **Art. 14(4)(a)** (understand capabilities/limitations) — `model_id` and
   `model_version` give the reviewer the identifiers needed to look up capability
   documentation, but the human-readable capability summary is an oversight-UI
@@ -151,12 +159,11 @@ guarantee and what only a deployment can:
   `minItems: 1` universally; the `≥2` constraint for biometric pipelines would
   require a deployment-profile schema variant.
 
-The five *out-of-scope* verdicts are consistent: they cover risk classification
-(12(2)(a)), automation-bias awareness (14(4)(b)), and the artifact-level
-disclosure and watermarking duties of Article 50(2)–(4). These are properties of
-the application's risk logic, oversight interface, or output artifacts — not of
-the pipeline's internal record stream — and Chapter 6 records the boundary
-deliberately rather than papering over it with a token field.
+The four *out-of-scope* verdicts are consistent: they cover automation-bias
+awareness (14(4)(b)) and the artifact-level disclosure and watermarking duties of
+Article 50(2)–(4). These are properties of the application's oversight interface
+or output artifacts — not of the pipeline's internal record stream — and Chapter 6
+records the boundary deliberately rather than papering over it with a token field.
 
 The honest reading of §5.2 is therefore: within the layer the protocol claims —
 the tamper-evident record stream of a pipeline run — coverage is complete; the
@@ -341,7 +348,7 @@ framing. The differentiation, established analytically in the gap analysis
 | EU AI Act clause mapping | ❌ | ✅ Arts. 12, 14, 50 — 13/21 clauses covered, 0 uncovered |
 | Privacy-preserving content hashing | ❌ (raw text default) | ✅ SHA-256, content stored out of band |
 | Pipeline integrity seal | ❌ | ✅ `bundle_hash` (RFC 8785 canonical JSON) |
-| Multi-framework support | ✅ (LangChain, CrewAI, OpenAI) | LangGraph only (PoC scope) |
+| Multi-framework support | ✅ (LangChain, CrewAI, OpenAI) | LangGraph adapter + a framework-free adapter; packaged AutoGen/CrewAI future work |
 
 The comparison is not a scoreboard. PROV-AGENT and this protocol target different
 problems: PROV-AGENT optimises reproducibility for scientific HPC workflows and
@@ -350,8 +357,10 @@ single framework and adds the one record type — human oversight — that the A
 requires and PROV-AGENT does not model. The two rows where PROV-AGENT leads
 (multi-framework support, scientific-workflow optimisation) are scope decisions of
 this PoC rather than protocol limitations: the record schemas are
-framework-agnostic, and Chapter 6 notes adapters for AutoGen and CrewAI as future
-work. The rows where this protocol leads — the HITL record, the before/after
+framework-agnostic, the framework-neutrality is demonstrated — not merely
+asserted — by a second, framework-free adapter (§4.5.5) that seals a valid bundle
+with no framework present, and Chapter 6 notes packaged adapters for AutoGen and
+CrewAI as future work. The rows where this protocol leads — the HITL record, the before/after
 evidence, the EU AI Act mapping, the integrity seal — are the thesis
 contribution, and §5.2–§5.4 are the evidence that they are not merely specified
 but implemented, complete against the obligations they target, and cheap to adopt.

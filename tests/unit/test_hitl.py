@@ -1,4 +1,4 @@
-"""Tests for HumanReview — decision capture, hash conventions, schema shape.
+"""Tests for HumanReview - decision capture, hash conventions, schema shape.
 
 Covers:
   Decision API: approved / edited / rejected / escalated branches each produce
@@ -64,7 +64,7 @@ def _make_review(session: StubSession, **overrides: Any) -> HumanReview:
 
 
 # ---------------------------------------------------------------------------
-# Decision branches — output shape + schema validity
+# Decision branches - output shape + schema validity
 # ---------------------------------------------------------------------------
 
 
@@ -204,7 +204,7 @@ def test_body_exception_suppresses_emission():
         with _make_review(session) as review:
             review.approve()
             raise ValueError("reviewer changed their mind")
-    # Decision was committed but the body raised — no record should leak out.
+    # Decision was committed but the body raised - no record should leak out.
     assert session.records == []
 
 

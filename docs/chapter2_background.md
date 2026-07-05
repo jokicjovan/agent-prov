@@ -46,11 +46,11 @@ The gaps relative to the requirements of this protocol are detailed in §2.6. Br
 
 ### 2.3.2 Other AI/ML provenance work
 
-A handful of other standards address adjacent problems. **PROV-ML** (Pimentel et al.) extends PROV to ML experiment tracking, focusing on training artefacts — datasets, hyperparameters, model versions, evaluation metrics. It is centred on the model-development lifecycle, not the deployed-inference lifecycle, and has no concept of an interactive agent or a human reviewer.
+A handful of other standards address adjacent problems. **PROV-ML** (Souza et al., WORKS 2019) extends PROV to the scientific ML lifecycle, focusing on training-side artefacts — datasets, hyperparameters, model versions, evaluation metrics. It is centred on the model-development lifecycle, not the deployed-inference lifecycle, and has no concept of an interactive agent or a human reviewer. It is notably the work of the same research line that later produced PROV-AGENT, which situates the present contribution as an extension of an established trajectory of PROV specialisation rather than a departure from it.
 
 **ProvONE** extends PROV with constructs for scientific workflow systems (Kepler, Taverna, VisTrails). Its concerns — workflow templates, parameter sweeps, sub-workflow nesting — predate the LLM-agent paradigm and do not map cleanly onto it.
 
-**PROV-DfA** (Provenance for Data-from-Activities, in some literatures rendered as Data-flow Analysis) addresses human-steered scientific workflows where a human selects parameters or directs branching. It models human *actions* as activities, not human *oversight of AI output*. The distinction matters: in PROV-DfA the human is the actor whose work is being recorded; in the EU AI Act framing, the AI is the actor and the human is the supervisor whose approval, rejection, or override constitutes regulatory evidence.
+**PROV-DfA** (Souza and Mattoso, IPAW 2018; introduced in "Provenance of Dynamic Adaptations in User-Steered Dataflows") addresses human-steered scientific workflows where a human selects parameters or directs branching. It models human *steering actions* as activities, not human *oversight of AI output*. The distinction matters: in PROV-DfA the human is the actor whose work is being recorded; in the EU AI Act framing, the AI is the actor and the human is the supervisor whose approval, rejection, or override constitutes regulatory evidence.
 
 **FAIR4ML** applies the FAIR principles (Findable, Accessible, Interoperable, Reusable) to ML model artefacts. It is a metadata schema for model registries, not an execution-trace standard.
 

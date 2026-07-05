@@ -33,6 +33,7 @@ def _bundle_metadata_rows(bundle: dict[str, Any]) -> list[tuple[str, str]]:
         ("protocol_version", bundle.get("protocol_version", "-")),
         ("created_at", bundle.get("created_at", "-")),
         ("disclosure_presented", _format_value(bundle.get("disclosure_presented"))),
+        ("outcome", bundle.get("outcome", "-")),
         ("bundle_hash", bundle.get("bundle_hash", "-")),
     ]
 

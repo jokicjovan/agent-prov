@@ -1,12 +1,14 @@
 """Canonical-JSON serialization, content hashing, and record timestamps.
 
-Leaf module: depends only on the standard library and ``rfc8785``, and imports
-nothing from ``middleware`` itself, so both the middleware (``core``) and the
-emitters can import it at load time without forming a cycle.
+Framework-neutral leaf module: depends only on the standard library and
+``rfc8785`` and imports nothing else in the package, so the session (its record
+factory), ``HumanReview``, ``bundle_generator``, and any adapter can import it at
+load time without forming a cycle.
 
 ``canonical_json_sha256`` defines the protocol's canonical hash form;
-``hash_content`` is the convenience wrapper the emitters and ``HumanReview``
-call; ``_now_iso8601`` stamps the UTC timestamps that records carry.
+``hash_content`` is the convenience wrapper the session factory and
+``HumanReview`` call; ``now_iso8601`` stamps the UTC timestamps that records
+carry.
 """
 
 from __future__ import annotations
@@ -18,9 +20,20 @@ from typing import Any
 import rfc8785
 
 
-def _now_iso8601() -> str:
+def now_iso8601() -> str:
     """UTC ISO 8601 timestamp with `Z` suffix (matches schema `iso8601_timestamp`)."""
     return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def canonical_json_bytes(obj: Any) -> bytes:
+    """Return the RFC 8785 canonical-JSON bytes of *obj*.
+
+    The single canonicalization entry point. *obj* must already be pure JSON
+    primitives -- ``rfc8785.dumps`` rejects anything else. Use this when the
+    canonical *bytes* are needed directly (e.g. signing a bound payload);
+    :func:`canonical_json_sha256` is the digest of these same bytes.
+    """
+    return rfc8785.dumps(obj)
 
 
 def canonical_json_sha256(obj: Any) -> str:
@@ -34,21 +47,21 @@ def canonical_json_sha256(obj: Any) -> str:
     these digests byte-for-byte, rather than having to match this reference
     implementation's incidental quirks.
 
-    *obj* must already be pure JSON primitives — ``rfc8785.dumps`` rejects
+    *obj* must already be pure JSON primitives -- ``rfc8785.dumps`` rejects
     anything else. This is the direct entry point for data that is already
     JSON-shaped (e.g. a fully assembled bundle in ``compute_bundle_hash``).
     Callers holding richer objects (LangChain messages, ``UUID``, ``datetime``)
     should use :func:`hash_content`, which normalises first.
     """
-    return hashlib.sha256(rfc8785.dumps(obj)).hexdigest()
+    return hashlib.sha256(canonical_json_bytes(obj)).hexdigest()
 
 
 def hash_content(obj: Any) -> str:
     """Canonical SHA-256 of *obj*, normalised to JSON-compatible form first.
 
-    Passes *obj* through :func:`_to_serializable` — which recursively unwraps
+    Passes *obj* through :func:`_to_serializable` - which recursively unwraps
     Pydantic / LangChain objects and stringifies non-JSON leaves (``UUID``,
-    ``datetime``, …) — then delegates to :func:`canonical_json_sha256`. Use
+    ``datetime``, ...) - then delegates to :func:`canonical_json_sha256`. Use
     this for emitter inputs (LLM messages, tool outputs, reviewer-supplied
     content) where the value may not already be pure JSON.
     """
@@ -61,14 +74,17 @@ def _to_serializable(obj: Any) -> Any:
     Unwraps Pydantic / LangChain objects (anything with ``model_dump`` or
     ``dict``) and recurses into the result; coerces mapping keys to strings;
     and stringifies any leaf that is not a JSON scalar (``UUID``, ``datetime``,
-    ``Decimal``, …), matching the old ``json.dumps(default=str)`` fallback.
+    ``Decimal``, ...), matching the old ``json.dumps(default=str)`` fallback.
     """
     if obj is None or isinstance(obj, (str, bool, int, float)):
         return obj
+    # `model_dump` (Pydantic v2) covers every model object that reaches this
+    # function: LangChain messages on the pinned langchain-core are Pydantic v2,
+    # so they expose it. No Pydantic-v1 `.dict()` fallback is kept on purpose --
+    # it would have to duck-type on a method named `dict`, which any unrelated
+    # object could define, and nothing in the current input set needs it.
     if hasattr(obj, "model_dump"):
         return _to_serializable(obj.model_dump())
-    if hasattr(obj, "dict") and callable(obj.dict):
-        return _to_serializable(obj.dict())
     if isinstance(obj, dict):
         return {str(k): _to_serializable(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
