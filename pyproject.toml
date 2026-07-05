@@ -7,7 +7,7 @@ packages = ["src/agent_prov"]
 
 [project]
 name = "agent-prov"
-version = "2.0.0"
+version = "2.1.0"
 description = "Provenance protocol for LLM multi-agent pipelines, mapped to EU AI Act Articles 12, 14, and 50"
 readme = "README.md"
 requires-python = ">=3.12"
