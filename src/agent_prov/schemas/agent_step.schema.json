@@ -85,7 +85,7 @@
     "reference_data_id": {
       "type": ["string", "null"],
       "minLength": 1,
-      "description": "Identifier of any reference dataset/database consulted for this step (e.g. RAG corpus version). EU AI Act Art. 12(3)(b) - record the reference database consulted (biometric minimum, applied universally where relevant). Null when no external reference data is consulted."
+      "description": "Identifier of the reference dataset consulted for this step: most often a retrieval corpus version, but equally a biometric comparison gallery, a code system, or a database snapshot label. EU AI Act Art. 12(3)(b) - record the reference database consulted (biometric minimum, applied universally where relevant). Null when no external reference data is consulted."
     },
     "parent_record_id": {
       "oneOf": [

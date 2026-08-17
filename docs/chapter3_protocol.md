@@ -74,7 +74,7 @@ The `error` object has one required member, `type` (the exception class name, e.
 
 `model_id` and `model_version` are separated because they decay at different rates. A deployment may pin to `claude-opus-4-7` for months while the specific snapshot served behind that identifier rotates. Post-market monitoring under Article 72 requires the granularity of both. Where a provider does not expose a distinct version string, the reference implementation falls back to using the model identifier as both fields; this is degenerate but well-formed.
 
-`reference_data_id` is nullable because not every model call consults a reference corpus. For retrieval-augmented generation, this field carries the version identifier of the consulted corpus and discharges Article 12(3)(b). For a model call that operates solely on its parameters, this field is `null`.
+`reference_data_id` is nullable because not every model call consults reference data. The field carries the identifier of the consulted dataset and discharges Article 12(3)(b). For a model step this is most often a corpus version under retrieval-augmented generation, but a biometric comparison gallery, a code system, or a database snapshot the step read from apply equally. For a model call that operates solely on its parameters, this field is `null`.
 
 `parent_record_id` is the `record_id` of the immediately preceding record in the bundle, or `null` for the first record. It establishes the structural chain of custody referenced by Article 12(2) traceability. The chain is chronological, not causal; §3.7.3 discusses this in more detail.
 
@@ -146,7 +146,7 @@ The structural symmetry with the Agent Step Record is intentional. Both records 
 
 `tool_name` is a free-form non-empty string and serves the same identifier role as `agent_id` and `model_id`: a stable, human-meaningful handle. `tool_version` is required even when no formal version exists; deployments must commit to *some* version string (a git SHA, an API version, the literal `"unversioned"`) so that drift across pipeline runs is detectable in the record set.
 
-`reference_data_id` for a tool invocation captures the version of any external corpus or API surface the tool consulted: a retrieval corpus, an external knowledge base, a third-party API version pin. `null` when the tool has no such reference data, for example a pure-function calculator.
+`reference_data_id` for a tool invocation identifies the external reference dataset the tool consulted: a retrieval corpus version or snapshot, the gallery a biometric comparison was run against, the version and effective date of a screening list (sanctions, blocklists), a code system or taxonomy, a database snapshot label. Where the backing data is not observable from outside the tool, which is the common case for a remote service call, the nearest observable surrogate is recorded instead - an API version pin or the date of the query - and this is one source of the *partial* verdict on Article 12(3)(b) in the evaluation chapter. `null` when the tool has no such reference data, for example a pure-function calculator.
 
 `runtime_metadata` is the same optional, non-hashed forensic side field defined on the Agent Step Record (§3.3.2). A tool call has no message or tool-call identifiers of its own to project, so the reference implementation records only the framework `run_id` here; the field remains open for deployment-specific identifiers and is omitted when empty.
 
