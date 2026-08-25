@@ -78,6 +78,8 @@ Regulation (EU) 2024/1689, the Artificial Intelligence Act, entered into force o
 
 The protocol proposed here is concerned with three articles. Articles 12 and 14 fall in the high-risk-systems chapter (Chapter III, Section 2). Article 50 is broader in scope and applies to any AI system interacting with natural persons or generating synthetic content.
 
+The selection is not arbitrary. Chapter III, Section 2 imposes technical obligations across Articles 9 to 15, but most of them are discharged by artefacts produced before or around deployment rather than by evidence generated during a run: Article 9 requires a risk-management process, Article 10 governs the quality of training, validation, and testing data, Article 11 requires technical documentation, Article 13 requires instructions for use, and Article 15 sets accuracy, robustness, and cybersecurity levels that are established by testing rather than by tracing. The criterion applied throughout this thesis is therefore whether an obligation can be discharged by evidence contained in a per-run execution trace. Articles 12 and 14 meet that criterion directly - one requires the trace itself, the other requires proof that a human could and did intervene in it - and Article 50(1) meets it partially, since presenting a disclosure is a per-run event. The remaining articles are complementary compliance obligations addressed by other means, not gaps in the protocol.
+
 A full obligation-by-obligation extraction is given in `obligation_summary.md`. The summary below covers what is most relevant for situating Chapter 3.
 
 ### 2.5.1 Article 12 — Record-Keeping
