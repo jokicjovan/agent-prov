@@ -9,8 +9,8 @@ recomputation, gathered into one public call:
 * **bundle_hash** - recompute the canonical-JSON SHA-256 with ``bundle_hash``
   excluded and compare against the stored seal (tamper evidence),
 * **parent-chain integrity** - referential integrity of ``parent_record_id``:
-  the head record has no parent and every other parent reference points at a
-  record that appears earlier in the bundle, and
+  the head record has no parent, every later record has one, and each of those
+  points at a record that appears earlier in the bundle, and
 * **internal consistency** - ``pipeline_id`` / ``session_id`` are uniform across
   the bundle and its records, and no two records share a ``record_id``, and
 * **execution-interval concurrency** - a non-fatal *observation*, not a failure:
@@ -111,12 +111,21 @@ def _check_bundle_hash(bundle: dict[str, Any]) -> list[str]:
 def _check_parent_chain(records: list[Any]) -> list[str]:
     """Referential integrity of parent_record_id across the record list.
 
-    The head record must have no parent; every other ``parent_record_id``, when
-    present, must reference a ``record_id`` that appears *earlier* in the list.
-    This catches dangling references (parent that names no record) and forward
-    references (parent that names a later record), without enforcing strict
-    linear chaining - emission-order linearity is a known approximation that
-    does not hold under parallel branches.
+    The head record must have no parent; every later record must have one, and it
+    must reference a ``record_id`` that appears *earlier* in the list. This
+    catches dangling references (a parent naming no record), forward references
+    (a parent naming a later record), and detached records (a null parent past
+    the head), without enforcing strict linear chaining - emission-order
+    linearity is a known approximation that does not hold under parallel branches.
+
+    A null parent past the head is an error rather than a tolerated gap because
+    every record in a bundle belongs to one session - ``_check_consistency``
+    enforces the uniform ``session_id`` - and a session sets ``last_record_id``
+    on its first append, so no later record can legitimately have been emitted
+    without a parent. A detached record is therefore evidence of an edit, which
+    is exactly what a chain check exists to surface: a record whose predecessor
+    was removed keeps a dangling reference, but one whose own link was cleared
+    would otherwise pass silently.
     """
     errors: list[str] = []
     seen: set[str] = set()
@@ -129,7 +138,12 @@ def _check_parent_chain(records: list[Any]) -> list[str]:
                 errors.append(
                     f"records[0]: head record must have no parent, got {parent!r}"
                 )
-        elif parent is not None and parent not in seen:
+        elif parent is None:
+            errors.append(
+                f"records[{i}]: parent_record_id is null; only the head record "
+                "may have no parent"
+            )
+        elif parent not in seen:
             errors.append(
                 f"records[{i}]: parent_record_id {parent!r} does not reference "
                 "any earlier record"
