@@ -5,10 +5,12 @@ steps, tool calls, and **human oversight intervention events** — designed to
 produce verifiable evidence for EU AI Act Articles 12 (record-keeping), 14 (human
 oversight), and 50 (transparency).
 
-> **Status: research proof-of-concept (v1.0.0).** This repository accompanies an
-> MSc thesis. The protocol schemas and the LangGraph reference implementation are
-> functional and tested and the core API is stable as of `1.0.0`; the
-> accompanying thesis is still in progress.
+> **Status: research proof-of-concept.** This repository accompanies my MSc
+> thesis. The protocol schemas and the LangGraph reference implementation are
+> functional and tested, and the core API is stable. The package (`agent-prov`)
+> and the protocol schema are versioned independently: the distribution is at
+> `2.1.0`, while records are stamped with `protocol_version 0.4.0`. The
+> accompanying thesis has been completed and successfully defended.
 
 ---
 
@@ -58,6 +60,8 @@ tamper-evident chain of *commitments*, and the original content can live in a
 separate, access-controlled store. Hashing uses canonical JSON per
 [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785), so any conformant verifier
 reproduces the digests byte-for-byte.
+
+![The four record types sealed inside a Pipeline Bundle](docs/images/readme_record_types.svg)
 
 ---
 
@@ -182,6 +186,8 @@ The same operations are available programmatically from `agent_prov.signing`
 
 ### Instrumenting your own pipeline
 
+![Middleware architecture: LangGraph pipeline, ProvenanceMiddleware, PipelineSession, HumanReview, BundleGenerator, and the independent consumers over a sealed bundle](docs/images/readme_architecture.svg)
+
 The LangChain adapter ships under the `langchain` extra (`pip install
 agent-prov[langchain]`; already provided by `uv sync`). The middleware is
 passive — it attaches through LangChain's standard `callbacks` mechanism and
@@ -240,9 +246,14 @@ src/agent_prov/ framework-neutral protocol core (session + record factory, schem
   adapters/
     langchain/  LangChain/LangGraph adapter — middleware + emitters (optional `langchain` extra)
   reporting/    compliance report generator (optional `reporting` extra)
-demos/          example pipelines: two LangGraph (mock + live), one framework-free loop
+demos/          example pipelines: four LangGraph (research + document_review have
+                mock/live variants; tool_calling + biometric_review are mock-only),
+                one framework-free loop
 evaluation/     completeness audit, overhead benchmark, developer-effort measurement
-docs/           protocol design, EU AI Act obligation mapping, gap analysis, design & evaluation write-up
+docs/
+  drafts/       thesis chapter drafts, EU AI Act obligation mapping, gap analysis
+  submission/   assembled thesis, conference paper, defense presentation
+  images/       diagrams and figures used in the drafts and in this README
 tests/          unit + integration test suite
 ```
 
@@ -269,7 +280,24 @@ uv run check-jsonschema --schemafile src/agent_prov/schemas/agent_step.schema.js
 
 ---
 
+## Performance
+
+Instrumentation overhead scales linearly with bundle size and stays in the
+low tens of milliseconds even for a 50-record bundle; adding human
+interventions costs more per record (each one hashes a before/after pair)
+but the curve is still linear. Measured by `evaluation/benchmark.py`, raw
+data in `evaluation/benchmark_results.csv`.
+
+![Instrumentation overhead in milliseconds vs. records per bundle, for agent-step-only and HITL-included bundles](docs/images/readme_overhead.svg)
+
+---
+
 ## Scope and limitations
+
+A completeness audit against 21 clauses across EU AI Act Articles 12, 14, and 50
+found zero uncovered in-scope clauses (14 fully covered, 3 partial — see
+`evaluation/completeness_checklist.csv`). The gaps below are the honest
+counterweight to that result — what the protocol deliberately does not claim:
 
 - **One packaged adapter.** The protocol core is framework-neutral and the record
   factory is the integration seam; LangGraph is the one adapter shipped as a
@@ -277,11 +305,37 @@ uv run check-jsonschema --schemafile src/agent_prov/schemas/agent_step.schema.js
   instrumented inline against the same seam, demonstrating that the factory
   generalizes, but packaged adapters for other frameworks (AutoGen, CrewAI) are
   future work.
+- **Tamper-evident by default, not authentic by default.** `bundle_hash` is an
+  unkeyed digest: it detects any alteration to a sealed bundle, but anyone can
+  recompute it, so it does not by itself bind a bundle to the party that produced
+  it. The optional `signing` extra closes this gap with a detached Ed25519
+  signature over the seal; the bare protocol core stays unsigned and crypto-free.
+- **The record chain proves order, not causation.** `parent_record_id` links each
+  record to its predecessor in emission order, which coincides with causal order
+  only for sequential pipelines. The independent verifier detects the case this
+  breaks down — records with overlapping execution intervals — and reports it as
+  a non-fatal warning rather than asserting a false sequence, but it does not
+  reconstruct the true data-flow graph; that is future work.
+- **Four EU AI Act clauses are explicitly out of scope**, not silently skipped:
+  automation-bias awareness (Art. 14(4)(b)) and the artifact/interface-level
+  transparency duties of Art. 50(2)-(4) (AI-content watermarking, biometric/
+  emotion-recognition disclosure, deepfake labelling). These operate on output
+  artifacts and user interfaces, not on pipeline execution, and belong to a
+  media-provenance standard (e.g. C2PA) or the application's front end rather
+  than to this protocol.
+- **Human-oversight regime enforcement is conditional on honest declaration.**
+  Article 14(5)'s two-person rule is enforced at seal time once a bundle declares
+  `oversight_regime: biometric_dual_control`, but a producer under that
+  obligation could under-declare the regime and skip the stricter check — the
+  same emission-time trust boundary as any other self-asserted field.
 - **Research artifact.** This is a research proof-of-concept, not a production
   library. It demonstrates the protocol; it has not been hardened for production
   deployment.
 - The protocol records hashes and structure; where and how the underlying content
   is stored is a deployment concern left to the integrator.
+
+See `docs/drafts/chapter6_discussion.md` for the full threat model, limitations,
+and future-work discussion.
 
 ---
 
@@ -293,13 +347,23 @@ Agent Interactions in Agentic Workflows*, IEEE e-Science, 2025), which captures
 automated agent steps but does not model human oversight events and has no
 regulatory mapping. It builds on the
 [W3C PROV](https://www.w3.org/TR/prov-overview/) foundation. See
-`docs/gap_analysis.md` for the full comparison.
+`docs/drafts/gap_analysis.md` for the full comparison.
 
 ---
 
 ## Citation & license
 
-This repository accompanies an MSc Software Engineering thesis (in progress). If
-you reference it, please cite the thesis (details to follow) and this repository.
+This repository accompanies my MSc Software Engineering thesis:
+
+> Jovan Jokić, *AI Agent Provenance & Compliance Protocol*, MSc thesis, Faculty
+> of Technical Sciences, University of Novi Sad, 2026.
+
+A companion paper, *A Provenance and Compliance Protocol for LLM-Based
+Multi-Agent Systems*, is forthcoming in the
+[Зборник радова Факултета техничких наука](https://zbornik.ftn.uns.ac.rs/index.php/zbornik)
+(Proceedings of the Faculty of Technical Sciences, Novi Sad); full issue and
+DOI details will be added once it is published.
+
+If you reference this work, please cite the thesis and this repository.
 
 Licensed under the **Apache License 2.0** — see [`LICENSE`](LICENSE).
