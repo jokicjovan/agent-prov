@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 580" font-family="'Segoe UI', 'Noto Sans', system-ui, sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#44546A"/>
+    </marker>
+    <marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2F5496"/>
+    </marker>
+    <marker id="tl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8A94A6"/>
+    </marker>
+  </defs>
+
+  <!-- ============ left: what the chain records ============ -->
+  <rect x="30" y="46" width="368" height="252" rx="7" fill="#F8F8F9" stroke="#B7C2D2" stroke-width="1.5"/>
+  <text x="214" y="76" font-size="13.5" font-weight="650" fill="#1F2937" text-anchor="middle">Шта ланац бележи</text>
+  <text x="214" y="97" font-size="11.5" font-style="italic" fill="#6B7686" text-anchor="middle">поље parent_record_id: редослед емитовања</text>
+
+  <g font-size="14" font-weight="650" text-anchor="middle">
+    <rect x="66" y="170" width="52" height="42" rx="7" fill="#FFFFFF" stroke="#44546A" stroke-width="1.5"/>
+    <text x="92" y="197" fill="#1F2937">A</text>
+    <rect x="150" y="170" width="52" height="42" rx="7" fill="#FFFFFF" stroke="#44546A" stroke-width="1.5"/>
+    <text x="176" y="197" fill="#1F2937">B</text>
+    <rect x="234" y="170" width="52" height="42" rx="7" fill="#FFFFFF" stroke="#44546A" stroke-width="1.5"/>
+    <text x="260" y="197" fill="#1F2937">C</text>
+    <rect x="318" y="170" width="52" height="42" rx="7" fill="#FFFFFF" stroke="#44546A" stroke-width="1.5"/>
+    <text x="344" y="197" fill="#1F2937">D</text>
+  </g>
+  <g stroke="#44546A" stroke-width="1.6" marker-end="url(#ar)">
+    <line x1="118" y1="191" x2="146" y2="191"/>
+    <line x1="202" y1="191" x2="230" y2="191"/>
+    <line x1="286" y1="191" x2="314" y2="191"/>
+  </g>
+  <text x="214" y="252" font-size="11.5" fill="#5A6577" text-anchor="middle">Права линија: сваки запис показује на</text>
+  <text x="214" y="270" font-size="11.5" fill="#5A6577" text-anchor="middle">непосредног претходника по времену.</text>
+
+  <!-- ============ right: what actually happened ============ -->
+  <rect x="422" y="46" width="368" height="252" rx="7" fill="#F4F7FB" stroke="#2F5496" stroke-width="1.5"/>
+  <text x="606" y="76" font-size="13.5" font-weight="650" fill="#24406F" text-anchor="middle">Шта се стварно догодило</text>
+  <text x="606" y="97" font-size="11.5" font-style="italic" fill="#3B5488" text-anchor="middle">узрочност: B и C гране се из истог корака</text>
+
+  <g font-size="14" font-weight="650" text-anchor="middle">
+    <rect x="580" y="118" width="52" height="40" rx="7" fill="#FFFFFF" stroke="#2F5496" stroke-width="1.5"/>
+    <text x="606" y="144" fill="#1F2937">A</text>
+    <rect x="490" y="188" width="52" height="40" rx="7" fill="#FFFFFF" stroke="#2F5496" stroke-width="1.5"/>
+    <text x="516" y="214" fill="#1F2937">B</text>
+    <rect x="670" y="188" width="52" height="40" rx="7" fill="#FFFFFF" stroke="#2F5496" stroke-width="1.5"/>
+    <text x="696" y="214" fill="#1F2937">C</text>
+    <rect x="580" y="252" width="52" height="40" rx="7" fill="#FFFFFF" stroke="#2F5496" stroke-width="1.5"/>
+    <text x="606" y="278" fill="#1F2937">D</text>
+  </g>
+  <g stroke="#2F5496" stroke-width="1.6" fill="none" marker-end="url(#arb)">
+    <path d="M588,158 L525,184"/>
+    <path d="M624,158 L687,184"/>
+    <path d="M525,228 L588,250"/>
+    <path d="M687,228 L624,250"/>
+  </g>
+
+  <!-- ============ intervals ============ -->
+  <text x="30" y="346" font-size="13.5" font-weight="650" fill="#1F2937">Одакле верификатор зна да ланац може бити апроксимација</text>
+  <text x="30" y="367" font-size="11.5" font-style="italic" fill="#6B7686">из временских интервала које сваки запис ионако носи</text>
+
+  <rect x="240" y="386" width="94" height="122" fill="#FBF1E4" stroke="#B26A00" stroke-width="1.3" stroke-dasharray="5 4"/>
+  <text x="287" y="404" font-size="11" font-weight="650" fill="#B26A00" text-anchor="middle">преклапање</text>
+
+  <g font-size="12" font-weight="650" fill="#2B3440">
+    <text x="46" y="431">A</text>
+    <text x="46" y="462">B</text>
+    <text x="46" y="493">C</text>
+    <text x="46" y="524">D</text>
+  </g>
+  <rect x="80" y="419" width="120" height="16" rx="4" fill="#D9E1EE" stroke="#8A94A6" stroke-width="1.2"/>
+  <rect x="206" y="450" width="128" height="16" rx="4" fill="#F3D9B8" stroke="#B26A00" stroke-width="1.3"/>
+  <rect x="240" y="481" width="126" height="16" rx="4" fill="#F3D9B8" stroke="#B26A00" stroke-width="1.3"/>
+  <rect x="372" y="512" width="120" height="16" rx="4" fill="#D9E1EE" stroke="#8A94A6" stroke-width="1.2"/>
+
+  <line x1="80" y1="546" x2="560" y2="546" stroke="#8A94A6" stroke-width="1.4" marker-end="url(#tl)"/>
+  <text x="568" y="550" font-size="11" fill="#8A94A6">време</text>
+
+  <rect x="580" y="414" width="210" height="104" rx="6" fill="#FAFBFD" stroke="#D6DCE5" stroke-width="1.3"/>
+  <text x="600" y="440" font-size="12" font-weight="650" fill="#B26A00">Упозорење о конкурентности</text>
+  <text x="600" y="464" font-size="11.5" fill="#5A6577">B и C се преклапају, па им</text>
+  <text x="600" y="482" font-size="11.5" fill="#5A6577">редослед није доказ.</text>
+  <text x="600" y="506" font-size="11.5" font-style="italic" fill="#B26A00">Верификатор то јавља.</text>
+
+</svg>

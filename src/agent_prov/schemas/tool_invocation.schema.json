@@ -85,7 +85,7 @@
     "reference_data_id": {
       "type": ["string", "null"],
       "minLength": 1,
-      "description": "Identifier of any reference dataset/database consulted by the tool (e.g. corpus version, API endpoint version). EU AI Act Art. 12(3)(b) - record the reference database consulted (biometric minimum, applied universally where relevant). Null when the tool consults no external reference data."
+      "description": "Identifier of the external reference dataset consulted by the tool: a retrieval corpus version or snapshot, a biometric comparison gallery, a screening list version, a code system, a database snapshot label. Where the backing data is not observable from outside the tool, record the nearest observable surrogate (an API version pin, the query date). EU AI Act Art. 12(3)(b) - record the reference database consulted (biometric minimum, applied universally where relevant). Null when the tool consults no external reference data."
     },
     "parent_record_id": {
       "oneOf": [

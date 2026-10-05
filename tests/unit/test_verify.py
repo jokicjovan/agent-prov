@@ -17,10 +17,13 @@ the tests never depend on demos/ artifacts.
   11  A non-dict input is rejected without raising.
   12  CLI returns 0 and prints OK for a good bundle.
   13  CLI returns 1 and prints failures for a tampered bundle.
+  14  The curated top-level API is importable without any optional extra.
   15  A sequential bundle raises no concurrency warning (ok, warnings empty).
   16  Overlapping intervals raise a concurrency warning but keep ok True.
   17  The concurrency warning names every record in the cluster.
   18  CLI prints the warning and still returns 0 for a concurrent bundle.
+  19  A null parent_record_id past the head record is detected.
+  20  A cleared parent is detected even when the bundle is honestly re-sealed.
 """
 
 from __future__ import annotations
@@ -236,3 +239,28 @@ def test_18_cli_prints_warning_and_returns_zero_for_concurrent_bundle(tmp_path, 
     out = capsys.readouterr().out
     assert "OK: bundle verified" in out
     assert "ran concurrently" in out
+
+
+def test_19_null_parent_past_head_detected():
+    # Only records[0] may have a null parent; a later record without one is
+    # detached from the chain. The schema permits null here (agent_step and
+    # tool_invocation both accept it, for the head case), so this is a defect
+    # only the chain check can catch.
+    bundle = _sealed_bundle()
+    bundle["records"][1]["parent_record_id"] = None
+    result = verify_bundle(_reseal(bundle))
+    assert not result.ok
+    assert any("only the head record may have no parent" in e for e in result.errors)
+
+
+def test_20_cleared_parent_detected_under_an_honest_reseal():
+    """The chain check stands on its own, independent of the seal.
+
+    An editor who clears a link and recomputes bundle_hash produces a bundle
+    whose seal verifies; the detached record must still be reported.
+    """
+    bundle = _sealed_bundle()
+    bundle["records"][1]["parent_record_id"] = None
+    result = verify_bundle(_reseal(bundle))
+    assert not any("bundle_hash" in e for e in result.errors)
+    assert any("parent_record_id is null" in e for e in result.errors)

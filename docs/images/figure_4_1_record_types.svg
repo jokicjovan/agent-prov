@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 500" font-family="'Segoe UI', 'Noto Sans', system-ui, sans-serif">
+  <!-- ===== outer container: Pipeline Bundle ===== -->
+  <rect x="26" y="28" width="768" height="446" rx="14" fill="#F7F9FC" stroke="#44546A" stroke-width="1.6"/>
+  <text x="48" y="58" font-size="17" font-weight="700" fill="#1F2937">Pipeline Bundle</text>
+  <text x="48" y="76" font-size="11.5" fill="#6B7686">пакет записа тока обраде &#183; обухвата све записе једног извршавања</text>
+  <text x="772" y="58" font-size="11" fill="#6B7686" text-anchor="end">outcome: completed | aborted | error</text>
+
+  <!-- ===== record card 1: Agent Step ===== -->
+  <rect x="48" y="104" width="226" height="252" rx="9" fill="#FFFFFF" stroke="#B7C2D2" stroke-width="1.4"/>
+  <text x="66" y="132" font-size="14" font-weight="650" fill="#1F2937">Agent Step Record</text>
+  <text x="66" y="149" font-size="10.5" fill="#6B7686">корак агента</text>
+  <line x1="66" y1="162" x2="256" y2="162" stroke="#E3E7EE" stroke-width="1"/>
+  <g font-size="11.5" fill="#44546A" font-family="'Consolas','Courier New',monospace">
+    <text x="66" y="186">model_id</text>
+    <text x="66" y="208">model_version</text>
+    <text x="66" y="230">input_hash</text>
+    <text x="66" y="252">output_hash</text>
+    <text x="66" y="274">status</text>
+    <text x="66" y="296">timestamp_start/end</text>
+  </g>
+
+  <!-- ===== record card 2: Tool Invocation ===== -->
+  <rect x="296" y="104" width="226" height="252" rx="9" fill="#FFFFFF" stroke="#B7C2D2" stroke-width="1.4"/>
+  <text x="314" y="132" font-size="14" font-weight="650" fill="#1F2937">Tool Invocation Record</text>
+  <text x="314" y="149" font-size="10.5" fill="#6B7686">позив алата</text>
+  <line x1="314" y1="162" x2="504" y2="162" stroke="#E3E7EE" stroke-width="1"/>
+  <g font-size="11.5" fill="#44546A" font-family="'Consolas','Courier New',monospace">
+    <text x="314" y="186">tool_name</text>
+    <text x="314" y="208">tool_version</text>
+    <text x="314" y="230">input_hash</text>
+    <text x="314" y="252">output_hash</text>
+    <text x="314" y="274">status</text>
+    <text x="314" y="296">timestamp_start/end</text>
+  </g>
+
+  <!-- ===== record card 3: Human Intervention (accent - novelty) ===== -->
+  <rect x="544" y="104" width="226" height="252" rx="9" fill="#2F5496" stroke="#24406F" stroke-width="1.6"/>
+  <text x="562" y="132" font-size="14" font-weight="650" fill="#FFFFFF">Human Intervention</text>
+  <text x="562" y="149" font-size="10.5" fill="#D6E0F1">људска интервенција</text>
+  <line x1="562" y1="162" x2="752" y2="162" stroke="#4B6AA8" stroke-width="1"/>
+  <g font-size="11.5" fill="#EAF0FA" font-family="'Consolas','Courier New',monospace">
+    <text x="562" y="186">reviewer_id[]</text>
+    <text x="562" y="208">action_type</text>
+    <text x="562" y="230">output_before_hash</text>
+    <text x="562" y="252">output_after_hash</text>
+    <text x="562" y="274">intervention_timestamp</text>
+    <text x="562" y="296">reviewer_role</text>
+  </g>
+
+  <!-- ===== seal bar ===== -->
+  <rect x="48" y="388" width="722" height="62" rx="9" fill="#EEF1F6" stroke="#B7C2D2" stroke-width="1.4"/>
+  <rect x="66" y="404" width="30" height="30" rx="5" fill="#44546A"/>
+  <path d="M74 404 v-5 a7 7 0 0 1 14 0 v5" fill="none" stroke="#44546A" stroke-width="2.4"/>
+  <circle cx="81" cy="419" r="3" fill="#FFFFFF"/>
+  <text x="112" y="414" font-size="13" font-weight="650" fill="#1F2937">bundle_hash</text>
+  <text x="112" y="433" font-size="11" fill="#6B7686">SHA-256 печат каноничког JSON целог пакета (RFC 8785) &#183; чини накнадне измене уочљивим</text>
+</svg>

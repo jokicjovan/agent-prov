@@ -18,9 +18,9 @@ IEEE-style and will be finalised at manuscript-assembly time.
 
 ## Prior and related work
 
-3. R. Souza, T. Skluzacek, S. Wilkinson, et al., "PROV-AGENT: Unified Provenance
-   for Tracking AI Agent Interactions in Agentic Workflows," in *Proc. IEEE
-   e-Science*, Chicago, IL, USA, 2025. arXiv:2508.02866. — Closest prior work; the
+3. R. Souza, A. Gueroudji, S. DeWitt, et al., "PROV-AGENT: Unified Provenance
+   for Tracking AI Agent Interactions in Agentic Workflows," in *Proc. 21st IEEE
+   International Conference on e-Science*, Chicago, IL, USA, 2025. arXiv:2508.02866. — Closest prior work; the
    protocol extends and differentiates from it.
 4. R. Souza, L. G. Azevedo, V. Lourenço, et al., "Provenance Data in the Machine
    Learning Lifecycle in Computational Science and Engineering," in *Proc. IEEE/ACM
@@ -101,3 +101,32 @@ constraint future direction (Ch. 6 §6.5.9).
 20. LangChain, *LangGraph — Building stateful, multi-actor applications with
     LLMs*, software documentation. https://langchain-ai.github.io/langgraph/ —
     The framework targeted by the reference implementation.
+
+## Cryptographic and format standards
+
+Normative specifications for the primitives the protocol builds on: the hash
+function behind every content commitment and the bundle seal, the schema language
+the record types are written in, the signature scheme of the optional signing
+layer, and the timestamp and identifier formats the schemas constrain.
+
+21. National Institute of Standards and Technology, *Secure Hash Standard (SHS)*,
+    FIPS PUB 180-4, U.S. Department of Commerce, August 2015.
+    https://doi.org/10.6028/NIST.FIPS.180-4 — Defines SHA-256, the sole hash
+    algorithm the protocol permits.
+22. A. Wright, H. Andrews, B. Hutton, and G. Dennis, *JSON Schema: A Media Type
+    for Describing JSON Documents*, draft-bhutton-json-schema-01, Internet
+    Engineering Task Force, June 2022.
+    https://json-schema.org/draft/2020-12/json-schema-core.html — The
+    specification language of the four record types.
+23. S. Josefsson and I. Liusvaara, *Edwards-Curve Digital Signature Algorithm
+    (EdDSA)*, RFC 8032, Internet Engineering Task Force, January 2017.
+    https://www.rfc-editor.org/rfc/rfc8032 — Defines Ed25519, used by the
+    optional detached-signature layer.
+24. G. Klyne and C. Newman, *Date and Time on the Internet: Timestamps*, RFC 3339,
+    Internet Engineering Task Force, July 2002.
+    https://www.rfc-editor.org/rfc/rfc3339 — The timestamp format required by
+    every record type.
+25. K. Davis, B. Peabody, and P. Leach, *Universally Unique IDentifiers (UUIDs)*,
+    RFC 9562, Internet Engineering Task Force, May 2024. (Obsoletes RFC 4122.)
+    https://www.rfc-editor.org/rfc/rfc9562 — Source of the lowercase-hex canonical
+    string form the schemas enforce.

@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 760" font-family="'Segoe UI', 'Noto Sans', system-ui, sans-serif">
+  <defs>
+    <marker id="tri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#FFFFFF" stroke="#44546A" stroke-width="1.4"/>
+    </marker>
+    <marker id="tria" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#FFFFFF" stroke="#8A94A6" stroke-width="1.4"/>
+    </marker>
+    <marker id="open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M0,0 L10,5 L0,10" fill="none" stroke="#44546A" stroke-width="1.6"/>
+    </marker>
+    <marker id="openA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M0,0 L10,5 L0,10" fill="none" stroke="#2F5496" stroke-width="1.9"/>
+    </marker>
+  </defs>
+
+  <!-- ============ packages ============ -->
+  <rect x="20" y="52" width="808" height="658" rx="6" fill="none" stroke="#B7C2D2" stroke-width="1.6" stroke-dasharray="7 5"/>
+  <text x="36" y="44" font-size="13" font-weight="650" fill="#5A6577">agent_prov</text>
+  <text x="118" y="44" font-size="12" fill="#8A94A6">- језгро протокола, не увози ниједан агентни радни оквир</text>
+
+  <rect x="856" y="236" width="360" height="232" rx="6" fill="none" stroke="#B7C2D2" stroke-width="1.6" stroke-dasharray="7 5"/>
+  <text x="872" y="228" font-size="13" font-weight="650" fill="#5A6577">agent_prov.adapters.langchain</text>
+
+  <!-- ============ SessionProtocol ============ -->
+  <rect x="306" y="84" width="260" height="246" fill="#F3F6FA" stroke="#8A94A6" stroke-width="1.6"/>
+  <text x="436" y="105" font-size="11" font-style="italic" fill="#6B7686" text-anchor="middle">&#171;protocol&#187;</text>
+  <text x="436" y="124" font-size="13.5" font-weight="700" fill="#1F2937" text-anchor="middle">SessionProtocol</text>
+  <line x1="306" y1="136" x2="566" y2="136" stroke="#8A94A6" stroke-width="1.2"/>
+  <text x="318" y="155" font-size="11" font-family="Consolas, monospace" fill="#2B3440">pipeline_id</text>
+  <text x="318" y="172" font-size="11" font-family="Consolas, monospace" fill="#2B3440">session_id</text>
+  <text x="318" y="189" font-size="11" font-family="Consolas, monospace" fill="#2B3440">protocol_version</text>
+  <text x="318" y="206" font-size="11" font-family="Consolas, monospace" fill="#2B3440">last_record_id</text>
+  <line x1="306" y1="219" x2="566" y2="219" stroke="#8A94A6" stroke-width="1.2"/>
+  <text x="318" y="238" font-size="11" font-family="Consolas, monospace" fill="#2B3440">add_record()</text>
+  <text x="318" y="255" font-size="11" font-family="Consolas, monospace" fill="#2B3440">add_agent_step()</text>
+  <text x="318" y="272" font-size="11" font-family="Consolas, monospace" fill="#2B3440">add_agent_step_error()</text>
+  <text x="318" y="289" font-size="11" font-family="Consolas, monospace" fill="#2B3440">add_tool_invocation()</text>
+  <text x="318" y="306" font-size="11" font-family="Consolas, monospace" fill="#2B3440">add_tool_invocation_error()</text>
+  <text x="318" y="323" font-size="10" font-style="italic" fill="#8A94A6">фабрика записа - тачка споја адаптера</text>
+
+  <!-- ============ HumanReview ============ -->
+  <rect x="44" y="110" width="230" height="200" fill="#EEF1F6" stroke="#44546A" stroke-width="1.6"/>
+  <text x="159" y="134" font-size="13.5" font-weight="700" fill="#1F2937" text-anchor="middle">HumanReview</text>
+  <line x1="44" y1="146" x2="274" y2="146" stroke="#44546A" stroke-width="1.2"/>
+  <text x="56" y="166" font-size="11" font-family="Consolas, monospace" fill="#2B3440">output_before_hash</text>
+  <text x="56" y="183" font-size="11" font-family="Consolas, monospace" fill="#2B3440">record</text>
+  <line x1="44" y1="196" x2="274" y2="196" stroke="#44546A" stroke-width="1.2"/>
+  <text x="56" y="215" font-size="11" font-family="Consolas, monospace" fill="#2B3440">approve()</text>
+  <text x="56" y="232" font-size="11" font-family="Consolas, monospace" fill="#2B3440">edit()</text>
+  <text x="56" y="249" font-size="11" font-family="Consolas, monospace" fill="#2B3440">reject()</text>
+  <text x="56" y="266" font-size="11" font-family="Consolas, monospace" fill="#2B3440">escalate()</text>
+  <text x="56" y="283" font-size="11" font-family="Consolas, monospace" fill="#2B3440">__enter__()</text>
+  <text x="56" y="300" font-size="11" font-family="Consolas, monospace" fill="#2B3440">__exit__()</text>
+
+  <!-- ============ PipelineSession ============ -->
+  <rect x="306" y="380" width="260" height="132" fill="#EEF1F6" stroke="#44546A" stroke-width="1.6"/>
+  <text x="436" y="404" font-size="13.5" font-weight="700" fill="#1F2937" text-anchor="middle">PipelineSession</text>
+  <line x1="306" y1="416" x2="566" y2="416" stroke="#44546A" stroke-width="1.2"/>
+  <text x="318" y="436" font-size="11" font-family="Consolas, monospace" fill="#2B3440">records: list</text>
+  <line x1="306" y1="449" x2="566" y2="449" stroke="#44546A" stroke-width="1.2"/>
+  <text x="318" y="468" font-size="10.5" font-style="italic" fill="#5A6577">реализује све операције</text>
+  <text x="318" y="484" font-size="10.5" font-style="italic" fill="#5A6577">протокола SessionProtocol,</text>
+  <text x="318" y="500" font-size="10.5" font-style="italic" fill="#5A6577">води хронолошки родитељски ланац</text>
+
+  <!-- ============ BundleGenerator ============ -->
+  <rect x="306" y="576" width="260" height="104" fill="#EEF1F6" stroke="#44546A" stroke-width="1.6"/>
+  <text x="436" y="600" font-size="13.5" font-weight="700" fill="#1F2937" text-anchor="middle">BundleGenerator</text>
+  <line x1="306" y1="612" x2="566" y2="612" stroke="#44546A" stroke-width="1.2"/>
+  <text x="318" y="632" font-size="11" font-family="Consolas, monospace" fill="#2B3440">generate()</text>
+  <text x="318" y="650" font-size="11" font-family="Consolas, monospace" fill="#2B3440">to_file()</text>
+  <text x="318" y="670" font-size="10" font-style="italic" fill="#8A94A6">валидира и печати пакет</text>
+
+  <!-- ============ EventSink ============ -->
+  <rect x="650" y="360" width="158" height="104" fill="#F3F6FA" stroke="#8A94A6" stroke-width="1.6"/>
+  <text x="729" y="381" font-size="11" font-style="italic" fill="#6B7686" text-anchor="middle">&#171;protocol&#187;</text>
+  <text x="729" y="400" font-size="13.5" font-weight="700" fill="#1F2937" text-anchor="middle">EventSink</text>
+  <line x1="650" y1="412" x2="808" y2="412" stroke="#8A94A6" stroke-width="1.2"/>
+  <text x="661" y="432" font-size="11" font-family="Consolas, monospace" fill="#2B3440">write_header()</text>
+  <text x="661" y="452" font-size="11" font-family="Consolas, monospace" fill="#2B3440">append_record()</text>
+
+  <!-- ============ EventLog ============ -->
+  <rect x="650" y="520" width="158" height="130" fill="#EEF1F6" stroke="#44546A" stroke-width="1.6"/>
+  <text x="729" y="544" font-size="13.5" font-weight="700" fill="#1F2937" text-anchor="middle">EventLog</text>
+  <line x1="650" y1="556" x2="808" y2="556" stroke="#44546A" stroke-width="1.2"/>
+  <text x="661" y="576" font-size="11" font-family="Consolas, monospace" fill="#2B3440">path</text>
+  <line x1="650" y1="588" x2="808" y2="588" stroke="#44546A" stroke-width="1.2"/>
+  <text x="661" y="607" font-size="11" font-family="Consolas, monospace" fill="#2B3440">write_header()</text>
+  <text x="661" y="624" font-size="11" font-family="Consolas, monospace" fill="#2B3440">append_record()</text>
+  <text x="661" y="641" font-size="11" font-family="Consolas, monospace" fill="#2B3440">close()</text>
+
+  <!-- ============ BaseCallbackHandler (external) ============ -->
+  <rect x="880" y="102" width="312" height="68" fill="#FFFFFF" stroke="#B7C2D2" stroke-width="1.6" stroke-dasharray="6 4"/>
+  <text x="1036" y="126" font-size="13" font-weight="650" fill="#5A6577" text-anchor="middle">BaseCallbackHandler</text>
+  <text x="1036" y="150" font-size="10.5" font-style="italic" fill="#8A94A6" text-anchor="middle">LangChain, изван протокола</text>
+
+  <!-- ============ ProvenanceMiddleware ============ -->
+  <rect x="880" y="280" width="312" height="168" fill="#EEF1F6" stroke="#44546A" stroke-width="1.6"/>
+  <text x="1036" y="304" font-size="13.5" font-weight="700" fill="#1F2937" text-anchor="middle">ProvenanceMiddleware</text>
+  <line x1="880" y1="316" x2="1192" y2="316" stroke="#44546A" stroke-width="1.2"/>
+  <text x="892" y="336" font-size="11" font-family="Consolas, monospace" fill="#2B3440">in_flight</text>
+  <line x1="880" y1="348" x2="1192" y2="348" stroke="#44546A" stroke-width="1.2"/>
+  <text x="892" y="367" font-size="11" font-family="Consolas, monospace" fill="#2B3440">on_chain_start(), on_chain_end()</text>
+  <text x="892" y="384" font-size="11" font-family="Consolas, monospace" fill="#2B3440">on_chat_model_start(), on_llm_end()</text>
+  <text x="892" y="401" font-size="11" font-family="Consolas, monospace" fill="#2B3440">on_tool_start(), on_tool_end()</text>
+  <text x="892" y="418" font-size="11" font-family="Consolas, monospace" fill="#2B3440">on_chain_error(), on_llm_error()</text>
+  <text x="892" y="435" font-size="11" font-family="Consolas, monospace" fill="#2B3440">on_tool_error()</text>
+
+  <!-- ============ relations ============ -->
+  <line x1="436" y1="380" x2="436" y2="330" stroke="#8A94A6" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#tria)"/>
+  <line x1="729" y1="520" x2="729" y2="464" stroke="#8A94A6" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#tria)"/>
+
+  <path d="M436,576 L436,512" fill="none" stroke="#44546A" stroke-width="1.5" marker-end="url(#open)"/>
+  <path d="M274,250 L306,250" fill="none" stroke="#44546A" stroke-width="1.5" marker-end="url(#open)"/>
+
+  <path d="M566,410 L650,410" fill="none" stroke="#44546A" stroke-width="1.5" marker-end="url(#open)"/>
+  <text x="604" y="401" font-size="10.5" fill="#5A6577" text-anchor="middle">0..1</text>
+
+  <line x1="1036" y1="280" x2="1036" y2="170" stroke="#44546A" stroke-width="1.6" marker-end="url(#tri)"/>
+
+  <path d="M880,300 L566,300" fill="none" stroke="#2F5496" stroke-width="2.2" marker-end="url(#openA)"/>
+  <text x="723" y="288" font-size="11.5" font-family="Consolas, monospace" fill="#2F5496" text-anchor="middle">session</text>
+  <text x="723" y="322" font-size="10.5" font-style="italic" fill="#2F5496" text-anchor="middle">адаптер зависи од протокола,</text>
+  <text x="723" y="337" font-size="10.5" font-style="italic" fill="#2F5496" text-anchor="middle">а не од конкретне класе сесије</text>
+
+  <!-- ============ legend ============ -->
+  <rect x="856" y="520" width="360" height="128" rx="6" fill="#FAFBFD" stroke="#D6DCE5" stroke-width="1.3"/>
+  <text x="872" y="546" font-size="11.5" font-weight="650" fill="#5A6577">Легенда</text>
+
+  <line x1="874" y1="576" x2="928" y2="576" stroke="#44546A" stroke-width="1.6" marker-end="url(#tri)"/>
+  <text x="948" y="580" font-size="11" fill="#2B3440">наслеђивање</text>
+
+  <line x1="874" y1="606" x2="928" y2="606" stroke="#8A94A6" stroke-width="1.6" stroke-dasharray="7 5" marker-end="url(#tria)"/>
+  <text x="948" y="610" font-size="11" fill="#2B3440">реализација протокола</text>
+
+  <path d="M874,634 L930,634" fill="none" stroke="#44546A" stroke-width="1.5" marker-end="url(#open)"/>
+  <text x="948" y="638" font-size="11" fill="#2B3440">асоцијација</text>
+
+</svg>

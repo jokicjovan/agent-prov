@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" font-family="'Segoe UI', 'Noto Sans', system-ui, sans-serif">
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#44546A"/>
+    </marker>
+  </defs>
+
+  <!-- ===== relations ===== -->
+  <!-- Entity -> Activity : wasGeneratedBy (lower straight) -->
+  <line x1="246" y1="336" x2="466" y2="342" stroke="#44546A" stroke-width="1.5" marker-end="url(#arw)"/>
+  <text x="352" y="372" font-size="12" font-style="italic" fill="#6B7686" text-anchor="middle">wasGeneratedBy</text>
+
+  <!-- Activity -> Entity : used (upper curve) -->
+  <path d="M 470 296 Q 356 250 244 296" fill="none" stroke="#44546A" stroke-width="1.5" marker-end="url(#arw)"/>
+  <text x="356" y="262" font-size="12" font-style="italic" fill="#6B7686" text-anchor="middle">used</text>
+
+  <!-- Activity -> Agent : wasAssociatedWith -->
+  <line x1="540" y1="276" x2="398" y2="132" stroke="#44546A" stroke-width="1.5" marker-end="url(#arw)"/>
+  <text x="512" y="205" font-size="12" font-style="italic" fill="#6B7686" text-anchor="start">wasAssociatedWith</text>
+
+  <!-- Entity -> Agent : wasAttributedTo -->
+  <line x1="180" y1="276" x2="322" y2="132" stroke="#44546A" stroke-width="1.5" marker-end="url(#arw)"/>
+  <text x="196" y="205" font-size="12" font-style="italic" fill="#6B7686" text-anchor="end">wasAttributedTo</text>
+
+  <!-- ===== Agent (pentagon, accent) ===== -->
+  <polygon points="360,36 409.5,71.9 390.6,130.1 329.4,130.1 310.5,71.9" fill="#2F5496" stroke="#24406F" stroke-width="1.5"/>
+  <text x="360" y="86" font-size="15" font-weight="600" fill="#FFFFFF" text-anchor="middle">Agent</text>
+  <text x="360" y="104" font-size="10.5" fill="#D6E0F1" text-anchor="middle">ко/шта делује</text>
+
+  <!-- ===== Entity (ellipse) ===== -->
+  <ellipse cx="150" cy="320" rx="94" ry="47" fill="#EEF1F6" stroke="#44546A" stroke-width="1.5"/>
+  <text x="150" y="316" font-size="15" font-weight="600" fill="#1F2937" text-anchor="middle">Entity</text>
+  <text x="150" y="334" font-size="10.5" fill="#6B7686" text-anchor="middle">податак / артефакт</text>
+
+  <!-- ===== Activity (rectangle) ===== -->
+  <rect x="470" y="278" width="182" height="84" rx="8" fill="#E3E9F2" stroke="#44546A" stroke-width="1.5"/>
+  <text x="561" y="316" font-size="15" font-weight="600" fill="#1F2937" text-anchor="middle">Activity</text>
+  <text x="561" y="334" font-size="10.5" fill="#6B7686" text-anchor="middle">извршавање</text>
+</svg>

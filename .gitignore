@@ -315,3 +315,8 @@ CLAUDE.md
 # Cursor
 .cursor/
 .cursorrules
+
+# Microsoft Office lock/temp files
+~$*.doc*
+~$*.ppt*
+~WRL*.tmp
